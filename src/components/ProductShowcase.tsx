@@ -7,9 +7,10 @@ import { LUXURY_PRODUCTS } from '../data';
 interface ProductShowcaseProps {
   lang: Language;
   products: Product[];
+  searchQuery?: string;
 }
 
-export default function ProductShowcase({ lang, products }: ProductShowcaseProps) {
+export default function ProductShowcase({ lang, products, searchQuery = '' }: ProductShowcaseProps) {
   const isRTL = lang === 'ar';
   
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -28,9 +29,20 @@ export default function ProductShowcase({ lang, products }: ProductShowcaseProps
 
   const categories = ['All', 'Watches', 'Jewelry', 'Fragrance', 'Accessories'];
 
-  const filteredProducts = selectedCategory === 'All' 
-    ? products 
-    : products.filter(p => p.categoryEn === selectedCategory);
+  const filteredProducts = products.filter(p => {
+    // Check category filter
+    const matchesCategory = selectedCategory === 'All' || p.categoryEn === selectedCategory;
+    
+    // Check search query
+    if (!searchQuery) return matchesCategory;
+    
+    const query = searchQuery.toLowerCase().trim();
+    const nameMatch = p.nameEn.toLowerCase().includes(query) || p.nameAr.includes(query);
+    const categoryMatch = p.categoryEn.toLowerCase().includes(query) || p.categoryAr.includes(query);
+    const descMatch = p.descriptionEn.toLowerCase().includes(query) || p.descriptionAr.includes(query);
+    
+    return matchesCategory && (nameMatch || categoryMatch || descMatch);
+  });
 
   const toggleFavorite = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -100,112 +112,134 @@ export default function ProductShowcase({ lang, products }: ProductShowcaseProps
         {/* Products Matrix / Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           <AnimatePresence mode="popLayout">
-            {filteredProducts.map((product) => {
-              const isFav = favorites.includes(product.id);
-              return (
-                <motion.div
-                  key={product.id}
-                  id={`product-card-${product.id}`}
-                  layout
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.5 }}
-                  onClick={() => setSelectedProduct(product)}
-                  className="group relative rounded-xl border border-gold/10 bg-luxury-dark/45 hover:bg-luxury-dark/90 p-4 transition-all duration-500 overflow-hidden cursor-pointer flex flex-col justify-between"
-                >
-                  {/* Subtle Gold Shimmer Border on Hover */}
-                  <span className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-gold to-transparent scale-0 group-hover:scale-100 transition-transform duration-750" />
-                  <span className="absolute inset-y-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-gold to-transparent scale-0 group-hover:scale-100 transition-transform duration-750 delay-75" />
-                  <span className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-l from-transparent via-gold to-transparent scale-0 group-hover:scale-100 transition-transform duration-750 delay-150" />
-                  <span className="absolute inset-y-0 left-0 w-[1px] bg-gradient-to-t from-transparent via-gold to-transparent scale-0 group-hover:scale-100 transition-transform duration-750 delay-225" />
+            {filteredProducts.length === 0 ? (
+              <motion.div
+                key="empty-state"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.5 }}
+                className="col-span-full py-20 px-4 text-center space-y-5 rounded-2xl border border-gold/15 bg-luxury-dark/30 backdrop-blur-md max-w-lg mx-auto"
+              >
+                <div className="text-gold text-4xl font-serif">⚜</div>
+                <h3 className="font-serif text-xl font-bold text-white tracking-widest uppercase">
+                  {isRTL ? 'لم يتم العثور على قطع تطابق بحثك' : 'No Exquisite Creations Found'}
+                </h3>
+                <div className="w-12 h-[1px] bg-gold/50 mx-auto" />
+                <p className="text-luxury-cream/60 text-xs leading-relaxed max-w-sm mx-auto">
+                  {isRTL 
+                    ? 'نأسف لعدم العثور على قطع تتوافق مع مدخلات البحث الحالية. يرجى مراجعة التهجئة أو استخدام تعبيرات أخرى مثل "ساعة" أو "أقراط" أو "عود".'
+                    : 'Our elite vault currently has no masterworks matching this filter criteria. Please revise your search keywords or seek adjacent bespoke terms.'}
+                </p>
+              </motion.div>
+            ) : (
+              filteredProducts.map((product) => {
+                const isFav = favorites.includes(product.id);
+                return (
+                  <motion.div
+                    key={product.id}
+                    id={`product-card-${product.id}`}
+                    layout
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.5 }}
+                    onClick={() => setSelectedProduct(product)}
+                    className="group relative rounded-xl border border-gold/10 bg-luxury-dark/45 hover:bg-luxury-dark/90 p-4 transition-all duration-500 overflow-hidden cursor-pointer flex flex-col justify-between"
+                  >
+                    {/* Subtle Gold Shimmer Border on Hover */}
+                    <span className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-gold to-transparent scale-0 group-hover:scale-100 transition-transform duration-750" />
+                    <span className="absolute inset-y-0 right-0 w-[1px] bg-gradient-to-b from-transparent via-gold to-transparent scale-0 group-hover:scale-100 transition-transform duration-750 delay-75" />
+                    <span className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-l from-transparent via-gold to-transparent scale-0 group-hover:scale-100 transition-transform duration-750 delay-150" />
+                    <span className="absolute inset-y-0 left-0 w-[1px] bg-gradient-to-t from-transparent via-gold to-transparent scale-0 group-hover:scale-100 transition-transform duration-750 delay-225" />
 
-                  {/* Top features: Premium badge and Favorite button */}
-                  <div className="relative z-10 flex justify-between items-center mb-3">
-                    {product.isPremium ? (
-                      <span className="bg-gold/10 border border-gold/30 text-[9px] font-serif font-semibold text-gold tracking-widest px-2 py-0.5 rounded uppercase">
-                        {isRTL ? 'إصدار ملكي' : 'Royal Edition'}
-                      </span>
-                    ) : (
-                      <span className="text-transparent text-[9px] px-2 py-0.5 select-none font-serif">Empty</span>
-                    )}
+                    {/* Top features: Premium badge and Favorite button */}
+                    <div className="relative z-10 flex justify-between items-center mb-3">
+                      {product.isPremium ? (
+                        <span className="bg-gold/10 border border-gold/30 text-[9px] font-serif font-semibold text-gold tracking-widest px-2 py-0.5 rounded uppercase">
+                          {isRTL ? 'إصدار ملكي' : 'Royal Edition'}
+                        </span>
+                      ) : (
+                        <span className="text-transparent text-[9px] px-2 py-0.5 select-none font-serif">Empty</span>
+                      )}
 
-                    <button
-                      id={`fav-btn-${product.id}`}
-                      onClick={(e) => toggleFavorite(product.id, e)}
-                      className="text-luxury-cream/40 hover:text-gold transition-colors duration-300"
-                    >
-                      <Heart className={`h-4.5 w-4.5 ${isFav ? 'fill-gold text-gold scale-110' : ''}`} />
-                    </button>
-                  </div>
+                      <button
+                        id={`fav-btn-${product.id}`}
+                        onClick={(e) => toggleFavorite(product.id, e)}
+                        className="text-luxury-cream/40 hover:text-gold transition-colors duration-300"
+                      >
+                        <Heart className={`h-4.5 w-4.5 ${isFav ? 'fill-gold text-gold scale-110' : ''}`} />
+                      </button>
+                    </div>
 
-                  {/* Image container with subtle parallax/slight zoom */}
-                  <div className="relative h-64 w-full rounded-lg overflow-hidden bg-luxury-black mb-4">
-                    <img
-                      src={product.image}
-                      alt={lang === 'ar' ? product.nameAr : product.nameEn}
-                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
-                      referrerPolicy="no-referrer"
-                    />
-                    
-                    {/* Dark gradient overlay showing only on hover */}
-                    <div className="absolute inset-0 bg-luxury-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                      <div className="rounded-full bg-gold text-luxury-black px-4 py-2 font-serif text-xs font-bold tracking-widest uppercase flex items-center space-x-2 space-x-reverse shadow-lg">
-                        <Eye className="h-3.5 w-3.5" />
-                        <span>{isRTL ? 'عرض التفاصيل والضمان' : 'Assess Creation'}</span>
+                    {/* Image container with subtle parallax/slight zoom */}
+                    <div className="relative h-64 w-full rounded-lg overflow-hidden bg-luxury-black mb-4">
+                      <img
+                        src={product.image}
+                        alt={lang === 'ar' ? product.nameAr : product.nameEn}
+                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                        referrerPolicy="no-referrer"
+                      />
+                      
+                      {/* Dark gradient overlay showing only on hover */}
+                      <div className="absolute inset-0 bg-luxury-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <div className="rounded-full bg-gold text-luxury-black px-4 py-2 font-serif text-xs font-bold tracking-widest uppercase flex items-center space-x-2 space-x-reverse shadow-lg">
+                          <Eye className="h-3.5 w-3.5" />
+                          <span>{isRTL ? 'عرض التفاصيل والضمان' : 'Assess Creation'}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Brand Meta & Info */}
-                  <div className="space-y-1.5 flex-grow flex flex-col justify-between">
-                    <div>
-                      <p className="text-[10px] uppercase font-serif tracking-[0.2em] text-gold">
-                        {isRTL ? product.categoryAr : product.categoryEn}
-                      </p>
-                      
-                      <h3 className="font-serif text-base font-bold text-white tracking-wide group-hover:text-gold transition-colors line-clamp-1">
-                        {isRTL ? product.nameAr : product.nameEn}
-                      </h3>
+                    {/* Brand Meta & Info */}
+                    <div className="space-y-1.5 flex-grow flex flex-col justify-between">
+                      <div>
+                        <p className="text-[10px] uppercase font-serif tracking-[0.2em] text-gold">
+                          {isRTL ? product.categoryAr : product.categoryEn}
+                        </p>
+                        
+                        <h3 className="font-serif text-base font-bold text-white tracking-wide group-hover:text-gold transition-colors line-clamp-1">
+                          {isRTL ? product.nameAr : product.nameEn}
+                        </h3>
 
-                      <p className="text-xs text-luxury-cream/65 line-clamp-2 mt-1 leading-relaxed font-sans">
-                        {isRTL ? product.descriptionAr : product.descriptionEn}
-                      </p>
-                    </div>
+                        <p className="text-xs text-luxury-cream/65 line-clamp-2 mt-1 leading-relaxed font-sans">
+                          {isRTL ? product.descriptionAr : product.descriptionEn}
+                        </p>
+                      </div>
 
-                    {/* Stock Status + Value Area */}
-                    <div className="pt-3 border-t border-gold/5 mt-3 flex items-center justify-between">
-                      <div className="flex flex-col text-start">
-                        <span className="text-[9px] text-luxury-cream/40 uppercase font-mono tracking-wider">{isRTL ? 'المبلغ التقديري' : 'Investment Value'}</span>
-                        <span className="font-mono text-[15px] font-bold text-gold">
-                          {product.priceAED.toLocaleString()} AED
+                      {/* Stock Status + Value Area */}
+                      <div className="pt-3 border-t border-gold/5 mt-3 flex items-center justify-between">
+                        <div className="flex flex-col text-start">
+                          <span className="text-[9px] text-luxury-cream/40 uppercase font-mono tracking-wider">{isRTL ? 'المبلغ التقديري' : 'Investment Value'}</span>
+                          <span className="font-mono text-[15px] font-bold text-gold">
+                            {product.priceAED.toLocaleString()} AED
+                          </span>
+                        </div>
+
+                        {/* Stock badge with light bullet */}
+                        <span className={`text-[10px] font-serif tracking-wider px-2 py-0.5 rounded flex items-center gap-1.5 ${
+                          product.stockStatus === 'In Stock' 
+                            ? 'text-emerald-400 bg-emerald-950/10' 
+                            : 'text-amber-400 bg-amber-950/10'
+                        }`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${product.stockStatus === 'In Stock' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                          {isRTL ? product.stockStatusAr : product.stockStatus}
                         </span>
                       </div>
-
-                      {/* Stock badge with light bullet */}
-                      <span className={`text-[10px] font-serif tracking-wider px-2 py-0.5 rounded flex items-center gap-1.5 ${
-                        product.stockStatus === 'In Stock' 
-                          ? 'text-emerald-400 bg-emerald-900/10' 
-                          : 'text-amber-400 bg-amber-900/10'
-                      }`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${product.stockStatus === 'In Stock' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-                        {isRTL ? product.stockStatusAr : product.stockStatus}
-                      </span>
                     </div>
-                  </div>
 
-                  {/* Action view details Button for accessibility */}
-                  <button 
-                    id={`view-details-${product.id}`}
-                    name="view-details"
-                    className="mt-4 w-full text-center py-2 text-xs border border-gold/20 hover:border-gold hover:bg-gold/5 text-luxury-cream tracking-widest font-serif uppercase rounded"
-                  >
-                    {isRTL ? 'معاينة التحفة الفنية' : 'Inspect Creation'}
-                  </button>
+                    {/* Action view details Button for accessibility */}
+                    <button 
+                      id={`view-details-${product.id}`}
+                      name="view-details"
+                      className="mt-4 w-full text-center py-2 text-xs border border-gold/20 hover:border-gold hover:bg-gold/5 text-luxury-cream tracking-widest font-serif uppercase rounded"
+                    >
+                      {isRTL ? 'معاينة التحفة الفنية' : 'Inspect Creation'}
+                    </button>
 
-                </motion.div>
-              );
-            })}
+                  </motion.div>
+                );
+              })
+            )}
           </AnimatePresence>
         </div>
 

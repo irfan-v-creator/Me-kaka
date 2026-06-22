@@ -4,6 +4,8 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import ProductShowcase from './components/ProductShowcase';
 import AdminPortal from './components/AdminPortal';
+import SEOManager from './components/SEOManager';
+import LoginModal from './components/LoginModal';
 import { Language, Product } from './types';
 import { LUXURY_PRODUCTS } from './data';
 
@@ -11,6 +13,58 @@ export default function App() {
   const [lang, setLang] = useState<Language>('en');
   const [activePage, setActivePage] = useState<string>('home');
   const [products, setProducts] = useState<Product[]>(LUXURY_PRODUCTS);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Professional Session & Role-Based Authentication State
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
+
+  const handleLoginSuccess = (email: string, adminStatus: boolean) => {
+    setIsLoggedIn(true);
+    setIsAdmin(adminStatus);
+    setUserEmail(email);
+    
+    if (adminStatus) {
+      setActivePage('admin-portal');
+      window.location.hash = '#/admin-portal';
+    } else {
+      setActivePage('shop');
+      if (window.location.hash) {
+        window.location.hash = '';
+      }
+    }
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setIsAdmin(false);
+    setUserEmail(null);
+    setActivePage('home');
+    if (window.location.hash) {
+      window.location.hash = '';
+    }
+  };
+
+  const handleLoginRaw = (email: string, pass: string): boolean => {
+    const normalizedEmail = email.toLowerCase().trim();
+    if (normalizedEmail === 'owner@luxoradubai.ae' && pass === 'DubaiLuxury2026') {
+      handleLoginSuccess(normalizedEmail, true);
+      return true;
+    } else if (normalizedEmail && pass.length >= 4) {
+      handleLoginSuccess(normalizedEmail, false);
+      return true;
+    }
+    return false;
+  };
+
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    if (query && activePage !== 'home' && activePage !== 'shop' && activePage !== 'admin-portal') {
+      setActivePage('shop');
+    }
+  };
 
   // Hash Routing support for secure unadvertised owner admin route
   useEffect(() => {
@@ -69,14 +123,42 @@ export default function App() {
 
   return (
     <div id="luxora-app-root" className="min-h-screen bg-luxury-black text-luxury-cream selection:bg-gold selection:text-luxury-black font-sans">
+      <SEOManager lang={lang} />
       
-      {/* Impeccable Header Bar */}
+      {/* Impeccable Header Bar with elevated auth states */}
       <Navbar 
         lang={lang} 
         setLang={setLang} 
         onNavigate={handleNavigate} 
         activePage={activePage} 
+        searchQuery={searchQuery}
+        setSearchQuery={handleSearchChange}
+        isLoggedIn={isLoggedIn}
+        isAdmin={isAdmin}
+        userEmail={userEmail}
+        onOpenLogin={() => setShowLoginModal(true)}
+        onLogout={handleLogout}
       />
+
+      {/* Exquisite VIP Access Banner Info */}
+      {isLoggedIn && !isAdmin && (
+        <div id="vip-gold-banner" className="bg-gold/10 border-b border-gold/25 text-gold text-xs py-3 px-4 text-center tracking-widest uppercase font-serif flex items-center justify-center gap-2 animate-fade-in">
+          <Sparkles className="h-3.5 w-3.5 animate-pulse text-gold flex-shrink-0" />
+          <span>
+            {isRTL 
+              ? `الملف الشخصي الفاخر نشط لـ (${userEmail}) • تم تفعيل خصم النخبة المضمون بنسبة ١٠٪`
+              : `Bespoke Sovereign VIP Session Active for ${userEmail} • Verified Member Discount Engaged`
+            }
+          </span>
+          <button 
+            id="vip-signout-banner-btn"
+            onClick={handleLogout}
+            className={`font-serif underline text-[9px] hover:text-white transition-colors uppercase ${isRTL ? 'mr-4' : 'ml-4'} cursor-pointer`}
+          >
+            {isRTL ? 'تسجيل الخروج' : 'Sign Out'}
+          </button>
+        </div>
+      )}
 
       {/* Main Dynamic Viewport Container */}
       <main id="luxora-main-content">
@@ -101,13 +183,13 @@ export default function App() {
                 </p>
               </div>
             </section>
-
+ 
             {/* Dynamic Product Catalog Gallery */}
-            <ProductShowcase lang={lang} products={products} />
+            <ProductShowcase lang={lang} products={products} searchQuery={searchQuery} />
           </div>
         ) : activePage === 'shop' ? (
           <div className="py-6">
-            <ProductShowcase lang={lang} products={products} />
+            <ProductShowcase lang={lang} products={products} searchQuery={searchQuery} />
           </div>
         ) : activePage === 'admin-portal' ? (
           <AdminPortal
@@ -115,6 +197,9 @@ export default function App() {
             products={products}
             onAddProduct={handleAddProduct}
             onDeleteProduct={handleDeleteProduct}
+            isAuthenticated={isLoggedIn && isAdmin}
+            onLogout={handleLogout}
+            onLogin={handleLoginRaw}
           />
         ) : (
           /* Elegant placeholder view layout for modularly built future steps */
@@ -187,17 +272,7 @@ export default function App() {
 
         <div className="max-w-7xl mx-auto border-t border-gold/10 mt-10 pt-6 text-center text-[10px] text-luxury-cream/35 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p>
-            © {new Date().getFullYear()} LUXORA DUBAI.
-            {/* Extremely discrete golden sovereign badge acting as a shortcut entry point for the owner admin-portal */}
-            <span 
-              onClick={() => handleNavigate('admin-portal')} 
-              className="cursor-default select-none text-gold/5 hover:text-gold/40 transition-colors duration-500 font-mono text-[10px] ml-1.5 mr-1"
-              style={{ userSelect: 'none' }}
-              title="Sovereign Access Key"
-            >
-              ⚜
-            </span>
-            {isRTL ? 'جميع الحقوق محفوظة.' : 'All Sovereign Rights Reserved.'}
+            © {new Date().getFullYear()} LUXORA DUBAI. {isRTL ? 'جميع الحقوق محفوظة.' : 'All Sovereign Rights Reserved.'}
           </p>
           <div className="flex space-x-6 space-x-reverse text-gold/60">
             <a href="#" className="hover:text-gold transition-colors">{isRTL ? 'الشروط والأحكام' : 'Terms of Use'}</a>
@@ -206,23 +281,13 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Temporary Floating DEV Toggle Button requested in preview mode */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <button
-          id="dev-admin-toggle-btn"
-          onClick={() => handleNavigate(activePage === 'admin-portal' ? 'home' : 'admin-portal')}
-          className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-luxury-black font-semibold text-xs tracking-wider uppercase px-4 py-3 rounded-full shadow-[0_4px_20px_rgba(245,158,11,0.4)] hover:shadow-[0_6px_25px_rgba(245,158,11,0.6)] active:scale-95 hover:from-amber-400 hover:to-amber-500 border border-amber-300/30 transition-all cursor-pointer font-serif"
-          title="Toggle Admin Control Suite"
-        >
-          <span>🛠️</span>
-          <span>
-            {activePage === 'admin-portal' 
-              ? (isRTL ? 'معاينة المتجر الفاخر' : 'Go to Luxury Boutique') 
-              : (isRTL ? 'لوحة تحكم المشرف' : 'Sovereign Control')
-            }
-          </span>
-        </button>
-      </div>
+      {/* Render the Luxury Login Modal */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        lang={lang}
+        onLoginSuccess={handleLoginSuccess}
+      />
 
     </div>
   );

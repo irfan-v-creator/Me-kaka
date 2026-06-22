@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, Globe, ShoppingBag, User } from 'lucide-react';
+import { Menu, X, Globe, ShoppingBag, User, Search, LogOut, Crown, ShieldAlert, Sparkles } from 'lucide-react';
 import { Language, NavItem } from '../types';
 
 interface NavbarProps {
@@ -7,6 +7,13 @@ interface NavbarProps {
   setLang: (lang: Language) => void;
   onNavigate: (page: string) => void;
   activePage: string;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  isLoggedIn: boolean;
+  isAdmin: boolean;
+  userEmail: string | null;
+  onOpenLogin: () => void;
+  onLogout: () => void;
 }
 
 export const navItems: NavItem[] = [
@@ -16,14 +23,40 @@ export const navItems: NavItem[] = [
   { labelEn: 'About Luxora', labelAr: 'عن لوكسورا', href: 'about' }
 ];
 
-export default function Navbar({ lang, setLang, onNavigate, activePage }: NavbarProps) {
+export default function Navbar({ 
+  lang, 
+  setLang, 
+  onNavigate, 
+  activePage, 
+  searchQuery, 
+  setSearchQuery,
+  isLoggedIn,
+  isAdmin,
+  userEmail,
+  onOpenLogin,
+  onLogout
+}: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
   const toggleLanguage = () => {
     setLang(lang === 'en' ? 'ar' : 'en');
   };
 
   const isRTL = lang === 'ar';
+
+  const handleProfileClick = () => {
+    if (isLoggedIn) {
+      setShowProfileDropdown((prev) => !prev);
+    } else {
+      onOpenLogin();
+    }
+  };
+
+  const handleLogoutClick = () => {
+    setShowProfileDropdown(false);
+    onLogout();
+  };
 
   return (
     <nav 
@@ -88,14 +121,95 @@ export default function Navbar({ lang, setLang, onNavigate, activePage }: Navbar
               </span>
             </button>
 
-            {/* Profile Placeholder (Luxury UI) */}
-            <button 
-              id="user-profile-btn"
-              className="text-luxury-cream/80 hover:text-gold transition-colors duration-300"
-              title={isRTL ? 'حسابي' : 'My Account'}
-            >
-              <User className="h-5 w-5" />
-            </button>
+            {/* Elegant Profile Authenticated Status & User Trigger */}
+            <div className="relative">
+              <button 
+                id="user-profile-btn"
+                onClick={handleProfileClick}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gold/15 transition-all duration-300 hover:border-gold hover:bg-gold/5 cursor-pointer ${
+                  isLoggedIn ? 'text-gold' : 'text-luxury-cream/80 hover:text-gold'
+                }`}
+                title={isRTL ? 'حسابي وبوابتي' : 'My Account & Gateway'}
+              >
+                <User className="h-4.5 w-4.5" />
+                {isLoggedIn && (
+                  <span className="text-[10px] uppercase tracking-widest font-serif max-w-[85px] truncate">
+                    {isAdmin ? (isRTL ? 'صاحب المتجر' : 'Owner') : (isRTL ? 'عضو نخبة' : 'VIP Member')}
+                  </span>
+                )}
+                {isLoggedIn && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse animate-duration-1000" />
+                )}
+              </button>
+
+              {/* Magnificent Dropdown Menu */}
+              {showProfileDropdown && isLoggedIn && (
+                <div 
+                  className={`absolute top-full mt-3 ${isRTL ? 'left-0' : 'right-0'} w-64 bg-luxury-dark/95 border border-gold/30 rounded-xl shadow-2xl p-5 z-50 text-start space-y-4`}
+                  dir={isRTL ? 'rtl' : 'ltr'}
+                >
+                  <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-gold/30 via-gold to-gold/30 rounded-t-xl" />
+                  
+                  {/* Account Header */}
+                  <div className="space-y-1">
+                    <span className="block text-[8px] uppercase tracking-widest text-gold/60 font-mono">
+                      {isRTL ? 'بيانات الجلسة المعتمدة' : 'SECURED SESSION ACTIVE'}
+                    </span>
+                    <h5 className="font-serif text-xs font-bold text-white max-w-[200px] truncate">
+                      {userEmail}
+                    </h5>
+                    {isAdmin ? (
+                      <span className="inline-flex items-center gap-1 bg-gold/10 border border-gold/30 text-[9px] text-gold uppercase px-1.5 py-0.5 font-serif rounded">
+                        <Crown className="h-2.5 w-2.5" />
+                        {isRTL ? 'المالك الموقر' : 'Royal Administrator'}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 bg-emerald-950/20 border border-emerald-500/30 text-[9px] text-emerald-400 uppercase px-1.5 py-0.5 font-sans rounded">
+                        <Sparkles className="h-2.5 w-2.5 text-gold" />
+                        {isRTL ? 'رتبة كبار المقتنين VIP' : 'Emerald Sovereign VIP'}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="w-full h-[1px] bg-gold/10" />
+
+                  {/* Context Links */}
+                  <div className="space-y-2">
+                    {isAdmin && (
+                      <button
+                        onClick={() => {
+                          setShowProfileDropdown(false);
+                          onNavigate('admin-portal');
+                        }}
+                        className="w-full text-start text-xs font-serif text-luxury-cream hover:text-gold transition-colors block py-1 cursor-pointer"
+                      >
+                        {isRTL ? '⚙️ فتح لوحة التحكم الرئيسية' : '⚙️ Launch Control Suite'}
+                      </button>
+                    )}
+                    
+                    {!isAdmin && (
+                      <div className="rounded bg-gold/5 p-2 text-[10px] text-gold/80 leading-relaxed font-sans border border-gold/10">
+                        <strong className="block mb-1">{isRTL ? 'امتيازات العضو VIP:' : 'VIP Privileges Secured:'}</strong>
+                        <ul className="list-disc pl-3 space-y-0.5 text-luxury-cream/80 text-[9px]" dir={isRTL ? 'rtl' : 'ltr'}>
+                          <li>{isRTL ? 'تصفح مخزون الخزنة الملكية الخاص' : 'Access Royal Vault items'}</li>
+                          <li>{isRTL ? 'دخول صالات كبار الشخصيات بنادي دبي مول' : 'Dubai Mall VIP Lounge access'}</li>
+                          <li>{isRTL ? 'توصيل مصفح ومؤمّن مجانيّ بالكامل' : 'Complimentary armored delivery'}</li>
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Sign Out Action */}
+                  <button
+                    onClick={handleLogoutClick}
+                    className="w-full bg-red-950/20 hover:bg-red-950/60 border border-red-500/20 hover:border-red-500/50 rounded p-2 text-[10px] font-serif uppercase tracking-widest text-red-400 hover:text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <LogOut className="h-3 w-3" />
+                    <span>{isRTL ? 'إنهاء الجلسة الآمنة' : 'Terminate Secure Session'}</span>
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Cart Button */}
             <button
@@ -145,6 +259,34 @@ export default function Navbar({ lang, setLang, onNavigate, activePage }: Navbar
         </div>
       </div>
 
+      {/* Premium Minimalist Luxury Search Bar */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-4">
+        <div className="max-w-md mx-auto relative group">
+          <div className="relative flex items-center bg-black/40 border border-gold/25 hover:border-gold/50 rounded-full py-1 px-4 transition-all duration-300 focus-within:border-gold focus-within:ring-1 focus-within:ring-gold/30 focus-within:shadow-[0_0_15px_rgba(212,175,55,0.15)]">
+            <Search className={`h-4 w-4 text-gold shrink-0 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+            <input
+              id="luxury-search-input"
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={isRTL ? 'ابحث عن الإبداعات الفاخرة...' : 'Search luxury creations...'}
+              className="w-full bg-transparent text-xs text-luxury-cream placeholder:text-luxury-cream/40 focus:outline-none border-none py-1.5 focus:ring-0 focus:border-transparent"
+              dir={isRTL ? 'rtl' : 'ltr'}
+            />
+            {searchQuery && (
+              <button
+                id="clear-search-btn"
+                onClick={() => setSearchQuery('')}
+                className="text-luxury-cream/40 hover:text-gold transition-colors p-1 shrink-0"
+                title={isRTL ? 'مسح البحث' : 'Clear Search'}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Mobile Drawer Navigation */}
       {mobileMenuOpen && (
         <div id="mobile-drawer" className="md:hidden border-t border-gold/10 bg-luxury-black px-4 py-6 animate-fade-in">
@@ -181,13 +323,49 @@ export default function Navbar({ lang, setLang, onNavigate, activePage }: Navbar
                 <span>{lang === 'en' ? 'العربية (Arabic)' : 'English'}</span>
               </button>
 
-              <div className="flex space-x-4 space-x-reverse">
-                <button 
-                  id="mobile-user-profile-btn"
-                  className="rounded-full bg-luxury-dark p-2 text-luxury-cream border border-gold/15"
-                >
-                  <User className="h-4 w-4" />
-                </button>
+              <div className="flex items-center gap-3">
+                {isLoggedIn ? (
+                  <div className="flex items-center gap-3">
+                    <div className="text-start">
+                      <span className="block text-[8px] uppercase text-gold tracking-widest font-mono">{isAdmin ? (isRTL ? 'المالك الموقر' : 'ROYAL OWNER') : (isRTL ? 'عضو كبار الشخصيات' : 'VIP MEMBER')}</span>
+                      <span className="block text-[10px] text-white/70 max-w-[120px] truncate">{userEmail}</span>
+                    </div>
+                    {isAdmin && (
+                      <button 
+                        onClick={() => {
+                          onNavigate('admin-portal');
+                          setMobileMenuOpen(false);
+                        }}
+                        className="p-2 border border-gold/20 rounded-full text-gold bg-gold/5 cursor-pointer"
+                        title="Control Suite"
+                      >
+                        <Crown className="h-4 w-4" />
+                      </button>
+                    )}
+                    <button 
+                      onClick={() => {
+                        handleLogoutClick();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="p-2 border border-red-500/30 rounded-full text-red-400 bg-red-950/20 cursor-pointer"
+                      title={isRTL ? 'تسجيل الخروج' : 'Log Out'}
+                    >
+                      <LogOut className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button 
+                    id="mobile-user-profile-btn"
+                    onClick={() => {
+                      onOpenLogin();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1 bg-luxury-dark text-luxury-cream border border-gold/35 rounded-full text-xs font-serif uppercase tracking-widest cursor-pointer"
+                  >
+                    <User className="h-3.5 w-3.5 text-gold" />
+                    <span>{isRTL ? 'دخول' : 'Sign In'}</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>

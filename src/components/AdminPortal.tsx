@@ -8,13 +8,23 @@ interface AdminPortalProps {
   onAddProduct: (product: Omit<Product, 'id'>) => void;
   products: Product[];
   onDeleteProduct: (id: string) => void;
+  isAuthenticated: boolean;
+  onLogout: () => void;
+  onLogin: (email: string, pass: string) => boolean;
 }
 
-export default function AdminPortal({ lang, onAddProduct, products, onDeleteProduct }: AdminPortalProps) {
+export default function AdminPortal({ 
+  lang, 
+  onAddProduct, 
+  products, 
+  onDeleteProduct,
+  isAuthenticated,
+  onLogout,
+  onLogin
+}: AdminPortalProps) {
   const isRTL = lang === 'ar';
 
-  // Login states
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  // Login inputs if not already authenticated
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [loginError, setLoginError] = useState<string>('');
@@ -40,9 +50,8 @@ export default function AdminPortal({ lang, onAddProduct, products, onDeleteProd
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simple secure direct credential match
-    if (email.toLowerCase() === 'owner@luxoradubai.ae' && password === 'DubaiLuxury2026') {
-      setIsAuthenticated(true);
+    const isSuccess = onLogin(email, password);
+    if (isSuccess) {
       setLoginError('');
     } else {
       setLoginError(isRTL ? 'بيانات الاعتماد غير صالحة. يرجى المحاولة مرة أخرى.' : 'Invalid sovereign credentials. Access restricted.');
@@ -220,8 +229,8 @@ export default function AdminPortal({ lang, onAddProduct, products, onDeleteProd
 
         <button
           id="logout-btn"
-          onClick={() => setIsAuthenticated(false)}
-          className="rounded border border-gold/30 hover:border-gold px-4 py-1.5 text-xs font-serif tracking-widest lowercase text-luxury-cream/80 hover:text-gold transition-colors"
+          onClick={onLogout}
+          className="rounded border border-gold/30 hover:border-gold px-4 py-1.5 text-xs font-serif tracking-widest lowercase text-luxury-cream/80 hover:text-gold transition-colors cursor-pointer"
         >
           {isRTL ? 'قفل الخزنة (تسجيل الخروج)' : 'Lock Vault (Logout)'}
         </button>
