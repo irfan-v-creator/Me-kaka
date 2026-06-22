@@ -1,0 +1,6 @@
+{
+  "name": "LUXORA Dubai",
+  "description": "High-end luxury e-commerce website centering Premium Dubai styles, dual English/Arabic languages, UAE VAT computation, and a discrete administration control suite.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
