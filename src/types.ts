@@ -27,6 +27,14 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface Order {
+  id: string;
+  productName: string;
+  priceAED: number;
+  customerPhone: string;
+  orderTime: string;
+}
+
 export interface DeliveryZone {
   id: string;
   nameEn: string;

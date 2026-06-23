@@ -14,6 +14,7 @@ interface NavbarProps {
   userEmail: string | null;
   onOpenLogin: () => void;
   onLogout: () => void;
+  cartCount?: number;
 }
 
 export const navItems: NavItem[] = [
@@ -34,7 +35,8 @@ export default function Navbar({
   isAdmin,
   userEmail,
   onOpenLogin,
-  onLogout
+  onLogout,
+  cartCount = 0
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -215,13 +217,15 @@ export default function Navbar({
             <button
               id="cart-btn"
               onClick={() => onNavigate('cart')}
-              className="relative text-luxury-cream/80 hover:text-gold transition-colors duration-300"
+              className="relative text-luxury-cream/80 hover:text-gold transition-colors duration-300 pointer-events-auto cursor-pointer"
               title={isRTL ? 'حقيبة التسوق' : 'Shopping Bag'}
             >
               <ShoppingBag className="h-5 w-5" />
-              <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[9px] font-bold text-luxury-black">
-                1
-              </span>
+              {cartCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[9px] font-bold text-luxury-black animate-pulse">
+                  {cartCount}
+                </span>
+              )}
             </button>
           </div>
 
@@ -239,12 +243,14 @@ export default function Navbar({
             <button
               id="cart-btn-mobile"
               onClick={() => onNavigate('cart')}
-              className="relative text-luxury-cream/80 hover:text-gold transition-colors duration-300"
+              className="relative text-luxury-cream/80 hover:text-gold transition-colors duration-300 cursor-pointer"
             >
               <ShoppingBag className="h-5 w-5" />
-              <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-gold text-[8px] font-bold text-luxury-black">
-                1
-              </span>
+              {cartCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-gold text-[8px] font-bold text-luxury-black">
+                  {cartCount}
+                </span>
+              )}
             </button>
 
             <button

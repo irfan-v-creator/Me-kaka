@@ -8,15 +8,28 @@ interface ProductShowcaseProps {
   lang: Language;
   products: Product[];
   searchQuery?: string;
+  onAddToCart?: (product: Product) => void;
+  onPlaceOrder?: (product: Product, customerPhone: string) => void;
 }
 
-export default function ProductShowcase({ lang, products, searchQuery = '' }: ProductShowcaseProps) {
+export default function ProductShowcase({ lang, products, searchQuery = '', onAddToCart, onPlaceOrder }: ProductShowcaseProps) {
   const isRTL = lang === 'ar';
   
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [inquirySubmitted, setInquirySubmitted] = useState<boolean>(false);
+  const [addedToBag, setAddedToBag] = useState<boolean>(false);
+  const [clientPhone, setClientPhone] = useState<string>('');
+  const [validationError, setValidationError] = useState<boolean>(false);
+
+  React.useEffect(() => {
+    if (selectedProduct) {
+      setClientPhone('');
+      setInquirySubmitted(false);
+      setValidationError(false);
+    }
+  }, [selectedProduct]);
 
   // Filter translation keys
   const categoriesTranslation: Record<string, { en: string; ar: string }> = {
@@ -163,13 +176,27 @@ export default function ProductShowcase({ lang, products, searchQuery = '' }: Pr
                         <span className="text-transparent text-[9px] px-2 py-0.5 select-none font-serif">Empty</span>
                       )}
 
-                      <button
-                        id={`fav-btn-${product.id}`}
-                        onClick={(e) => toggleFavorite(product.id, e)}
-                        className="text-luxury-cream/40 hover:text-gold transition-colors duration-300"
-                      >
-                        <Heart className={`h-4.5 w-4.5 ${isFav ? 'fill-gold text-gold scale-110' : ''}`} />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          id={`add-bag-quick-${product.id}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onAddToCart) onAddToCart(product);
+                          }}
+                          className="text-luxury-cream/40 hover:text-gold transition-colors duration-300 p-1.5 rounded-full hover:bg-gold/5 cursor-pointer"
+                          title={isRTL ? 'إضافة إلى حقيبة الاقتناء' : 'Add to Shopping Vault Bag'}
+                        >
+                          <ShoppingBag className="h-4.5 w-4.5" />
+                        </button>
+
+                        <button
+                          id={`fav-btn-${product.id}`}
+                          onClick={(e) => toggleFavorite(product.id, e)}
+                          className="text-luxury-cream/40 hover:text-gold transition-colors duration-300 cursor-pointer"
+                        >
+                          <Heart className={`h-4.5 w-4.5 ${isFav ? 'fill-gold text-gold scale-110' : ''}`} />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Image container with subtle parallax/slight zoom */}
@@ -350,23 +377,78 @@ export default function ProductShowcase({ lang, products, searchQuery = '' }: Pr
                       ) : (
                         <div className="space-y-2">
                           <p className="text-[10px] uppercase font-serif tracking-widest text-luxury-cream/50">
-                            {isRTL ? 'استفسار فوري عبر خبير الفخامة' : 'Instant vVIP Placement Inquiry'}
+                            {isRTL ? 'استفسار فوري عبر خبير الفخامة *' : 'Instant vVIP Placement Inquiry *'}
                           </p>
                           
                           <div className="flex gap-2">
                             <input
                               id="client-phone-input"
                               type="tel"
-                              placeholder={isRTL ? 'رقم الهاتف (+971)' : 'Direct Mobile Number (+971)'}
-                              className="bg-luxury-black border border-gold/20 text-xs text-luxury-cream rounded-md p-3 flex-grow focus:outline-none focus:border-gold font-mono"
+                              value={clientPhone}
+                              onChange={(e) => {
+                                setClientPhone(e.target.value);
+                                setValidationError(false);
+                              }}
+                              placeholder={isRTL ? 'رقم الهاتف (7510447887)' : 'Direct Mobile Number (7510447887)'}
+                              className={`bg-luxury-black border text-xs text-luxury-cream rounded-md p-3 flex-grow focus:outline-none focus:border-gold font-mono ${
+                                validationError ? 'border-red-500 bg-red-950/10' : 'border-gold/20'
+                              }`}
                             />
                             
                             <button
                               id="submit-inquiry-btn"
-                              onClick={() => setInquirySubmitted(true)}
-                              className="bg-gradient-to-r from-gold to-gold-dark text-luxury-black font-serif text-xs font-bold tracking-widest uppercase px-5 py-3 rounded-md shadow-lg hover:shadow-gold/20 transition-all active:scale-95 flex-shrink-0"
+                              onClick={() => {
+                                if (!clientPhone.trim()) {
+                                  setValidationError(true);
+                                  return;
+                                }
+                                if (selectedProduct) {
+                                  if (onPlaceOrder) {
+                                    onPlaceOrder(selectedProduct, clientPhone);
+                                  }
+                                  setInquirySubmitted(true);
+                                  setValidationError(false);
+
+                                  // WhatsApp Fast Alert
+                                  const formattedMsg = `✨ *LUXORA Dubai - New Order Alert* ✨\n\nProduct: ${selectedProduct.nameEn}\nValue: ${selectedProduct.priceAED.toLocaleString()} AED\nCustomer Contact: ${clientPhone.trim()}`;
+                                  const whatsappUrl = `https://wa.me/917510447887?text=${encodeURIComponent(formattedMsg)}`;
+                                  window.open(whatsappUrl, '_blank');
+                                }
+                              }}
+                              className="bg-gradient-to-r from-gold to-gold-dark text-luxury-black font-serif text-xs font-bold tracking-widest uppercase px-5 py-3 rounded-md shadow-lg hover:shadow-gold/20 transition-all active:scale-95 flex-shrink-0 cursor-pointer"
                             >
                               {isRTL ? 'طلب الآن' : 'Acquire'}
+                            </button>
+                          </div>
+                          {validationError && (
+                            <p className="text-[10px] text-red-400 font-sans mt-0.5">
+                              {isRTL ? 'يرجى إدخال رقم الهاتف للتنسيق الآمن.' : 'Mobile phone number required.'}
+                            </p>
+                          )}
+
+                          <div className="pt-2">
+                            <button
+                              id="add-to-bag-modal-btn"
+                              onClick={() => {
+                                if (onAddToCart) {
+                                  onAddToCart(selectedProduct);
+                                  setAddedToBag(true);
+                                  setTimeout(() => setAddedToBag(false), 2000);
+                                }
+                              }}
+                              className={`w-full py-3 rounded-md text-xs font-serif font-bold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${
+                                addedToBag 
+                                  ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/50' 
+                                  : 'bg-gold text-luxury-black hover:bg-white hover:text-luxury-black'
+                              }`}
+                            >
+                              <ShoppingBag className="h-4 w-4" />
+                              <span>
+                                {addedToBag 
+                                  ? (isRTL ? 'تمت الإضافة بنجاح! ⚜' : 'Added to Bag! ⚜')
+                                  : (isRTL ? 'إضافة إلى حقيبة الاقتناء' : 'Add to Shopping Bag')
+                                }
+                              </span>
                             </button>
                           </div>
                           

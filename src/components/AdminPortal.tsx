@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Lock, User, ShieldAlert, CheckCircle, Plus, Sparkles, TrendingUp, DollarSign, Coins, Eye, Image, Trash2 } from 'lucide-react';
-import { Product, Language } from '../types';
+import { Product, Language, Order } from '../types';
 
 interface AdminPortalProps {
   lang: Language;
   onAddProduct: (product: Omit<Product, 'id'>) => void;
   products: Product[];
+  orders?: Order[];
   onDeleteProduct: (id: string) => void;
   isAuthenticated: boolean;
   onLogout: () => void;
@@ -17,6 +18,7 @@ export default function AdminPortal({
   lang, 
   onAddProduct, 
   products, 
+  orders = [],
   onDeleteProduct,
   isAuthenticated,
   onLogout,
@@ -41,11 +43,14 @@ export default function AdminPortal({
   const [stockStatus, setStockStatus] = useState<'In Stock' | 'Low Stock' | 'Out of Stock'>('In Stock');
   const [formSuccess, setFormSuccess] = useState<boolean>(false);
 
-  // Hardcoded premium stats
+  // Hardcoded premium stats with real-time increments from the live state orders array
+  const liveOrdersCount = orders ? orders.length : 0;
+  const liveOrdersRevenue = orders ? orders.reduce((sum, o) => sum + o.priceAED, 0) : 0;
+
   const stats = {
-    monthlyRevenue: 3450000,
-    activeOrders: 28,
-    vatCollected: 172500 // 5% of monthly revenue
+    monthlyRevenue: 3450000 + liveOrdersRevenue,
+    activeOrders: 28 + liveOrdersCount,
+    vatCollected: 172500 + Math.round(liveOrdersRevenue * 0.05)
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -295,6 +300,66 @@ export default function AdminPortal({
           </div>
         </div>
 
+      </div>
+
+      {/* Sovereign Live Incoming Orders Vault */}
+      <div className="bg-luxury-dark/95 border border-gold/15 rounded-xl p-6 relative overflow-hidden backdrop-blur-md text-start space-y-4">
+        <div className="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-gold to-transparent" />
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gold/10 pb-4">
+          <div>
+            <h3 className="font-serif text-lg font-bold text-white tracking-widest uppercase flex items-center gap-2">
+              <Sparkles className="h-4.5 w-4.5 text-gold animate-pulse" />
+              <span>{isRTL ? 'منصة توثيق الحجوزات والطلبات الواردة' : 'Sovereign Control Suite: Incoming Orders'}</span>
+            </h3>
+            <p className="text-xs text-luxury-cream/60">
+              {isRTL ? 'تتبع فوري لمبيعات القطع الثمينة وقنوات الاتصال المباشرة مع كبار الشخصيات.' : 'Instantly track, monitor and clear incoming client dispatches.'}
+            </p>
+          </div>
+          <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 px-2.5 py-1 rounded-full uppercase tracking-widest animate-pulse font-semibold flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-[pulse_1.5s_infinite]" />
+            <span>{isRTL ? 'اتصال آمن نشط' : 'Sovereign Feeds Active'}</span>
+          </span>
+        </div>
+
+        {(!orders || orders.length === 0) ? (
+          <div className="text-center py-8 text-luxury-cream/40 text-xs tracking-wider">
+            {isRTL ? 'لا توجد طلبات جارية حالياً في هذه الجلسة.' : 'No incoming portfolio orders detected.'}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[280px] overflow-y-auto pr-1">
+            {orders.map((order) => (
+              <div 
+                key={order.id}
+                className="group relative bg-luxury-black/40 border border-gold/10 hover:border-gold/30 p-3.5 rounded-lg flex justify-between items-start transition-all duration-300"
+              >
+                <div className="space-y-1 text-start">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[9px] text-luxury-black font-bold bg-gold px-1.5 py-0.5 rounded">
+                      {order.id}
+                    </span>
+                    <span className="text-[9px] text-luxury-cream/40 font-mono">
+                      {order.orderTime}
+                    </span>
+                  </div>
+                  <h4 className="font-serif text-xs font-bold text-white leading-tight mt-1 line-clamp-1">{order.productName}</h4>
+                  <div className="flex items-center gap-1.5 text-[10px] text-luxury-cream/60">
+                    <span className="uppercase tracking-widest text-[9px] text-luxury-cream/40">{isRTL ? 'الهاتف:' : 'Phone:'}</span>
+                    <span className="font-mono text-gold leading-none">{order.customerPhone}</span>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <span className="text-[9px] uppercase tracking-widest text-luxury-cream/30 font-mono block mb-0.5">
+                    {isRTL ? 'القيمة المشفرة' : 'Secure Value'}
+                  </span>
+                  <span className="font-mono text-xs font-bold text-gold">
+                    {order.priceAED.toLocaleString()} AED
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Main Form & Catalog Manager Panel */}
