@@ -10,14 +10,42 @@ interface ProductShowcaseProps {
   searchQuery?: string;
   onAddToCart?: (product: Product) => void;
   onPlaceOrder?: (product: Product, customerPhone: string) => void;
+  favorites?: string[];
+  onToggleFavorite?: (id: string) => void;
+  vatPercentage?: number;
 }
 
-export default function ProductShowcase({ lang, products, searchQuery = '', onAddToCart, onPlaceOrder }: ProductShowcaseProps) {
+export default function ProductShowcase({ 
+  lang, 
+  products, 
+  searchQuery = '', 
+  onAddToCart, 
+  onPlaceOrder,
+  favorites: propFavorites,
+  onToggleFavorite,
+  vatPercentage = 5
+}: ProductShowcaseProps) {
   const isRTL = lang === 'ar';
   
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [favorites, setFavorites] = useState<string[]>([]);
+  const [localFavorites, setLocalFavorites] = useState<string[]>([]);
+  
+  const favorites = propFavorites || localFavorites;
+  
+  const toggleFavorite = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onToggleFavorite) {
+      onToggleFavorite(id);
+    } else {
+      if (localFavorites.includes(id)) {
+        setLocalFavorites(localFavorites.filter(f => f !== id));
+      } else {
+        setLocalFavorites([...localFavorites, id]);
+      }
+    }
+  };
+
   const [inquirySubmitted, setInquirySubmitted] = useState<boolean>(false);
   const [addedToBag, setAddedToBag] = useState<boolean>(false);
   const [clientPhone, setClientPhone] = useState<string>('');
@@ -56,15 +84,6 @@ export default function ProductShowcase({ lang, products, searchQuery = '', onAd
     
     return matchesCategory && (nameMatch || categoryMatch || descMatch);
   });
-
-  const toggleFavorite = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (favorites.includes(id)) {
-      setFavorites(favorites.filter(f => f !== id));
-    } else {
-      setFavorites([...favorites, id]);
-    }
-  };
 
   return (
     <section 
@@ -345,16 +364,16 @@ export default function ProductShowcase({ lang, products, searchQuery = '', onAd
                           <span className="font-mono text-sm text-luxury-cream font-bold">{selectedProduct.priceAED.toLocaleString()} AED</span>
                         </div>
                         
-                        {/* 5% UAE VAT */}
+                        {/* Dynamic UAE VAT */}
                         <div className="flex justify-between items-center text-[11px] text-luxury-cream/40">
-                          <span>{isRTL ? 'ضريبة القيمة المضافة للإمارات (٥٪)' : 'UAE VAT 5% Included'}</span>
-                          <span className="font-mono">{(selectedProduct.priceAED * 0.05).toLocaleString()} AED</span>
+                          <span>{isRTL ? `ضريبة القيمة المضافة للإمارات (${vatPercentage}٪)` : `UAE VAT ${vatPercentage}% Included`}</span>
+                          <span className="font-mono">{(selectedProduct.priceAED * (vatPercentage / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED</span>
                         </div>
 
                         <div className="border-t border-gold/10 pt-2 flex justify-between items-center text-xs">
                           <span className="text-gold font-serif uppercase tracking-widest">{isRTL ? 'مجموع المبلغ الشامل' : 'Total Investment'}</span>
                           <span className="font-mono font-bold text-white text-base">
-                            {(selectedProduct.priceAED * 1.05).toLocaleString()} AED
+                            {(selectedProduct.priceAED * (1 + vatPercentage / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED
                           </span>
                         </div>
                       </div>

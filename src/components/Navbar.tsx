@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, Globe, ShoppingBag, User, Search, LogOut, Crown, ShieldAlert, Sparkles } from 'lucide-react';
+import { Menu, X, Globe, ShoppingBag, User, Search, LogOut, Crown, ShieldAlert, Sparkles, Heart } from 'lucide-react';
 import { Language, NavItem } from '../types';
 
 interface NavbarProps {
@@ -15,6 +15,8 @@ interface NavbarProps {
   onOpenLogin: () => void;
   onLogout: () => void;
   cartCount?: number;
+  favoritesCount?: number;
+  onOpenWishlist?: () => void;
 }
 
 export const navItems: NavItem[] = [
@@ -36,7 +38,9 @@ export default function Navbar({
   userEmail,
   onOpenLogin,
   onLogout,
-  cartCount = 0
+  cartCount = 0,
+  favoritesCount = 0,
+  onOpenWishlist
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -213,6 +217,21 @@ export default function Navbar({
               )}
             </div>
 
+            {/* Wishlist Button */}
+            <button
+              id="wishlist-btn"
+              onClick={onOpenWishlist}
+              className="relative text-luxury-cream/80 hover:text-gold transition-colors duration-300 pointer-events-auto cursor-pointer"
+              title={isRTL ? 'قائمة الأمنيات الملكية' : 'Sovereign Wishlist'}
+            >
+              <Heart className="h-5 w-5" />
+              {favoritesCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[9px] font-bold text-luxury-black animate-pulse">
+                  {favoritesCount}
+                </span>
+              )}
+            </button>
+
             {/* Cart Button */}
             <button
               id="cart-btn"
@@ -238,6 +257,21 @@ export default function Navbar({
               className="rounded-full border border-gold/20 px-2 py-1 text-[10px] uppercase text-gold"
             >
               {lang === 'en' ? 'AR' : 'EN'}
+            </button>
+
+            {/* Mobile Wishlist Button */}
+            <button
+              id="wishlist-btn-mobile"
+              onClick={onOpenWishlist}
+              className="relative text-luxury-cream/80 hover:text-gold transition-colors duration-300 cursor-pointer"
+              title={isRTL ? 'قائمة الأمنيات الملكية' : 'Sovereign Wishlist'}
+            >
+              <Heart className="h-5 w-5" />
+              {favoritesCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-gold text-[8px] font-bold text-luxury-black">
+                  {favoritesCount}
+                </span>
+              )}
             </button>
 
             <button

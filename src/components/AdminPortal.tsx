@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
-import { Lock, User, ShieldAlert, CheckCircle, Plus, Sparkles, TrendingUp, DollarSign, Coins, Eye, Image, Trash2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Lock, User, ShieldAlert, CheckCircle, Plus, Sparkles, TrendingUp, DollarSign, Coins, Eye, Image, Trash2, X, FileText, Shield, Phone, MapPin, Check } from 'lucide-react';
 import { Product, Language, Order } from '../types';
 
 interface AdminPortalProps {
@@ -12,6 +12,9 @@ interface AdminPortalProps {
   isAuthenticated: boolean;
   onLogout: () => void;
   onLogin: (email: string, pass: string) => boolean;
+  onDispatchOrder?: (id: string) => void;
+  vatPercentage?: number;
+  onUpdateVatPercentage?: (vat: number) => void;
 }
 
 export default function AdminPortal({ 
@@ -22,7 +25,10 @@ export default function AdminPortal({
   onDeleteProduct,
   isAuthenticated,
   onLogout,
-  onLogin
+  onLogin,
+  onDispatchOrder,
+  vatPercentage = 5,
+  onUpdateVatPercentage
 }: AdminPortalProps) {
   const isRTL = lang === 'ar';
 
@@ -43,6 +49,64 @@ export default function AdminPortal({
   const [stockStatus, setStockStatus] = useState<'In Stock' | 'Low Stock' | 'Out of Stock'>('In Stock');
   const [formSuccess, setFormSuccess] = useState<boolean>(false);
 
+  // Sovereign selected order for luxury detail view
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+
+  // Parse and calculate separate line items with their subtotals
+  const getSelectedOrderItems = () => {
+    if (!selectedOrder) return [];
+    const rawName = selectedOrder.productName || '';
+    
+    // Split by comma
+    const parsedItems = rawName.split(',').map(itemStr => {
+      const trimmed = itemStr.trim();
+      // Match quantities in formats: (x2), x2, x 2, (2), × 2, * 2 at the end of the item
+      const qtyMatch = trimmed.match(/(?:\(?\s*[\*x×]\s*(\d+)\s*\)?|\(\s*(\d+)\s*\))$/i);
+      if (qtyMatch) {
+        const quantity = parseInt(qtyMatch[1] || qtyMatch[2], 10);
+        const name = trimmed.replace(/(?:\(?\s*[\*x×]\s*(\d+)\s*\)?|\(\s*(\d+)\s*\))$/i, '').trim();
+        return { name, quantity };
+      }
+      return { name: trimmed, quantity: 1 };
+    });
+
+    const subtotalVal = selectedOrder.priceAED / (1 + vatPercentage / 100);
+
+    const itemsWithPrices = parsedItems.map(item => {
+      const matchingProduct = products.find(
+        p => p.nameEn.toLowerCase() === item.name.toLowerCase() || 
+             p.nameAr.toLowerCase() === item.name.toLowerCase()
+      );
+      
+      let price = matchingProduct ? matchingProduct.priceAED : 0;
+      return {
+        ...item,
+        price,
+        resolvedName: matchingProduct ? (isRTL ? matchingProduct.nameAr : matchingProduct.nameEn) : item.name
+      };
+    });
+
+    const foundPricesSum = itemsWithPrices.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    return itemsWithPrices.map((item) => {
+      let finalSubtotal = item.price * item.quantity;
+      if (foundPricesSum === 0) {
+        finalSubtotal = (subtotalVal / parsedItems.length);
+      } else if (item.price === 0) {
+        const remaining = Math.max(0, subtotalVal - foundPricesSum);
+        finalSubtotal = remaining / itemsWithPrices.filter(i => i.price === 0).length;
+      } else {
+        finalSubtotal = (item.price * item.quantity / foundPricesSum) * subtotalVal;
+      }
+      return {
+        ...item,
+        subtotal: finalSubtotal
+      };
+    });
+  };
+
+  const finalItems = getSelectedOrderItems();
+
   // Hardcoded premium stats with real-time increments from the live state orders array
   const liveOrdersCount = orders ? orders.length : 0;
   const liveOrdersRevenue = orders ? orders.reduce((sum, o) => sum + o.priceAED, 0) : 0;
@@ -50,7 +114,7 @@ export default function AdminPortal({
   const stats = {
     monthlyRevenue: 3450000 + liveOrdersRevenue,
     activeOrders: 28 + liveOrdersCount,
-    vatCollected: 172500 + Math.round(liveOrdersRevenue * 0.05)
+    vatCollected: 172500 + Math.round(liveOrdersRevenue * (vatPercentage / (100 + vatPercentage)))
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -282,11 +346,11 @@ export default function AdminPortal({
           </div>
         </div>
 
-        {/* Card 3: 5% VAT collected */}
+        {/* Card 3: Dynamic VAT collected */}
         <div className="bg-luxury-dark/90 border border-gold/15 p-6 rounded-xl flex items-center justify-between relative overflow-hidden text-start">
           <div className="space-y-1">
             <span className="text-[10px] uppercase font-serif tracking-widest text-luxury-cream/50">
-              {isRTL ? 'مجموع ضريبة القيمة المضافة المحسوبة (٥٪)' : 'Dubai VAT Retained (5%)'}
+              {isRTL ? `مجموع ضريبة القيمة المضافة المحسوبة (${vatPercentage}٪)` : `Dubai VAT Retained (${vatPercentage}%)`}
             </span>
             <h4 className="text-2xl font-mono font-bold text-gold">
               {stats.vatCollected.toLocaleString()} AED
@@ -300,6 +364,54 @@ export default function AdminPortal({
           </div>
         </div>
 
+      </div>
+
+      {/* Royal Configuration & Policies Section */}
+      <div className="bg-luxury-dark/95 border border-gold/15 rounded-xl p-6 relative overflow-hidden backdrop-blur-md text-start space-y-4">
+        <div className="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-gold to-transparent" />
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h3 className="font-serif text-lg font-bold text-white tracking-widest uppercase flex items-center gap-2">
+              <Coins className="h-4.5 w-4.5 text-gold" />
+              <span>{isRTL ? 'إعدادات النظام والضريبة الملكية' : 'Sovereign Configuration & Royal Policies'}</span>
+            </h3>
+            <p className="text-xs text-luxury-cream/60">
+              {isRTL ? 'إدارة نسبة ضريبة القيمة المضافة لدولة الإمارات المطبقة على مبيعات المعروضات الثمينة.' : 'Manage UAE regulatory VAT parameters applied across all digital showrooms.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="max-w-md pt-2">
+          <div className="space-y-1.5">
+            <label className="block text-[10px] uppercase font-mono tracking-widest text-gold/85">
+              {isRTL ? 'تعديل نسبة ضريبة القيمة المضافة (%) *' : 'Set VAT Percentage (%) *'}
+            </label>
+            <div className="relative flex items-center">
+              <input
+                id="vat-percentage-input"
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                value={vatPercentage}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  if (onUpdateVatPercentage) {
+                    onUpdateVatPercentage(isNaN(val) ? 0 : val);
+                  }
+                }}
+                className="w-full bg-luxury-black/80 border border-gold/20 text-sm text-luxury-cream rounded px-4 py-3 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold font-mono pr-12 transition-all duration-300"
+                placeholder="5"
+              />
+              <span className="absolute right-4 text-xs font-mono text-gold-light pointer-events-none">
+                %
+              </span>
+            </div>
+            <p className="text-[10px] text-luxury-cream/40 italic">
+              {isRTL ? 'التعديل يطبق فوراً في سلة المشتريات ومستندات تدقيق الطلبات الإلكترونية.' : 'Modifications propagate instantly to client carts and financial audit logs.'}
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Sovereign Live Incoming Orders Vault */}
@@ -330,7 +442,8 @@ export default function AdminPortal({
             {orders.map((order) => (
               <div 
                 key={order.id}
-                className="group relative bg-luxury-black/40 border border-gold/10 hover:border-gold/30 p-3.5 rounded-lg flex justify-between items-start transition-all duration-300"
+                onClick={() => setSelectedOrder(order)}
+                className="group relative bg-luxury-black/40 border border-gold/10 hover:border-gold/30 p-3.5 rounded-lg flex justify-between items-start transition-all duration-300 cursor-pointer hover:bg-luxury-black/60 hover:shadow-[0_0_15px_rgba(212,175,55,0.1)] pointer-events-auto"
               >
                 <div className="space-y-1 text-start">
                   <div className="flex items-center gap-2">
@@ -345,6 +458,17 @@ export default function AdminPortal({
                   <div className="flex items-center gap-1.5 text-[10px] text-luxury-cream/60">
                     <span className="uppercase tracking-widest text-[9px] text-luxury-cream/40">{isRTL ? 'الهاتف:' : 'Phone:'}</span>
                     <span className="font-mono text-gold leading-none">{order.customerPhone}</span>
+                  </div>
+                  <div className="pt-1 flex items-center gap-2">
+                    <span className={`text-[8px] uppercase tracking-widest px-1.5 py-0.5 rounded font-mono font-semibold ${
+                      order.status === 'Dispatched'
+                        ? 'bg-gold/20 text-gold border border-gold/30'
+                        : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 animate-pulse'
+                    }`}>
+                      {order.status === 'Dispatched'
+                        ? (isRTL ? 'تم الإرسال' : 'Dispatched')
+                        : (isRTL ? 'قيد المعالجة' : 'Processing Feed')}
+                    </span>
                   </div>
                 </div>
 
@@ -565,6 +689,205 @@ export default function AdminPortal({
         </div>
 
       </div>
+
+      {/* Sovereign Order Details View Modal */}
+      <AnimatePresence>
+        {selectedOrder && (
+          <>
+            {/* Backdrop with blurred background */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedOrder(null)}
+              className="fixed inset-0 z-[100] bg-luxury-black/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto cursor-default"
+            >
+              {/* Modal Container */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative w-full max-w-lg bg-luxury-dark border-2 border-gold/30 rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(212,175,55,0.25)] flex flex-col justify-between text-luxury-cream text-start font-sans"
+              >
+                {/* Royal Accent Header Bar */}
+                <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-transparent via-gold to-transparent" />
+
+                {/* Header Section */}
+                <div className="p-6 border-b border-gold/10 flex justify-between items-center bg-luxury-black/60">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-full border border-gold/20 bg-gold/10 text-gold">
+                      <FileText className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[10px] font-bold text-luxury-black bg-gold px-2 py-0.5 rounded">
+                          {selectedOrder.id}
+                        </span>
+                        <span className="text-[10px] text-luxury-cream/40 font-mono">
+                          {selectedOrder.orderTime}
+                        </span>
+                      </div>
+                      <h4 className="font-serif text-sm font-bold text-white tracking-widest uppercase mt-1">
+                        {isRTL ? 'تفاصيل الحجز الملكي' : 'Sovereign Order Audit'}
+                      </h4>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedOrder(null)}
+                    className="text-luxury-cream/50 hover:text-gold p-1.5 rounded-full border border-gold/10 hover:border-gold/30 transition-all duration-300"
+                  >
+                    <X className="h-4.5 w-4.5" />
+                  </button>
+                </div>
+
+                {/* Content Details Grid */}
+                <div className="p-6 space-y-5 overflow-y-auto max-h-[70vh]">
+                  {/* Status Banner */}
+                  <div className={`p-3 rounded-lg border flex items-center justify-between text-xs font-serif ${
+                    selectedOrder.status === 'Dispatched' 
+                      ? 'bg-gold/10 border-gold/30 text-gold' 
+                      : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      <span className="uppercase tracking-widest font-semibold text-[10px]">
+                        {isRTL ? 'حالة الحجز الجاري:' : 'Logistics Security State:'}
+                      </span>
+                    </div>
+                    <span className="font-mono font-bold uppercase tracking-widest text-[9px]">
+                      {selectedOrder.status === 'Dispatched' 
+                        ? (isRTL ? 'تم الإرسال والترخيص' : 'Dispatched & Cleared') 
+                        : (isRTL ? 'قيد الحراسة والمعالجة' : 'Armed Processing')}
+                    </span>
+                  </div>
+
+                  {/* Client Identity */}
+                  <div className="space-y-2">
+                    <h5 className="text-[10px] font-mono uppercase tracking-widest text-gold/80 border-b border-gold/10 pb-1">
+                      {isRTL ? 'هوية العميل الكريم' : 'VIP Client Identity'}
+                    </h5>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-luxury-black/30 p-3 rounded-lg border border-gold/5">
+                      <div className="space-y-0.5">
+                        <span className="text-[9px] uppercase tracking-wider text-luxury-cream/40 block">
+                          {isRTL ? 'الاسم الكامل:' : 'Full Name:'}
+                        </span>
+                        <span className="text-xs font-serif font-bold text-white">
+                          {selectedOrder.clientName || (isRTL ? 'عميل لوكسورا الموقر' : 'Sovereign Luxora Patron')}
+                        </span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="text-[9px] uppercase tracking-wider text-luxury-cream/40 block">
+                          {isRTL ? 'رقم الاتصال المباشر:' : 'Direct Phone Contact:'}
+                        </span>
+                        <div className="flex items-center gap-1 text-xs font-mono font-bold text-gold">
+                          <Phone className="h-3 w-3" />
+                          <span>{selectedOrder.customerPhone}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Logistics / Dispatch Coordinates */}
+                  <div className="space-y-2">
+                    <h5 className="text-[10px] font-mono uppercase tracking-widest text-gold/80 border-b border-gold/10 pb-1">
+                      {isRTL ? 'تفاصيل الخدمات اللوجستية المصفحة' : 'Logistics & Secure Dispatch'}
+                    </h5>
+                    <div className="space-y-3 bg-luxury-black/30 p-3.5 rounded-lg border border-gold/5">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-wider text-luxury-cream/40">
+                          <MapPin className="h-3 w-3 text-gold" />
+                          <span>{isRTL ? 'إحداثيات وموقع التوصيل الآمن:' : 'Armored Delivery Coordinates:'}</span>
+                        </div>
+                        <p className="text-xs text-luxury-cream/80 leading-relaxed pl-4 font-serif">
+                          {selectedOrder.deliveryCoordinates || (isRTL ? 'تسليم يدوي مباشر في دبي كبار الشخصيات' : 'Direct Hand-Delivery Handover, Dubai VIP')}
+                        </p>
+                      </div>
+
+                      <div className="space-y-1 pt-2 border-t border-gold/5">
+                        <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-wider text-luxury-cream/40">
+                          <Shield className="h-3 w-3 text-gold" />
+                          <span>{isRTL ? 'شروط الحراسة والطلبات الخاصة:' : 'Bespoke Guard Requirements & Notes:'}</span>
+                        </div>
+                        <p className="text-xs text-luxury-cream/80 leading-relaxed pl-4 italic font-sans font-light">
+                          {selectedOrder.bespokeNotes || (isRTL ? 'لم يتم إدراج متطلبات حراسة مخصصة' : 'Standard secure elite courier transit scheduled.')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Financial Audit breakdown */}
+                  <div className="space-y-2">
+                    <h5 className="text-[10px] font-mono uppercase tracking-widest text-gold/80 border-b border-gold/10 pb-1">
+                      {isRTL ? 'التدقيق المالي الشامل' : 'Financial Investment Audit'}
+                    </h5>
+                    <div className="bg-luxury-black/40 border border-gold/10 rounded-lg p-4 space-y-3 font-mono text-xs">
+                      {/* Product Detail lines mapped properly */}
+                      <div className="space-y-2 pb-2 border-b border-gold/10">
+                        {finalItems.map((item, index) => (
+                          <div key={index} className="flex justify-between items-start gap-4 text-[11px]">
+                            <span className="text-luxury-cream/70 font-serif leading-tight">
+                              {item.resolvedName}{item.quantity > 1 ? ` × ${item.quantity}` : ''}
+                            </span>
+                            <span className="text-white font-bold text-right flex-shrink-0">
+                              {item.subtotal.toLocaleString(undefined, { maximumFractionDigits: 0 })} AED
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Financial Sum list */}
+                      <div className="space-y-1.5 pt-1 text-[11px]">
+                        <div className="flex justify-between text-luxury-cream/50">
+                          <span>{isRTL ? 'القيمة الأساسية (قبل الضريبة):' : 'Bespoke Subtotal:'}</span>
+                          <span>{((selectedOrder.priceAED) / (1 + vatPercentage / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })} AED</span>
+                        </div>
+                        <div className="flex justify-between text-luxury-cream/50">
+                          <span>{isRTL ? `ضريبة القيمة المضافة لدولة الإمارات (${vatPercentage}٪):` : `UAE VAT (${vatPercentage}%):`}</span>
+                          <span>{(selectedOrder.priceAED * vatPercentage / (100 + vatPercentage)).toLocaleString(undefined, { maximumFractionDigits: 2 })} AED</span>
+                        </div>
+                        <div className="flex justify-between text-gold font-bold text-xs pt-2 border-t border-gold/10 font-serif">
+                          <span className="uppercase tracking-widest">{isRTL ? 'الإجمالي النهائي الموثق:' : 'Sovereign Grand Total:'}</span>
+                          <span>{selectedOrder.priceAED.toLocaleString()} AED</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Controls */}
+                <div className="p-6 border-t border-gold/10 bg-luxury-black/60 flex flex-col sm:flex-row gap-3">
+                  <button
+                    onClick={() => setSelectedOrder(null)}
+                    className="w-full sm:w-1/3 py-2.5 border border-gold/15 text-luxury-cream/70 hover:text-white hover:border-gold/30 rounded-lg text-xs font-serif uppercase tracking-widest transition-all duration-300 cursor-pointer"
+                  >
+                    {isRTL ? 'إغلاق المراجعة' : 'Close Audit'}
+                  </button>
+
+                  {selectedOrder.status !== 'Dispatched' && (
+                    <button
+                      onClick={() => {
+                        if (onDispatchOrder) {
+                          onDispatchOrder(selectedOrder.id);
+                        }
+                        // Instantly reflect state locally so the dispatch change is immediate in modal too
+                        setSelectedOrder({
+                          ...selectedOrder,
+                          status: 'Dispatched'
+                        });
+                      }}
+                      className="w-full sm:w-2/3 py-2.5 bg-gold hover:bg-gold-light text-luxury-black hover:text-black rounded-lg text-xs font-serif uppercase font-bold tracking-widest transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(212,175,55,0.2)] cursor-pointer"
+                    >
+                      <Check className="h-4 w-4" />
+                      <span>{isRTL ? 'تأكيد إرسال الطلب وحراسته' : 'Mark as Dispatched'}</span>
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
     </section>
   );

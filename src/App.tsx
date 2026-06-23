@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Phone, MapPin, Globe, Sparkles, Trash2, Minus, Plus, ArrowLeft, ShoppingBag, Send, Check } from 'lucide-react';
+import { Mail, Phone, MapPin, Globe, Sparkles, Trash2, Minus, Plus, ArrowLeft, ShoppingBag, Send, Check, Printer, X, FileText } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import ProductShowcase from './components/ProductShowcase';
 import AdminPortal from './components/AdminPortal';
 import SEOManager from './components/SEOManager';
 import LoginModal from './components/LoginModal';
+import SovereignWishlist from './components/SovereignWishlist';
 import { Language, Product, CartItem, Order } from './types';
 import { LUXURY_PRODUCTS } from './data';
 
@@ -13,6 +15,39 @@ export default function App() {
   const [lang, setLang] = useState<Language>('en');
   const [activePage, setActivePage] = useState<string>('home');
   const [products, setProducts] = useState<Product[]>(LUXURY_PRODUCTS);
+
+  // Sovereign Wishlist State with localStorage synchronization
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('luxora_favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('luxora_favorites', JSON.stringify(favorites));
+    } catch (e) {
+      console.error('Failed to sync favorites/wishlist:', e);
+    }
+  }, [favorites]);
+
+  const [isWishlistOpen, setIsWishlistOpen] = useState<boolean>(false);
+
+  const handleToggleFavorite = (id: string) => {
+    if (favorites.includes(id)) {
+      setFavorites(favorites.filter(favId => favId !== id));
+    } else {
+      setFavorites([...favorites, id]);
+    }
+  };
+
+  const handleMoveToCart = (product: Product) => {
+    handleAddToCart(product);
+    setFavorites(favorites.filter(favId => favId !== product.id));
+  };
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Professional E-commerce Cart State with secure localStorage synchronization
@@ -81,6 +116,23 @@ export default function App() {
   const [checkoutAddress, setCheckoutAddress] = useState<string>('');
   const [checkoutNotes, setCheckoutNotes] = useState<string>('');
   const [formErrors, setFormErrors] = useState<{ name?: boolean; phone?: boolean; address?: boolean }>({});
+
+  // Dynamic VAT percentage configuration
+  const [vatPercentage, setVatPercentage] = useState<number>(() => {
+    const saved = localStorage.getItem('luxora_vat_percentage');
+    return saved !== null ? Number(saved) : 5;
+  });
+
+  // Invoice states for post-purchase success screen
+  const [placedOrderInvoice, setPlacedOrderInvoice] = useState<Order | null>(null);
+  const [invoiceCartItems, setInvoiceCartItems] = useState<CartItem[]>([]);
+  const [invoiceDiscount, setInvoiceDiscount] = useState<number>(0);
+  const [invoiceSubtotal, setInvoiceSubtotal] = useState<number>(0);
+
+  const handleUpdateVatPercentage = (value: number) => {
+    setVatPercentage(value);
+    localStorage.setItem('luxora_vat_percentage', String(value));
+  };
 
   const handleLoginSuccess = (email: string, adminStatus: boolean) => {
     setIsLoggedIn(true);
@@ -152,10 +204,12 @@ export default function App() {
   };
 
   const handlePlaceOrder = (product: Product, customerPhone: string) => {
+    const isRTL = lang === 'ar';
+    const vat = product.priceAED * (vatPercentage / 100);
     const newOrder: Order = {
       id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
       productName: product.nameEn,
-      priceAED: product.priceAED,
+      priceAED: product.priceAED + vat, // standard total inclusive of configured VAT
       customerPhone: customerPhone.trim(),
       orderTime: new Date().toLocaleTimeString('en-US', {
         hour: '2-digit',
@@ -164,7 +218,11 @@ export default function App() {
         month: 'short', 
         day: 'numeric',
         year: 'numeric'
-      })
+      }),
+      clientName: isRTL ? 'عميل خاص كبار الشخصيات' : 'VIP Patron Sovereign Suite',
+      deliveryCoordinates: isRTL ? 'موقع تسليم دبلوماسي - دبي' : 'Diplomatic Sovereign Coordinates, Dubai',
+      bespokeNotes: isRTL ? 'مطلوب مرافقة حراسة مسلحة دائمًا للقطع الثمينة' : 'Armed sovereign escort mandated at all times.',
+      vatAED: vat
     };
     setOrders((prev) => [newOrder, ...prev]);
   };
@@ -186,7 +244,7 @@ export default function App() {
     const subtotal = cart.reduce((sum, item) => sum + (item.product.priceAED * item.quantity), 0);
     const discount = (isLoggedIn && !isAdmin) ? (subtotal * 0.10) : 0;
     const taxable = subtotal - discount;
-    const vat = taxable * 0.05;
+    const vat = taxable * (vatPercentage / 100);
     const total = taxable + vat;
 
     // Create the order in standard model format for local and Admin Control Suite tracking
@@ -245,7 +303,7 @@ export default function App() {
       msg += `   • VIP Elite 10% Discount / خصم كبار الشخصيات: -${discount.toLocaleString()} AED\n`;
     }
     
-    msg += `   • UAE VAT 5% / ضريبة القيمة المضافة: ${vat.toLocaleString()} AED\n`;
+    msg += `   • UAE VAT ${vatPercentage}% / ضريبة القيمة المضافة: ${vat.toLocaleString()} AED\n`;
     msg += `   • *Grand Total / الإجمالي النهائي:* *${total.toLocaleString()} AED*\n`;
     msg += `${lineDivider}\n\n`;
     msg += `✨ _This sovereign dispatch request is locked and certified under Emirati high-jewelry protection guidelines. A luxury client director will contact you on WhatsApp shortly to complete transaction details._`;
@@ -253,6 +311,12 @@ export default function App() {
     // Target Phone Number is updated directly as requested: 7510447887
     const whatsappUrl = `https://wa.me/7510447887?text=${encodeURIComponent(msg)}`;
     window.open(whatsappUrl, '_blank');
+
+    // Save states for post-purchase invoice display
+    setPlacedOrderInvoice(newOrder);
+    setInvoiceCartItems([...cart]);
+    setInvoiceDiscount(discount);
+    setInvoiceSubtotal(subtotal);
 
     // Clean up states for completing experience
     setCart([]);
@@ -311,6 +375,14 @@ export default function App() {
     setProducts((prev) => prev.filter((p) => p.id !== id));
   };
 
+  const handleDispatchOrder = (id: string) => {
+    setOrders((prev) =>
+      prev.map((order) =>
+        order.id === id ? { ...order, status: 'Dispatched' } : order
+      )
+    );
+  };
+
   // Handle CTA explore buttons or other page switches
   const handleNavigate = (page: string) => {
     if (page === 'admin-portal') {
@@ -342,6 +414,8 @@ export default function App() {
         onOpenLogin={() => setShowLoginModal(true)}
         onLogout={handleLogout}
         cartCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
+        favoritesCount={favorites.length}
+        onOpenWishlist={() => setIsWishlistOpen(true)}
       />
 
       {/* Exquisite VIP Access Banner Info */}
@@ -389,11 +463,29 @@ export default function App() {
             </section>
  
             {/* Dynamic Product Catalog Gallery */}
-            <ProductShowcase lang={lang} products={products} searchQuery={searchQuery} onAddToCart={handleAddToCart} onPlaceOrder={handlePlaceOrder} />
+            <ProductShowcase 
+              lang={lang} 
+              products={products} 
+              searchQuery={searchQuery} 
+              onAddToCart={handleAddToCart} 
+              onPlaceOrder={handlePlaceOrder} 
+              favorites={favorites}
+              onToggleFavorite={handleToggleFavorite}
+              vatPercentage={vatPercentage}
+            />
           </div>
         ) : activePage === 'shop' ? (
           <div className="py-6">
-            <ProductShowcase lang={lang} products={products} searchQuery={searchQuery} onAddToCart={handleAddToCart} onPlaceOrder={handlePlaceOrder} />
+            <ProductShowcase 
+              lang={lang} 
+              products={products} 
+              searchQuery={searchQuery} 
+              onAddToCart={handleAddToCart} 
+              onPlaceOrder={handlePlaceOrder} 
+              favorites={favorites}
+              onToggleFavorite={handleToggleFavorite}
+              vatPercentage={vatPercentage}
+            />
           </div>
         ) : activePage === 'admin-portal' ? (
           <AdminPortal
@@ -405,6 +497,9 @@ export default function App() {
             isAuthenticated={isLoggedIn && isAdmin}
             onLogout={handleLogout}
             onLogin={handleLoginRaw}
+            onDispatchOrder={handleDispatchOrder}
+            vatPercentage={vatPercentage}
+            onUpdateVatPercentage={handleUpdateVatPercentage}
           />
         ) : activePage === 'cart' ? (
           <div className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 animate-slide-up" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -602,9 +697,9 @@ export default function App() {
                       )}
 
                       <div className="flex justify-between text-luxury-cream/50">
-                        <span>{isRTL ? 'ضريبة القيمة المضافة للإمارات (٥٪):' : 'UAE VAT Regulatory (5%):'}</span>
+                        <span>{isRTL ? `ضريبة القيمة المضافة للإمارات (${vatPercentage}٪):` : `UAE VAT Regulatory (${vatPercentage}%):`}</span>
                         <span>
-                          {((cart.reduce((sum, item) => sum + (item.product.priceAED * item.quantity), 0) - (isLoggedIn && !isAdmin ? cart.reduce((sum, item) => sum + (item.product.priceAED * item.quantity), 0) * 0.10 : 0)) * 0.05).toLocaleString()} AED
+                          {((cart.reduce((sum, item) => sum + (item.product.priceAED * item.quantity), 0) - (isLoggedIn && !isAdmin ? cart.reduce((sum, item) => sum + (item.product.priceAED * item.quantity), 0) * 0.10 : 0)) * (vatPercentage / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED
                         </span>
                       </div>
 
@@ -612,8 +707,8 @@ export default function App() {
                         <span className="text-gold tracking-widest font-semibold">{isRTL ? 'قيمة الاستثمار الإجمالي:' : 'SOVEREIGN GRAND TOTAL:'}</span>
                         <span className="text-gold font-mono font-semibold">
                           {(
-                            (cart.reduce((sum, item) => sum + (item.product.priceAED * item.quantity), 0) - (isLoggedIn && !isAdmin ? cart.reduce((sum, item) => sum + (item.product.priceAED * item.quantity), 0) * 0.10 : 0)) * 1.05
-                          ).toLocaleString()} AED
+                            (cart.reduce((sum, item) => sum + (item.product.priceAED * item.quantity), 0) - (isLoggedIn && !isAdmin ? cart.reduce((sum, item) => sum + (item.product.priceAED * item.quantity), 0) * 0.10 : 0)) * (1 + vatPercentage / 100)
+                          ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED
                         </span>
                       </div>
                     </div>
@@ -801,6 +896,294 @@ export default function App() {
         lang={lang}
         onLoginSuccess={handleLoginSuccess}
       />
+
+      {/* Sovereign Wishlist Drawer */}
+      <SovereignWishlist
+        isOpen={isWishlistOpen}
+        onClose={() => setIsWishlistOpen(false)}
+        lang={lang}
+        favorites={favorites}
+        products={products}
+        onToggleFavorite={handleToggleFavorite}
+        onMoveToCart={handleMoveToCart}
+      />
+
+      {/* Post-Purchase Success & Print Invoice Overlay */}
+      <AnimatePresence>
+        {placedOrderInvoice && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-luxury-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto no-print"
+          >
+            {/* Modal Body */}
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              className="relative w-full max-w-4xl bg-luxury-dark border border-gold/25 rounded-2xl shadow-2xl p-6 sm:p-10 my-8 overflow-hidden text-start printable-invoice-wrapper"
+              dir={isRTL ? 'rtl' : 'ltr'}
+            >
+              {/* Dynamic print-media style block */}
+              <style dangerouslySetInnerHTML={{ __html: `
+                @media print {
+                  /* Reset body and html backgrounds */
+                  html, body {
+                    background: #ffffff !important;
+                    color: #000000 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    width: 100% !important;
+                    height: auto !important;
+                  }
+                  /* Hide standard application shell elements */
+                  #luxora-app-root, footer, header, nav, #brand-footer-section, #vip-gold-banner, .no-print, button, .non-printable {
+                    display: none !important;
+                    height: 0 !important;
+                    overflow: hidden !important;
+                    visibility: hidden !important;
+                  }
+                  /* Elevate printable area to absolute full page canvas */
+                  .printable-invoice-wrapper {
+                    position: absolute !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100% !important;
+                    height: auto !important;
+                    margin: 0 !important;
+                    padding: 40px !important;
+                    background: #ffffff !important;
+                    color: #000000 !important;
+                    box-shadow: none !important;
+                    border: none !important;
+                    border-radius: 0 !important;
+                    display: block !important;
+                    overflow: visible !important;
+                    z-index: 9999999 !important;
+                  }
+                  /* Strict monochrome/print color guidelines */
+                  .printable-invoice-wrapper * {
+                    color: #000000 !important;
+                    border-color: #d1d5db !important; /* light gray dividers */
+                    background: transparent !important;
+                    text-shadow: none !important;
+                  }
+                  .print-text-dark {
+                    color: #000000 !important;
+                  }
+                  .print-text-muted {
+                    color: #4b5563 !important;
+                  }
+                  .print-logo-gold {
+                    color: #a36814 !important; /* Gold tone for physical print */
+                    font-weight: 800 !important;
+                  }
+                }
+              `}} />
+
+              {/* Gold border decorative line */}
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-gold to-transparent no-print" />
+              
+              {/* Close Button on-screen */}
+              <button
+                onClick={() => setPlacedOrderInvoice(null)}
+                className="absolute top-5 right-5 text-luxury-cream/40 hover:text-gold transition-colors p-2 rounded-full hover:bg-gold/5 no-print cursor-pointer"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              {/* Receipt Header */}
+              <div className="flex flex-col items-center text-center pb-8 border-b border-gold/15 mb-8">
+                <div className="text-[10px] font-mono tracking-[0.3em] text-gold uppercase mb-1 print-logo-gold">
+                  {isRTL ? 'معرض المقتنيات الملكية الرقمي' : 'Sovereign Digital Showroom'}
+                </div>
+                <h1 className="font-serif text-3xl sm:text-4xl font-extrabold tracking-[0.2em] text-white uppercase print-logo-gold">
+                  LUXORA
+                </h1>
+                <p className="text-[10px] font-mono tracking-widest text-luxury-cream/50 uppercase mt-1 print-text-muted">
+                  DUBAI, UNITED ARAB EMIRATES
+                </p>
+                <div className="w-16 h-[1px] bg-gold/30 my-4" />
+                
+                {/* Visual success pill */}
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 flex items-center gap-2 no-print">
+                  <Check className="h-4 w-4 text-emerald-400" />
+                  <span className="text-xs text-emerald-400 tracking-wider uppercase font-serif font-bold">
+                    {isRTL ? 'تم حجز الطلب وتأكيد مستند الاقتناء' : 'Order Confirmed & Sovereign Lock Secured'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Details Specifications Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-8 border-b border-gold/15 mb-8 text-xs">
+                {/* Invoice Metadata */}
+                <div className="space-y-3">
+                  <h3 className="font-serif text-xs font-bold tracking-widest text-gold uppercase print-logo-gold">
+                    {isRTL ? 'تفاصيل المذكرة المالية' : 'Invoice Specifications'}
+                  </h3>
+                  <div className="space-y-2 font-sans text-luxury-cream/80">
+                    <div className="flex justify-between md:justify-start gap-4">
+                      <span className="text-luxury-cream/40 uppercase tracking-wider w-32 print-text-muted">{isRTL ? 'رقم الفاتورة:' : 'Invoice ID:'}</span>
+                      <span className="font-mono text-white font-bold tracking-wider print-text-dark">{placedOrderInvoice.id}</span>
+                    </div>
+                    <div className="flex justify-between md:justify-start gap-4">
+                      <span className="text-luxury-cream/40 uppercase tracking-wider w-32 print-text-muted">{isRTL ? 'تاريخ المعاملة:' : 'Timestamp:'}</span>
+                      <span className="text-white print-text-dark font-mono">{placedOrderInvoice.orderTime}</span>
+                    </div>
+                    <div className="flex justify-between md:justify-start gap-4">
+                      <span className="text-luxury-cream/40 uppercase tracking-wider w-32 print-text-muted">{isRTL ? 'الاعتماد التنظيمي:' : 'Regulatory Seal:'}</span>
+                      <span className="text-gold tracking-widest font-serif font-semibold print-logo-gold">LUXORA DUBAI DIRECT</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Client Delivery Details */}
+                <div className="space-y-3">
+                  <h3 className="font-serif text-xs font-bold tracking-widest text-gold uppercase print-logo-gold">
+                    {isRTL ? 'بيانات العميل الكريم والتسليم' : 'VIP Patron & Delivery Coordinates'}
+                  </h3>
+                  <div className="space-y-2 font-sans text-luxury-cream/80">
+                    <div className="flex justify-between md:justify-start gap-4">
+                      <span className="text-luxury-cream/40 uppercase tracking-wider w-32 print-text-muted">{isRTL ? 'العميل الكريم:' : 'VIP Client Name:'}</span>
+                      <span className="text-white font-medium print-text-dark">{placedOrderInvoice.clientName || (isRTL ? 'عميل كبار الشخصيات' : 'VIP Patron')}</span>
+                    </div>
+                    <div className="flex justify-between md:justify-start gap-4">
+                      <span className="text-luxury-cream/40 uppercase tracking-wider w-32 print-text-muted">{isRTL ? 'رقم الاتصال:' : 'Contact Phone:'}</span>
+                      <span className="font-mono text-white print-text-dark">{placedOrderInvoice.customerPhone}</span>
+                    </div>
+                    <div className="flex justify-between md:justify-start gap-4">
+                      <span className="text-luxury-cream/40 uppercase tracking-wider w-32 print-text-muted">{isRTL ? 'إحداثيات التوصيل:' : 'Coordinates:'}</span>
+                      <span className="text-white print-text-dark">{placedOrderInvoice.deliveryCoordinates}</span>
+                    </div>
+                    {placedOrderInvoice.bespokeNotes && (
+                      <div className="flex justify-between md:justify-start gap-4">
+                        <span className="text-luxury-cream/40 uppercase tracking-wider w-32 print-text-muted">{isRTL ? 'مرافقة خاصة:' : 'Bespoke Escort:'}</span>
+                        <span className="text-gold font-medium italic print-logo-gold">{placedOrderInvoice.bespokeNotes}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Itemized Table */}
+              <div className="space-y-4 mb-8">
+                <h3 className="font-serif text-xs font-bold tracking-widest text-gold uppercase print-logo-gold">
+                  {isRTL ? 'مستند وجدول التحف الفنية والمقتنيات' : 'Curated Masterpieces Ledger'}
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-gold/20 text-gold uppercase font-serif tracking-widest print-logo-gold">
+                        <th className="py-3 px-1 text-start">{isRTL ? 'البيان والتحفة' : 'Masterpiece Description'}</th>
+                        <th className="py-3 px-4 text-center">{isRTL ? 'الكمية' : 'Qty'}</th>
+                        <th className="py-3 px-4 text-right">{isRTL ? 'سعر الوحدة' : 'Unit Price'}</th>
+                        <th className="py-3 px-4 text-right">{isRTL ? 'القيمة الإجمالية' : 'Total Value'}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gold/10">
+                      {invoiceCartItems.map((item, index) => {
+                        const itemSubtotal = item.product.priceAED * item.quantity;
+                        return (
+                          <tr key={index} className="text-luxury-cream/90 hover:bg-gold/5 transition-colors">
+                            <td className="py-4 px-1 flex items-center gap-3">
+                              <div className="w-10 h-10 rounded border border-gold/10 overflow-hidden bg-luxury-black flex-shrink-0 no-print">
+                                <img src={item.product.image} alt={item.product.nameEn} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                              </div>
+                              <div>
+                                <p className="font-serif text-sm font-semibold text-white print-text-dark">
+                                  {isRTL ? item.product.nameAr : item.product.nameEn}
+                                </p>
+                                <p className="text-[10px] text-luxury-cream/40 uppercase font-mono tracking-wider print-text-muted mt-0.5">
+                                  {item.product.category}
+                                </p>
+                              </div>
+                            </td>
+                            <td className="py-4 px-4 text-center font-mono font-bold text-white print-text-dark">
+                              {item.quantity}
+                            </td>
+                            <td className="py-4 px-4 text-right font-mono text-luxury-cream/70 print-text-muted">
+                              {item.product.priceAED.toLocaleString()} AED
+                            </td>
+                            <td className="py-4 px-4 text-right font-mono text-white font-bold print-text-dark">
+                              {itemSubtotal.toLocaleString()} AED
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Sovereign Summary Panel */}
+              <div className="bg-luxury-black/40 border border-gold/10 p-6 rounded-xl ml-auto max-w-md space-y-3 font-sans text-xs">
+                <div className="flex justify-between text-luxury-cream/50">
+                  <span className="uppercase tracking-wider print-text-muted">{isRTL ? 'المجموع قبل الضريبة:' : 'Bespoke Subtotal:'}</span>
+                  <span className="font-mono text-white print-text-dark">{invoiceSubtotal.toLocaleString()} AED</span>
+                </div>
+                
+                {invoiceDiscount > 0 && (
+                  <div className="flex justify-between text-gold">
+                    <span className="uppercase tracking-wider print-logo-gold">{isRTL ? 'خصم عضوية كبار الشخصيات (١٠٪):' : 'VIP Elite Member Discount:'}</span>
+                    <span className="font-mono font-bold">-{invoiceDiscount.toLocaleString()} AED</span>
+                  </div>
+                )}
+                
+                {/* Dynamic VAT based on system config */}
+                <div className="flex justify-between text-luxury-cream/50 border-t border-gold/5 pt-2.5">
+                  <span className="uppercase tracking-wider print-text-muted">{isRTL ? `ضريبة القيمة المضافة لدولة الإمارات (${vatPercentage}٪):` : `UAE VAT Regulatory (${vatPercentage}%):`}</span>
+                  <span className="font-mono text-white print-text-dark">
+                    {((invoiceSubtotal - invoiceDiscount) * (vatPercentage / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED
+                  </span>
+                </div>
+
+                <div className="flex justify-between text-gold font-serif text-sm font-bold border-t border-gold/20 pt-3">
+                  <span className="uppercase tracking-widest print-logo-gold">{isRTL ? 'قيمة الاستثمار الملوكي الإجمالي:' : 'Sovereign Grand Total:'}</span>
+                  <span className="font-mono text-base text-gold print-logo-gold">
+                    {placedOrderInvoice.priceAED.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED
+                  </span>
+                </div>
+              </div>
+
+              {/* Screen action controls */}
+              <div className="flex flex-col sm:flex-row justify-end gap-4 mt-10 pt-6 border-t border-gold/15 no-print print:hidden">
+                <button
+                  onClick={() => setPlacedOrderInvoice(null)}
+                  className="px-6 py-3.5 border border-gold/25 text-gold hover:bg-gold/5 text-xs font-serif uppercase tracking-widest rounded-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 bg-transparent print:hidden"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span>{isRTL ? 'مواصلة الاقتناء وتصفح المجموعة' : 'Continue Shopping'}</span>
+                </button>
+                
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    console.log("Print button clicked");
+                    alert("Print triggered");
+                    window.print();
+                  }}
+                  className="relative z-50 px-6 py-3.5 bg-gradient-to-r from-gold to-gold-light text-luxury-black hover:brightness-110 text-xs font-serif uppercase tracking-widest font-bold rounded-md transition-all active:scale-95 shadow-lg shadow-gold/10 cursor-pointer flex items-center justify-center gap-2 print:hidden"
+                >
+                  <Printer className="h-4 w-4" />
+                  <span>{isRTL ? 'طباعة الفاتورة الفورية' : 'Print Invoice'}</span>
+                </button>
+              </div>
+
+              {/* Print Footer Signature */}
+              <div className="text-center text-[9px] text-luxury-cream/35 italic mt-8 pt-4 border-t border-gold/5 uppercase tracking-widest font-serif">
+                {isRTL 
+                  ? 'طلب معتمد إلكترونياً وصادر بموجب لوائح الصياغة والحماية الملوكية بدبي • رقم الهاتف للتواصل المباشر: 7510447887' 
+                  : 'Sovereign Digitally Certified Order issued under Emirati Fine-Art Protection Guidelines • Phone: 7510447887'
+                }
+              </div>
+
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

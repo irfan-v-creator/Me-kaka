@@ -37,6 +37,7 @@ export interface Order {
   deliveryCoordinates?: string;
   bespokeNotes?: string;
   vatAED?: number;
+  status?: 'Pending' | 'Dispatched';
 }
 
 export interface DeliveryZone {
