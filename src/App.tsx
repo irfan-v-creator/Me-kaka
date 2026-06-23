@@ -77,9 +77,10 @@ export default function App() {
 
   // Exquisite Shopping Cart Form input state controls
   const [checkoutName, setCheckoutName] = useState<string>('');
+  const [checkoutPhone, setCheckoutPhone] = useState<string>('');
   const [checkoutAddress, setCheckoutAddress] = useState<string>('');
   const [checkoutNotes, setCheckoutNotes] = useState<string>('');
-  const [formErrors, setFormErrors] = useState<{ name?: boolean; address?: boolean }>({});
+  const [formErrors, setFormErrors] = useState<{ name?: boolean; phone?: boolean; address?: boolean }>({});
 
   const handleLoginSuccess = (email: string, adminStatus: boolean) => {
     setIsLoggedIn(true);
@@ -170,8 +171,9 @@ export default function App() {
 
   const handleWhatsAppCheckout = () => {
     // Basic validation
-    const errors: { name?: boolean; address?: boolean } = {};
+    const errors: { name?: boolean; phone?: boolean; address?: boolean } = {};
     if (!checkoutName.trim()) errors.name = true;
+    if (!checkoutPhone.trim()) errors.phone = true;
     if (!checkoutAddress.trim()) errors.address = true;
 
     if (Object.keys(errors).length > 0) {
@@ -187,11 +189,36 @@ export default function App() {
     const vat = taxable * 0.05;
     const total = taxable + vat;
 
+    // Create the order in standard model format for local and Admin Control Suite tracking
+    const orderItemsDesc = cart.map((item) => `${item.product.nameEn} (x${item.quantity})`).join(', ');
+    const newOrder: Order = {
+      id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+      productName: orderItemsDesc || 'VIP Pieces Portfolio Selection',
+      priceAED: total,
+      customerPhone: checkoutPhone.trim(),
+      orderTime: new Date().toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }) + ' - ' + new Date().toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: 'numeric'
+      }),
+      clientName: checkoutName.trim(),
+      deliveryCoordinates: checkoutAddress.trim(),
+      bespokeNotes: checkoutNotes.trim(),
+      vatAED: vat
+    };
+
+    // Push new order object to state array to instantly update admin dashboard stats and incoming logs
+    setOrders((prev) => [newOrder, ...prev]);
+
     const lineDivider = '════════════════════════════';
     
     let msg = `⚜️ *LUXORA DUBAI - ROYAL ORDER REQUEST* ⚜️\n`;
     msg += `${lineDivider}\n\n`;
     msg += `👤 *Client / العميل الكريم:* ${checkoutName.trim()}\n`;
+    msg += `📞 *Phone / الاتصال:* ${checkoutPhone.trim()}\n`;
     if (isLoggedIn && userEmail) {
       msg += `✉️ *VIP Account / بريد النخبة:* ${userEmail}\n`;
     }
@@ -223,9 +250,16 @@ export default function App() {
     msg += `${lineDivider}\n\n`;
     msg += `✨ _This sovereign dispatch request is locked and certified under Emirati high-jewelry protection guidelines. A luxury client director will contact you on WhatsApp shortly to complete transaction details._`;
 
-    // Target Phone Number is updated directly as requested: 917510447887
-    const whatsappUrl = `https://wa.me/917510447887?text=${encodeURIComponent(msg)}`;
+    // Target Phone Number is updated directly as requested: 7510447887
+    const whatsappUrl = `https://wa.me/7510447887?text=${encodeURIComponent(msg)}`;
     window.open(whatsappUrl, '_blank');
+
+    // Clean up states for completing experience
+    setCart([]);
+    setCheckoutName('');
+    setCheckoutPhone('');
+    setCheckoutAddress('');
+    setCheckoutNotes('');
   };
 
   const handleSearchChange = (query: string) => {
@@ -600,6 +634,24 @@ export default function App() {
                         {formErrors.name && (
                           <p className="text-[10px] text-red-400 font-sans mt-1">
                             {isRTL ? 'يرجى إدخال الاسم لتنسيق سجل الاقتناء.' : 'Client identity registration required.'}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-[10px] uppercase font-mono tracking-widest text-luxury-cream/50">
+                          {isRTL ? 'رقم الهاتف للاتصال الجارٍ *' : 'Direct Mobile Number *'}
+                        </label>
+                        <input 
+                          type="tel"
+                          value={checkoutPhone}
+                          onChange={(e) => setCheckoutPhone(e.target.value)}
+                          placeholder={isRTL ? 'مثال: 7510447887' : 'Example: 7510447887'}
+                          className={`w-full bg-luxury-black/60 border rounded-md p-3 text-xs text-luxury-cream focus:outline-none focus:border-gold transition-colors font-mono ${formErrors.phone ? 'border-red-500/80 bg-red-950/5' : 'border-gold/20'}`}
+                        />
+                        {formErrors.phone && (
+                          <p className="text-[10px] text-red-400 font-sans mt-1">
+                            {isRTL ? 'يرجى تزويدنا برقم هاتف للتنسيق الفوري.' : 'Registered customer mobile number required.'}
                           </p>
                         )}
                       </div>

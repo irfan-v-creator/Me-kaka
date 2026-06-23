@@ -33,6 +33,10 @@ export interface Order {
   priceAED: number;
   customerPhone: string;
   orderTime: string;
+  clientName?: string;
+  deliveryCoordinates?: string;
+  bespokeNotes?: string;
+  vatAED?: number;
 }
 
 export interface DeliveryZone {
