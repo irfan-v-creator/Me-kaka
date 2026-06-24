@@ -13,7 +13,8 @@ export const LUXURY_PRODUCTS: Product[] = [
     descriptionAr: 'تحفة ميكانيكية متميزة من سويسرا، مصنوعة يدوياً بالكامل من الذهب الأصفر عيار ٢٤ قيراط مع توربيون دقيق وميناء شامباني مشع.',
     stockStatus: 'Low Stock',
     stockStatusAr: 'كمية محدودة',
-    isPremium: true
+    isPremium: true,
+    stock: 2
   },
   {
     id: 'prod_2',
@@ -27,7 +28,8 @@ export const LUXURY_PRODUCTS: Product[] = [
     descriptionAr: 'ألماس مميز عالي النقاء درجة VVS1 مرتب بعناية متناهية ومثبت على قاعدة من الذهب الأبيض والوردي الفاخر عيار ١٨ قيراط.',
     stockStatus: 'In Stock',
     stockStatusAr: 'متوفر',
-    isPremium: true
+    isPremium: true,
+    stock: 12
   },
   {
     id: 'prod_3',
@@ -41,7 +43,8 @@ export const LUXURY_PRODUCTS: Product[] = [
     descriptionAr: 'تركيز دافئ وثري من دهن العود العتيق الممزوج ببتلات الورد الدمشقي النادر، أوراق الهيل، والجلود الملكية المعبأة في زجاج كرستالي.',
     stockStatus: 'In Stock',
     stockStatusAr: 'متوفر',
-    isPremium: false
+    isPremium: false,
+    stock: 25
   },
   {
     id: 'prod_4',
@@ -55,6 +58,7 @@ export const LUXURY_PRODUCTS: Product[] = [
     descriptionAr: 'منسوج ومطرز بالكامل يدوياً من حرير التوت الطبيعي الفاخر، مزين بخطوط وزخارف هندسية مترفة بخيوط الذهب الخالص.',
     stockStatus: 'Low Stock',
     stockStatusAr: 'كمية محدودة',
-    isPremium: false
+    isPremium: false,
+    stock: 3
   }
 ];

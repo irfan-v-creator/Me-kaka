@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, User, ShieldAlert, CheckCircle, Plus, Sparkles, TrendingUp, DollarSign, Coins, Eye, Image, Trash2, X, FileText, Shield, Phone, MapPin, Check } from 'lucide-react';
+import { Lock, User, ShieldAlert, CheckCircle, Plus, Sparkles, TrendingUp, DollarSign, Coins, Eye, Image, Trash2, X, FileText, Shield, Phone, MapPin, Check, Bell } from 'lucide-react';
 import { Product, Language, Order } from '../types';
 
 interface AdminPortalProps {
@@ -15,6 +15,7 @@ interface AdminPortalProps {
   onDispatchOrder?: (id: string) => void;
   vatPercentage?: number;
   onUpdateVatPercentage?: (vat: number) => void;
+  onUpdateProduct?: (product: Product) => void;
 }
 
 export default function AdminPortal({ 
@@ -28,7 +29,8 @@ export default function AdminPortal({
   onLogin,
   onDispatchOrder,
   vatPercentage = 5,
-  onUpdateVatPercentage
+  onUpdateVatPercentage,
+  onUpdateProduct
 }: AdminPortalProps) {
   const isRTL = lang === 'ar';
 
@@ -51,6 +53,46 @@ export default function AdminPortal({
 
   // Sovereign selected order for luxury detail view
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+
+  // Active toast notifications state
+  interface AdminToast {
+    id: string;
+    order: Order;
+  }
+  const [toasts, setToasts] = useState<AdminToast[]>([]);
+  const initialOrderIds = useRef<Set<string>>(new Set());
+  const [isNotificationMounted, setIsNotificationMounted] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Save existing order IDs on mount so we don't alert for preexisting orders
+    initialOrderIds.current = new Set(orders.map((o) => o.id));
+    setIsNotificationMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isNotificationMounted) return;
+
+    // Detect new orders that were placed via WhatsApp checkout and are not yet in our known list
+    const newOrders = orders.filter(
+      (order) => !initialOrderIds.current.has(order.id) && order.checkoutMethod === 'WhatsApp'
+    );
+
+    if (newOrders.length > 0) {
+      const newToasts = newOrders.map((o) => ({
+        id: `toast-${o.id}-${Date.now()}-${Math.random()}`,
+        order: o,
+      }));
+
+      setToasts((prev) => [...newToasts, ...prev]);
+
+      // Add them to the set of known orders so we do not notify again
+      newOrders.forEach((o) => initialOrderIds.current.add(o.id));
+    }
+  }, [orders, isNotificationMounted]);
+
+  const dismissToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
 
   // Parse and calculate separate line items with their subtotals
   const getSelectedOrderItems = () => {
@@ -690,6 +732,44 @@ export default function AdminPortal({
 
       </div>
 
+      {/* Manage Vault Inventory Section */}
+      <div className="bg-luxury-dark/95 border border-gold/15 rounded-xl p-6 relative overflow-hidden backdrop-blur-md text-start space-y-4">
+        <div className="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-gold to-transparent" />
+        <div className="border-b border-gold/10 pb-4">
+          <h3 className="font-serif text-lg font-bold text-gold tracking-wide flex items-center gap-2">
+            <Shield className="h-4.5 w-4.5 text-gold animate-pulse" />
+            <span>{isRTL ? 'إدارة المخزون الملكي' : 'Manage Vault Inventory'}</span>
+          </h3>
+          <p className="text-xs text-luxury-cream/60">
+            {isRTL ? 'لوحة تحكم كبار المشرفين لتعديل كميات وأسعار المعروضات الثمينة فورياً.' : 'Owner Master Dashboard to update asset prices, modify stock levels, and toggle immediate client availability.'}
+          </p>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="border-b border-gold/20 text-gold uppercase font-serif tracking-widest">
+                <th className="py-3 px-3 text-start">{isRTL ? 'البيان والتحفة' : 'Masterpiece Description'}</th>
+                <th className="py-3 px-3">{isRTL ? 'سعر الاستثمار' : 'Investment Price'}</th>
+                <th className="py-3 px-3">{isRTL ? 'الكمية النشطة' : 'Active Stock'}</th>
+                <th className="py-3 px-3">{isRTL ? 'الحالة والتوفر' : 'Availability'}</th>
+                <th className="py-3 px-3 text-end">{isRTL ? 'الإجراء الملكي' : 'Actions'}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gold/10">
+              {products.map((p) => (
+                <InventoryItemRow
+                  key={p.id}
+                  product={p}
+                  lang={lang}
+                  onUpdateProduct={onUpdateProduct || (() => {})}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Sovereign Order Details View Modal */}
       <AnimatePresence>
         {selectedOrder && (
@@ -889,6 +969,292 @@ export default function AdminPortal({
         )}
       </AnimatePresence>
 
+      {/* Toast Notification Container */}
+      <div 
+        id="admin-toasts-portal"
+        className={`fixed top-24 z-[100] space-y-3 max-w-sm w-[calc(100%-2rem)] sm:w-90 ${
+          isRTL ? 'left-4 sm:left-6' : 'right-4 sm:right-6'
+        }`}
+      >
+        <AnimatePresence>
+          {toasts.map((t) => (
+            <AdminToastCard
+              key={t.id}
+              toast={t}
+              isRTL={isRTL}
+              onDismiss={dismissToast}
+              onSelectOrder={setSelectedOrder}
+            />
+          ))}
+        </AnimatePresence>
+      </div>
+
     </section>
+  );
+}
+
+interface InventoryItemRowProps {
+  key?: any;
+  product: Product;
+  lang: Language;
+  onUpdateProduct: (product: Product) => void;
+}
+
+function InventoryItemRow({ product, lang, onUpdateProduct }: InventoryItemRowProps) {
+  const isRTL = lang === 'ar';
+  
+  // Initialize state from product data
+  const [price, setPrice] = useState<number>(product.priceAED);
+  const [stock, setStock] = useState<number>(product.stock !== undefined ? product.stock : (product.stockStatus === 'Out of Stock' ? 0 : 5));
+  const [isAvailable, setIsAvailable] = useState<boolean>(product.stockStatus !== 'Out of Stock');
+  const [success, setSuccess] = useState<boolean>(false);
+
+  // Sync state if product changes externally
+  useEffect(() => {
+    setPrice(product.priceAED);
+    setStock(product.stock !== undefined ? product.stock : (product.stockStatus === 'Out of Stock' ? 0 : 5));
+    setIsAvailable(product.stockStatus !== 'Out of Stock');
+  }, [product]);
+
+  const handleStockChange = (newStock: number) => {
+    const val = Math.max(0, newStock);
+    setStock(val);
+    if (val === 0) {
+      setIsAvailable(false);
+    } else {
+      setIsAvailable(true);
+    }
+  };
+
+  const handleToggleAvailable = () => {
+    const nextAvailable = !isAvailable;
+    setIsAvailable(nextAvailable);
+    if (!nextAvailable) {
+      setStock(0);
+    } else if (stock === 0) {
+      setStock(5); // default to 5 if made available
+    }
+  };
+
+  const handleUpdate = () => {
+    let resolvedStatus: 'In Stock' | 'Low Stock' | 'Out of Stock' = 'In Stock';
+    let resolvedStatusAr: 'متوفر' | 'كمية محدودة' | 'نفذت الكمية' = 'متوفر';
+
+    if (!isAvailable || stock === 0) {
+      resolvedStatus = 'Out of Stock';
+      resolvedStatusAr = 'نفذت الكمية';
+    } else if (stock <= 5) {
+      resolvedStatus = 'Low Stock';
+      resolvedStatusAr = 'كمية محدودة';
+    } else {
+      resolvedStatus = 'In Stock';
+      resolvedStatusAr = 'متوفر';
+    }
+
+    onUpdateProduct({
+      ...product,
+      priceAED: price,
+      stock: stock,
+      stockStatus: resolvedStatus,
+      stockStatusAr: resolvedStatusAr
+    });
+
+    setSuccess(true);
+    setTimeout(() => setSuccess(false), 2000);
+  };
+
+  return (
+    <tr className="border-b border-gold/10 hover:bg-gold/5 transition-colors">
+      <td className="py-4 px-3 flex items-center gap-3">
+        <img
+          src={product.image}
+          alt={product.nameEn}
+          className="h-10 w-10 rounded object-cover border border-gold/10 flex-shrink-0"
+          referrerPolicy="no-referrer"
+        />
+        <div className="text-start">
+          <p className="font-serif text-xs font-bold text-white line-clamp-1">
+            {isRTL ? product.nameAr : product.nameEn}
+          </p>
+          <span className="text-[9px] uppercase tracking-wider text-luxury-cream/40 font-mono">
+            {isRTL ? product.categoryAr : product.categoryEn}
+          </span>
+        </div>
+      </td>
+
+      {/* Price Input */}
+      <td className="py-4 px-3">
+        <div className="relative max-w-[130px]">
+          <input
+            type="number"
+            value={price}
+            onChange={(e) => setPrice(Math.max(0, Number(e.target.value)))}
+            className="w-full bg-luxury-black border border-gold/20 text-xs font-mono text-gold rounded p-1.5 focus:outline-none focus:border-gold text-start pr-8"
+          />
+          <span className="absolute right-2 top-2 text-[9px] font-mono text-gold/60 pointer-events-none">AED</span>
+        </div>
+      </td>
+
+      {/* Stock Counter */}
+      <td className="py-4 px-3">
+        <div className="flex items-center gap-1.5 max-w-[120px]">
+          <button
+            type="button"
+            onClick={() => handleStockChange(stock - 1)}
+            className="w-7 h-7 bg-luxury-black border border-gold/25 hover:bg-gold/10 text-gold flex items-center justify-center rounded cursor-pointer active:scale-90 transition-all text-xs font-bold"
+          >
+            -
+          </button>
+          <input
+            type="number"
+            value={stock}
+            onChange={(e) => handleStockChange(Math.max(0, Number(e.target.value)))}
+            className="w-12 text-center bg-luxury-black border border-gold/20 text-xs font-mono text-white rounded p-1"
+          />
+          <button
+            type="button"
+            onClick={() => handleStockChange(stock + 1)}
+            className="w-7 h-7 bg-luxury-black border border-gold/25 hover:bg-gold/10 text-gold flex items-center justify-center rounded cursor-pointer active:scale-90 transition-all text-xs font-bold"
+          >
+            +
+          </button>
+        </div>
+      </td>
+
+      {/* Availability Toggle */}
+      <td className="py-4 px-3">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleToggleAvailable}
+            className={`relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              isAvailable ? 'bg-gold' : 'bg-neutral-800'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-luxury-black shadow ring-0 transition duration-200 ease-in-out ${
+                isAvailable ? (isRTL ? 'translate-x-0' : 'translate-x-5') : (isRTL ? 'translate-x-5' : 'translate-x-0')
+              }`}
+            />
+          </button>
+          <span className={`text-[10px] font-serif uppercase tracking-wider ${isAvailable ? 'text-emerald-400' : 'text-neutral-500'}`}>
+            {isAvailable 
+              ? (isRTL ? 'متوفر' : 'In Stock') 
+              : (isRTL ? 'نفذت الكمية' : 'Sold Out')
+            }
+          </span>
+        </div>
+      </td>
+
+      {/* Update Action Button */}
+      <td className="py-4 px-3 text-end">
+        <button
+          type="button"
+          onClick={handleUpdate}
+          className={`px-3 py-1.5 font-serif text-[10px] font-bold tracking-widest uppercase rounded transition-all active:scale-95 flex items-center gap-1 cursor-pointer ${
+            success 
+              ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/50' 
+              : 'bg-gold text-luxury-black hover:brightness-110 shadow-lg shadow-gold/5'
+          }`}
+        >
+          {success ? (
+            <>
+              <Check className="h-3.5 w-3.5" />
+              <span>{isRTL ? 'تم التحديث' : 'Synced'}</span>
+            </>
+          ) : (
+            <span>{isRTL ? 'تحديث المخزن' : 'Update Inventory'}</span>
+          )}
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+interface AdminToastCardProps {
+  key?: any;
+  toast: { id: string; order: Order };
+  isRTL: boolean;
+  onDismiss: (id: string) => void;
+  onSelectOrder: (order: Order) => void;
+}
+
+function AdminToastCard({ toast, isRTL, onDismiss, onSelectOrder }: AdminToastCardProps) {
+  const { order } = toast;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onDismiss(toast.id);
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [toast.id, onDismiss]);
+
+  return (
+    <motion.div
+      id={`new-order-toast-${order.id}`}
+      initial={{ opacity: 0, y: -20, scale: 0.9, x: isRTL ? -50 : 50 }}
+      animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
+      exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+      className="bg-luxury-dark/95 border border-gold/40 rounded-xl p-4 shadow-2xl relative overflow-hidden backdrop-blur-md flex flex-col gap-2.5 text-start"
+    >
+      {/* Golden top gradient line */}
+      <div className="absolute top-0 inset-x-0 h-[2.5px] bg-gradient-to-r from-gold via-gold-light to-gold" />
+      
+      {/* Background radial gold glow for premium look */}
+      <div className="absolute -right-12 -top-12 w-24 h-24 bg-gold/10 rounded-full blur-2xl pointer-events-none" />
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="h-7 w-7 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center">
+            <Bell className="h-3.5 w-3.5 text-gold animate-[bounce_1s_infinite]" />
+          </div>
+          <span className="font-serif text-[10px] uppercase tracking-widest font-bold text-gold">
+            {isRTL ? 'طلب ملكي جديد' : 'New Royal Order Request'}
+          </span>
+        </div>
+        <button
+          onClick={() => onDismiss(toast.id)}
+          className="text-luxury-cream/40 hover:text-gold transition-colors duration-200 p-1 rounded hover:bg-gold/5 cursor-pointer"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="space-y-1">
+        <div className="flex justify-between items-baseline gap-2">
+          <p className="font-serif text-xs font-bold text-white">
+            {order.clientName || (isRTL ? 'عميل كبار الشخصيات' : 'VIP Patron')}
+          </p>
+          <span className="font-mono text-[10px] text-gold/80 font-semibold bg-gold/10 px-1.5 py-0.5 rounded border border-gold/20">
+            {order.id}
+          </span>
+        </div>
+        <p className="text-[10px] text-luxury-cream/60 line-clamp-2">
+          {order.productName}
+        </p>
+        <div className="flex justify-between items-center pt-1 border-t border-gold/10 mt-1">
+          <span className="text-[9px] text-luxury-cream/40 uppercase tracking-widest font-mono">
+            {isRTL ? 'إجمالي الاستثمار' : 'Total Investment'}
+          </span>
+          <span className="font-mono text-xs font-bold text-gold">
+            {order.priceAED.toLocaleString()} AED
+          </span>
+        </div>
+      </div>
+
+      {/* Action */}
+      <button
+        onClick={() => {
+          onSelectOrder(order);
+          onDismiss(toast.id);
+        }}
+        className="w-full bg-gold text-luxury-black font-serif text-[10px] font-bold tracking-widest uppercase py-1.5 rounded transition-all active:scale-[0.98] hover:brightness-110 flex items-center justify-center gap-1.5 shadow-lg shadow-gold/5 cursor-pointer"
+      >
+        <Eye className="h-3 w-3" />
+        <span>{isRTL ? 'عرض تفاصيل الطلب' : 'Assess Royal Request'}</span>
+      </button>
+    </motion.div>
   );
 }

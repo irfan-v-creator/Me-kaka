@@ -20,6 +20,7 @@ export interface Product {
   stockStatus: 'In Stock' | 'Low Stock' | 'Out of Stock';
   stockStatusAr: 'متوفر' | 'كمية محدودة' | 'نفذت الكمية';
   isPremium?: boolean;
+  stock?: number;
 }
 
 export interface CartItem {
@@ -38,6 +39,11 @@ export interface Order {
   bespokeNotes?: string;
   vatAED?: number;
   status?: 'Pending' | 'Dispatched';
+  checkoutMethod?: 'WhatsApp' | 'QuickBuy';
+  userEmail?: string;
+  items?: CartItem[];
+  subtotal?: number;
+  discount?: number;
 }
 
 export interface DeliveryZone {

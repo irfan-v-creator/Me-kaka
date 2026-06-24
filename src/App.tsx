@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Phone, MapPin, Globe, Sparkles, Trash2, Minus, Plus, ArrowLeft, ShoppingBag, Send, Check, Printer, X, FileText } from 'lucide-react';
+import { Mail, Phone, MapPin, Globe, Sparkles, Trash2, Minus, Plus, ArrowLeft, ShoppingBag, Send, Check, Share2, Printer, X, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
@@ -10,6 +10,8 @@ import LoginModal from './components/LoginModal';
 import SovereignWishlist from './components/SovereignWishlist';
 import { Language, Product, CartItem, Order } from './types';
 import { LUXURY_PRODUCTS } from './data';
+import { pdf } from '@react-pdf/renderer';
+import { InvoicePDFDocument } from './components/InvoicePDFDocument';
 
 export default function App() {
   const [lang, setLang] = useState<Language>('en');
@@ -81,17 +83,35 @@ export default function App() {
     return [
       {
         id: 'ORD-8429',
-        productName: 'Royal Oud Absolue Vial',
-        priceAED: 125000,
-        customerPhone: '7510447887',
-        orderTime: '6/22/2026, 11:24 PM'
+        productName: LUXURY_PRODUCTS[0]?.nameEn || 'The Golden Sovereign Chronometer',
+        priceAED: 137025,
+        customerPhone: '+971 50 123 4567',
+        orderTime: '11:24 PM - Jun 22, 2026',
+        clientName: 'VIP Member Guild',
+        deliveryCoordinates: 'Penthouse 4, Address Boulevard, Downtown Dubai',
+        bespokeNotes: 'Escorted armored courier requested.',
+        userEmail: 'guild.vip@luxoradubai.ae',
+        items: [{ product: LUXURY_PRODUCTS[0], quantity: 1 }],
+        subtotal: 145000,
+        discount: 14500,
+        vatAED: 6525,
+        checkoutMethod: 'QuickBuy'
       },
       {
         id: 'ORD-1094',
-        productName: 'Swiss Chronograf Golden Sovereign',
-        priceAED: 185000,
-        customerPhone: '7510447887',
-        orderTime: '6/22/2026, 9:15 PM'
+        productName: LUXURY_PRODUCTS[2]?.nameEn || 'Burj Oud Intense Bespoke Scent',
+        priceAED: 3969,
+        customerPhone: '+971 50 123 4567',
+        orderTime: '09:15 PM - Jun 22, 2026',
+        clientName: 'VIP Member Guild',
+        deliveryCoordinates: 'Penthouse 4, Address Boulevard, Downtown Dubai',
+        bespokeNotes: 'Deliver after sunset.',
+        userEmail: 'guild.vip@luxoradubai.ae',
+        items: [{ product: LUXURY_PRODUCTS[2], quantity: 1 }],
+        subtotal: 4200,
+        discount: 420,
+        vatAED: 189,
+        checkoutMethod: 'WhatsApp'
       }
     ];
   });
@@ -103,6 +123,23 @@ export default function App() {
       console.error('Failed to sync orders ledger:', e);
     }
   }, [orders]);
+
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'luxora_orders' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          setOrders(parsed);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   // Professional Session & Role-Based Authentication State
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
@@ -128,6 +165,8 @@ export default function App() {
   const [invoiceCartItems, setInvoiceCartItems] = useState<CartItem[]>([]);
   const [invoiceDiscount, setInvoiceDiscount] = useState<number>(0);
   const [invoiceSubtotal, setInvoiceSubtotal] = useState<number>(0);
+  const [isPdfExporting, setIsPdfExporting] = useState<boolean>(false);
+  const [isSharing, setIsSharing] = useState<boolean>(false);
 
   const handleUpdateVatPercentage = (value: number) => {
     setVatPercentage(value);
@@ -205,11 +244,16 @@ export default function App() {
 
   const handlePlaceOrder = (product: Product, customerPhone: string) => {
     const isRTL = lang === 'ar';
-    const vat = product.priceAED * (vatPercentage / 100);
+    const subtotalVal = product.priceAED;
+    const discountVal = (isLoggedIn && !isAdmin) ? (subtotalVal * 0.10) : 0;
+    const taxableVal = subtotalVal - discountVal;
+    const vatVal = taxableVal * (vatPercentage / 100);
+    const totalVal = taxableVal + vatVal;
+
     const newOrder: Order = {
       id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
       productName: product.nameEn,
-      priceAED: product.priceAED + vat, // standard total inclusive of configured VAT
+      priceAED: totalVal, // standard total inclusive of configured VAT
       customerPhone: customerPhone.trim(),
       orderTime: new Date().toLocaleTimeString('en-US', {
         hour: '2-digit',
@@ -222,9 +266,20 @@ export default function App() {
       clientName: isRTL ? 'عميل خاص كبار الشخصيات' : 'VIP Patron Sovereign Suite',
       deliveryCoordinates: isRTL ? 'موقع تسليم دبلوماسي - دبي' : 'Diplomatic Sovereign Coordinates, Dubai',
       bespokeNotes: isRTL ? 'مطلوب مرافقة حراسة مسلحة دائمًا للقطع الثمينة' : 'Armed sovereign escort mandated at all times.',
-      vatAED: vat
+      vatAED: vatVal,
+      checkoutMethod: 'QuickBuy',
+      userEmail: isLoggedIn && userEmail ? userEmail : undefined,
+      items: [{ product, quantity: 1 }],
+      subtotal: subtotalVal,
+      discount: discountVal
     };
     setOrders((prev) => [newOrder, ...prev]);
+
+    // Save states for post-purchase invoice display
+    setPlacedOrderInvoice(newOrder);
+    setInvoiceCartItems([{ product, quantity: 1 }]);
+    setInvoiceDiscount(discountVal);
+    setInvoiceSubtotal(subtotalVal);
   };
 
   const handleWhatsAppCheckout = () => {
@@ -265,7 +320,12 @@ export default function App() {
       clientName: checkoutName.trim(),
       deliveryCoordinates: checkoutAddress.trim(),
       bespokeNotes: checkoutNotes.trim(),
-      vatAED: vat
+      vatAED: vat,
+      checkoutMethod: 'WhatsApp',
+      userEmail: isLoggedIn && userEmail ? userEmail : undefined,
+      items: [...cart],
+      subtotal: subtotal,
+      discount: discount
     };
 
     // Push new order object to state array to instantly update admin dashboard stats and incoming logs
@@ -362,6 +422,76 @@ export default function App() {
 
   const isRTL = lang === 'ar';
 
+  const handleShareInvoice = async () => {
+    if (!placedOrderInvoice) return;
+
+    setIsSharing(true);
+    try {
+      const doc = (
+        <InvoicePDFDocument
+          order={placedOrderInvoice}
+          items={invoiceCartItems}
+          vatPercentage={vatPercentage}
+        />
+      );
+      const blob = await pdf(doc).toBlob();
+      const file = new File([blob], 'LUXORA_Sovereign_Invoice.pdf', { type: 'application/pdf' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: isRTL ? 'فاتورة لوكسورا دبي السيادية' : 'LUXORA Sovereign Invoice',
+          text: isRTL 
+            ? 'فاتورة مقتنياتك الفاخرة المنسقة من لوكسورا دبي.' 
+            : 'Your curated masterpiece invoice from LUXORA Dubai.'
+        });
+      } else {
+        // Fallback: If native file sharing is not supported by the browser, automatically trigger a direct file download as fallback.
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'LUXORA_Sovereign_Invoice.pdf';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      console.error('Error sharing invoice:', err);
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!placedOrderInvoice) return;
+
+    setIsPdfExporting(true);
+
+    try {
+      const doc = (
+        <InvoicePDFDocument
+          order={placedOrderInvoice}
+          items={invoiceCartItems}
+          vatPercentage={vatPercentage}
+        />
+      );
+      const blob = await pdf(doc).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'LUXORA_Invoice.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('PDF generation error:', err);
+    } finally {
+      setIsPdfExporting(false);
+    }
+  };
+
   // State handlers to mutate products collection immediately on admin demand
   const handleAddProduct = (newProduct: Omit<Product, 'id'>) => {
     const productWithId: Product = {
@@ -373,6 +503,12 @@ export default function App() {
 
   const handleDeleteProduct = (id: string) => {
     setProducts((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const handleUpdateProduct = (updatedProduct: Product) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === updatedProduct.id ? { ...p, ...updatedProduct } : p))
+    );
   };
 
   const handleDispatchOrder = (id: string) => {
@@ -500,6 +636,7 @@ export default function App() {
             onDispatchOrder={handleDispatchOrder}
             vatPercentage={vatPercentage}
             onUpdateVatPercentage={handleUpdateVatPercentage}
+            onUpdateProduct={handleUpdateProduct}
           />
         ) : activePage === 'cart' ? (
           <div className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 animate-slide-up" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -895,6 +1032,17 @@ export default function App() {
         onClose={() => setShowLoginModal(false)}
         lang={lang}
         onLoginSuccess={handleLoginSuccess}
+        isLoggedIn={isLoggedIn}
+        userEmail={userEmail}
+        isAdmin={isAdmin}
+        orders={orders}
+        onReopenInvoice={(order) => {
+          setPlacedOrderInvoice(order);
+          setInvoiceCartItems(order.items || []);
+          setInvoiceDiscount(order.discount || 0);
+          setInvoiceSubtotal(order.subtotal || order.priceAED);
+        }}
+        onLogout={handleLogout}
       />
 
       {/* Sovereign Wishlist Drawer */}
@@ -915,10 +1063,11 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-luxury-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto no-print"
+            className="fixed inset-0 bg-luxury-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto invoice-print-overlay invoice-modal-container"
           >
             {/* Modal Body */}
             <motion.div
+              id="invoice-capture-container"
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
@@ -929,92 +1078,204 @@ export default function App() {
               {/* Dynamic print-media style block */}
               <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
-                  /* Reset body and html backgrounds */
-                  html, body {
-                    background: #ffffff !important;
-                    color: #000000 !important;
+                  /* Force exact background and colors preservation on printing */
+                  html, body, .invoice-modal-container, .invoice-print-overlay, .printable-invoice-wrapper {
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                    background-color: #0d0d0d !important;
+                    color: #F5E6D3 !important;
                     margin: 0 !important;
                     padding: 0 !important;
                     width: 100% !important;
                     height: auto !important;
+                    overflow: visible !important;
                   }
-                  /* Hide standard application shell elements */
-                  #luxora-app-root, footer, header, nav, #brand-footer-section, #vip-gold-banner, .no-print, button, .non-printable {
-                    display: none !important;
-                    height: 0 !important;
-                    overflow: hidden !important;
-                    visibility: hidden !important;
+
+                  * {
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
                   }
-                  /* Elevate printable area to absolute full page canvas */
-                  .printable-invoice-wrapper {
+                  
+                  /* Ensure parent container does not crop or hide anything */
+                  .invoice-print-overlay {
                     position: absolute !important;
                     left: 0 !important;
                     top: 0 !important;
                     width: 100% !important;
                     height: auto !important;
+                    background-color: #0d0d0d !important;
+                    backdrop-filter: none !important;
+                    padding: 0 !important;
+                    overflow: visible !important;
+                    display: block !important;
+                    z-index: 9999999 !important;
+                  }
+
+                  /* Hide standard application shell elements and all UI buttons */
+                  #luxora-app-root, footer, header, nav, #brand-footer-section, #vip-gold-banner, .no-print, button, .non-printable, .print\\:hidden, #admin-toasts-portal {
+                    display: none !important;
+                    height: 0 !important;
+                    overflow: hidden !important;
+                    visibility: hidden !important;
+                  }
+
+                  /* Elevate printable area to absolute full page canvas optimized for A4 */
+                  .printable-invoice-wrapper {
+                    position: relative !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    height: auto !important;
                     margin: 0 !important;
-                    padding: 40px !important;
-                    background: #ffffff !important;
-                    color: #000000 !important;
+                    padding: 20mm !important; /* Elegant 20mm margins for A4 paper */
+                    background-color: #0d0d0d !important;
+                    color: #F5E6D3 !important;
                     box-shadow: none !important;
                     border: none !important;
                     border-radius: 0 !important;
                     display: block !important;
                     overflow: visible !important;
-                    z-index: 9999999 !important;
                   }
-                  /* Strict monochrome/print color guidelines */
+
+                  /* Remove custom web scrollbars or container height restrictions during print */
+                  .invoice-print-overlay, .printable-invoice-wrapper, .overflow-x-auto, .overflow-y-auto {
+                    overflow: visible !important;
+                    height: auto !important;
+                    max-height: none !important;
+                  }
+
+                  /* Adjust borders and dividers to luxurious gold accents */
                   .printable-invoice-wrapper * {
-                    color: #000000 !important;
-                    border-color: #d1d5db !important; /* light gray dividers */
-                    background: transparent !important;
+                    border-color: rgba(212, 175, 55, 0.2) !important;
                     text-shadow: none !important;
+                    box-shadow: none !important;
                   }
+
+                  /* Custom luxury color helpers for printing */
                   .print-text-dark {
-                    color: #000000 !important;
+                    color: #ffffff !important;
+                    font-weight: 700 !important;
                   }
                   .print-text-muted {
-                    color: #4b5563 !important;
+                    color: rgba(245, 230, 211, 0.6) !important; /* elegant muted cream */
                   }
                   .print-logo-gold {
-                    color: #a36814 !important; /* Gold tone for physical print */
+                    color: #D4AF37 !important; /* gorgeous luxury gold */
                     font-weight: 800 !important;
+                  }
+                  
+                  /* Ensure tables and elements expand without clipping or scrolling */
+                  table {
+                    page-break-inside: auto;
+                    width: 100% !important;
+                  }
+                  tr {
+                    page-break-inside: avoid;
+                    page-break-after: auto;
+                  }
+                  thead {
+                    display: table-header-group;
+                  }
+                  tfoot {
+                    display: table-footer-group;
                   }
                 }
               `}} />
 
               {/* Gold border decorative line */}
-              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-gold to-transparent no-print" />
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-gold to-transparent no-print print:hidden" data-html2canvas-ignore="true" />
               
               {/* Close Button on-screen */}
               <button
                 onClick={() => setPlacedOrderInvoice(null)}
-                className="absolute top-5 right-5 text-luxury-cream/40 hover:text-gold transition-colors p-2 rounded-full hover:bg-gold/5 no-print cursor-pointer"
+                className="absolute top-5 right-5 text-luxury-cream/40 hover:text-gold transition-colors p-2 rounded-full hover:bg-gold/5 no-print print:hidden cursor-pointer"
                 aria-label="Close"
+                data-html2canvas-ignore="true"
               >
                 <X className="h-5 w-5" />
               </button>
 
-              {/* Receipt Header */}
-              <div className="flex flex-col items-center text-center pb-8 border-b border-gold/15 mb-8">
-                <div className="text-[10px] font-mono tracking-[0.3em] text-gold uppercase mb-1 print-logo-gold">
-                  {isRTL ? 'معرض المقتنيات الملكية الرقمي' : 'Sovereign Digital Showroom'}
+              {/* Print-Only Letterhead (Hidden on web screen, visible on print) */}
+              <div className="hidden print:flex flex-col pb-8 border-b-2 border-gold/25 mb-8 w-full text-luxury-cream" dir={isRTL ? 'rtl' : 'ltr'}>
+                <div className="flex justify-between items-start w-full">
+                  <div className="text-start">
+                    <h1 className="font-serif text-3xl font-black tracking-widest text-gold print-logo-gold leading-none uppercase">
+                      LUXORA DUBAI
+                    </h1>
+                    <p className="text-[11px] font-mono tracking-[0.25em] text-luxury-cream/80 uppercase mt-2 font-bold">
+                      SOVEREIGN RETAIL FLAGSHIP
+                    </p>
+                    <p className="text-[10px] font-sans text-luxury-cream/60 mt-2">
+                      Downtown Dubai, United Arab Emirates • VVIP@luxoradubai.ae
+                    </p>
+                  </div>
+                  <div className="text-right flex flex-col items-end">
+                    <div className="border-2 border-gold/30 px-3 py-1.5 rounded-md bg-luxury-black/60">
+                      <p className="text-[9px] font-mono tracking-wider text-gold/60 font-bold uppercase leading-none">
+                        {isRTL ? 'الرقم الضريبي الرسمي لدولة الإمارات' : 'OFFICIAL UAE TAX IDENTIFICATION'}
+                      </p>
+                      <p className="text-sm font-mono font-black text-white print-text-dark tracking-widest mt-1">
+                        TRN: 100342981500003
+                      </p>
+                    </div>
+                    <p className="text-[9px] font-mono text-luxury-cream/40 mt-2">
+                      {isRTL ? 'مستند مالي معتمد ومعين قانونياً' : 'LEGALLY APPOINTED SOVEREIGN FINANCIAL LEDGER'}
+                    </p>
+                  </div>
                 </div>
-                <h1 className="font-serif text-3xl sm:text-4xl font-extrabold tracking-[0.2em] text-white uppercase print-logo-gold">
-                  LUXORA
-                </h1>
-                <p className="text-[10px] font-mono tracking-widest text-luxury-cream/50 uppercase mt-1 print-text-muted">
-                  DUBAI, UNITED ARAB EMIRATES
-                </p>
-                <div className="w-16 h-[1px] bg-gold/30 my-4" />
-                
-                {/* Visual success pill */}
-                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 flex items-center gap-2 no-print">
-                  <Check className="h-4 w-4 text-emerald-400" />
-                  <span className="text-xs text-emerald-400 tracking-wider uppercase font-serif font-bold">
-                    {isRTL ? 'تم حجز الطلب وتأكيد مستند الاقتناء' : 'Order Confirmed & Sovereign Lock Secured'}
-                  </span>
+                <div className="w-full h-[1px] bg-gold/15 mt-6" />
+              </div>
+
+              {/* Premium Corporate Letterhead (Web Screen Only) */}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-8 border-b border-gold/15 mb-8 print:hidden">
+                <div className="flex items-center gap-4">
+                  {/* Company Logo Icon */}
+                  <div className="h-14 w-14 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center print:border-neutral-300 print:bg-transparent">
+                    <svg className="h-9 w-9 text-gold print-logo-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M5 19h14M12 5l3 5 4-3-1 7H6l-1-7 4 3z" strokeLinecap="round" strokeLinejoin="round"/>
+                      <circle cx="12" cy="5" r="1" fill="currentColor"/>
+                      <circle cx="19" cy="7" r="1" fill="currentColor"/>
+                      <circle cx="5" cy="7" r="1" fill="currentColor"/>
+                    </svg>
+                  </div>
+                  <div className="text-start">
+                    <h1 className="font-serif text-2xl sm:text-3xl font-extrabold tracking-widest text-white uppercase print-logo-gold leading-none">
+                      LUXORA
+                    </h1>
+                    <p className="text-[10px] font-mono tracking-[0.2em] text-gold uppercase mt-1 print-logo-gold">
+                      {isRTL ? 'لوكسورا للمقتنيات الثمينة ش.ذ.م.م' : 'LUXORA LUXURY TRADING L.L.C.'}
+                    </p>
+                    <p className="text-[9px] font-mono text-luxury-cream/40 mt-0.5 print-text-muted">
+                      {isRTL ? 'ترخيص رقم: ٩٨١٢٤٤ • دبي، الإمارات العربية المتحدة' : 'License No: 981244 • Dubai, UAE'}
+                    </p>
+                  </div>
                 </div>
+
+                {/* Tax & Official Credentials Side */}
+                <div className="text-start md:text-end font-mono text-[10px] space-y-1 text-luxury-cream/60 print-text-muted">
+                  <div className="text-xs font-serif font-bold text-gold uppercase tracking-wider print-logo-gold">
+                    {isRTL ? 'فاتورة ضريبية رسمية' : 'OFFICIAL TAX INVOICE'}
+                  </div>
+                  <div>
+                    <span className="text-luxury-cream/40 print-text-muted">{isRTL ? 'الرقم الضريبي (TRN): ' : 'TRN: '}</span>
+                    <span className="text-white font-bold print-text-dark">100452390800003</span>
+                  </div>
+                  <div>
+                    <span className="text-luxury-cream/40 print-text-muted">{isRTL ? 'البريد الإلكتروني: ' : 'Email: '}</span>
+                    <span className="text-white print-text-dark">concierge@luxora.ae</span>
+                  </div>
+                  <div>
+                    <span className="text-luxury-cream/40 print-text-muted">{isRTL ? 'العنوان الرئيسي: ' : 'Address: '}</span>
+                    <span className="text-white print-text-dark">{isRTL ? 'برج برستيج، شارع الشيخ زايد، دبي' : 'Prestige Tower, Sheikh Zayed Rd, Dubai'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Visual success pill */}
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 flex items-center gap-2 mb-8 no-print print:hidden">
+                <Check className="h-4 w-4 text-emerald-400" />
+                <span className="text-xs text-emerald-400 tracking-wider uppercase font-serif font-bold">
+                  {isRTL ? 'تم حجز الطلب وتأكيد مستند الاقتناء' : 'Order Confirmed & Sovereign Lock Secured'}
+                </span>
               </div>
 
               {/* Details Specifications Grid */}
@@ -1149,10 +1410,14 @@ export default function App() {
               </div>
 
               {/* Screen action controls */}
-              <div className="flex flex-col sm:flex-row justify-end gap-4 mt-10 pt-6 border-t border-gold/15 no-print print:hidden">
+              <div 
+                className={`flex flex-col sm:flex-row justify-end gap-4 mt-10 pt-6 border-t border-gold/15 no-print print:hidden ${isPdfExporting ? 'hidden' : ''}`}
+                data-html2canvas-ignore="true"
+              >
                 <button
                   onClick={() => setPlacedOrderInvoice(null)}
                   className="px-6 py-3.5 border border-gold/25 text-gold hover:bg-gold/5 text-xs font-serif uppercase tracking-widest rounded-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 bg-transparent print:hidden"
+                  data-html2canvas-ignore="true"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   <span>{isRTL ? 'مواصلة الاقتناء وتصفح المجموعة' : 'Continue Shopping'}</span>
@@ -1161,14 +1426,39 @@ export default function App() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    console.log("Print button clicked");
-                    alert("Print triggered");
-                    window.print();
+                    if (!isSharing && !isPdfExporting) {
+                      handleShareInvoice();
+                    }
                   }}
-                  className="relative z-50 px-6 py-3.5 bg-gradient-to-r from-gold to-gold-light text-luxury-black hover:brightness-110 text-xs font-serif uppercase tracking-widest font-bold rounded-md transition-all active:scale-95 shadow-lg shadow-gold/10 cursor-pointer flex items-center justify-center gap-2 print:hidden"
+                  disabled={isSharing || isPdfExporting}
+                  className="px-6 py-3.5 border border-gold/25 text-gold hover:bg-gold/5 text-xs font-serif uppercase tracking-widest rounded-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 bg-transparent print:hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                  data-html2canvas-ignore="true"
                 >
-                  <Printer className="h-4 w-4" />
-                  <span>{isRTL ? 'طباعة الفاتورة الفورية' : 'Print Invoice'}</span>
+                  <Share2 className={`h-4 w-4 ${isSharing ? 'animate-spin' : ''}`} />
+                  <span>
+                    {isSharing 
+                      ? (isRTL ? 'جاري تحضير الفاتورة ومشاركتها...' : 'Sharing PDF...') 
+                      : (isRTL ? 'مشاركة الفاتورة الفورية' : 'Share Invoice')}
+                  </span>
+                </button>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isSharing && !isPdfExporting) {
+                      handleDownloadPDF();
+                    }
+                  }}
+                  disabled={isSharing || isPdfExporting}
+                  className="relative z-50 px-6 py-3.5 bg-gradient-to-r from-gold to-gold-light text-luxury-black hover:brightness-110 text-xs font-serif uppercase tracking-widest font-bold rounded-md transition-all active:scale-95 shadow-lg shadow-gold/10 cursor-pointer flex items-center justify-center gap-2 print:hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                  data-html2canvas-ignore="true"
+                >
+                  <Printer className={`h-4 w-4 ${isPdfExporting ? 'animate-spin' : ''}`} />
+                  <span>
+                    {isPdfExporting 
+                      ? (isRTL ? 'جاري تحضير الفاتورة...' : 'Generating PDF...') 
+                      : (isRTL ? 'طباعة الفاتورة الفورية' : 'Print Invoice')}
+                  </span>
                 </button>
               </div>
 

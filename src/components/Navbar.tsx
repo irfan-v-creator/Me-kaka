@@ -179,6 +179,18 @@ export default function Navbar({
 
                   <div className="w-full h-[1px] bg-gold/10" />
 
+                  {/* View Profile Button */}
+                  <button
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      onOpenLogin();
+                    }}
+                    className="w-full text-center bg-gold/10 hover:bg-gold/20 border border-gold/30 hover:border-gold rounded py-2 text-xs font-serif font-bold uppercase tracking-widest text-gold hover:text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <User className="h-3.5 w-3.5" />
+                    <span>{isRTL ? 'الملف وسجل الفواتير' : 'Profile & Invoices'}</span>
+                  </button>
+
                   {/* Context Links */}
                   <div className="space-y-2">
                     {isAdmin && (
@@ -366,10 +378,19 @@ export default function Navbar({
               <div className="flex items-center gap-3">
                 {isLoggedIn ? (
                   <div className="flex items-center gap-3">
-                    <div className="text-start">
-                      <span className="block text-[8px] uppercase text-gold tracking-widest font-mono">{isAdmin ? (isRTL ? 'المالك الموقر' : 'ROYAL OWNER') : (isRTL ? 'عضو كبار الشخصيات' : 'VIP MEMBER')}</span>
-                      <span className="block text-[10px] text-white/70 max-w-[120px] truncate">{userEmail}</span>
-                    </div>
+                    <button
+                      onClick={() => {
+                        onOpenLogin();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="flex items-center gap-2 text-start focus:outline-none"
+                    >
+                      <User className="h-4 w-4 text-gold" />
+                      <div className="text-start">
+                        <span className="block text-[8px] uppercase text-gold tracking-widest font-mono">{isAdmin ? (isRTL ? 'المالك الموقر' : 'ROYAL OWNER') : (isRTL ? 'عضو كبار الشخصيات' : 'VIP MEMBER')}</span>
+                        <span className="block text-[10px] text-white/70 max-w-[100px] truncate">{userEmail}</span>
+                      </div>
+                    </button>
                     {isAdmin && (
                       <button 
                         onClick={() => {
