@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, Lock, Mail, ShieldAlert, Sparkles, User, ShieldCheck, Crown, ExternalLink, Calendar, CreditCard, LogOut, Award, Clock, Eye, Share2 } from 'lucide-react';
+import { X, Lock, Mail, ShieldAlert, Sparkles, User, ShieldCheck, Crown, ExternalLink, Calendar, CreditCard, LogOut, Award, Clock, Eye, Share2, Star, Truck, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Language, Order } from '../types';
 import { pdf } from '@react-pdf/renderer';
 import { InvoicePDFDocument } from './InvoicePDFDocument';
@@ -47,6 +48,40 @@ export default function LoginModal({
   const [sharingOrderId, setSharingOrderId] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
+  const [expandedTracking, setExpandedTracking] = useState<Record<string, boolean>>({});
+  const [orderTrackingStages, setOrderTrackingStages] = useState<Record<string, 'Transit' | 'Delivered'>>(() => {
+    try {
+      const saved = localStorage.getItem('luxora_order_tracking');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const [orderReviews, setOrderReviews] = useState<Record<string, { rating: number; review: string; timestamp: string }>>(() => {
+    try {
+      const saved = localStorage.getItem('luxora_reviews');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const [feedbackOrder, setFeedbackOrder] = useState<Order | null>(null);
+  const [feedbackRating, setFeedbackRating] = useState<number>(5);
+  const [hoverRating, setHoverRating] = useState<number>(0);
+  const [feedbackReview, setFeedbackReview] = useState<string>('');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const getOrderTrackingStage = (orderId: string): 'Transit' | 'Delivered' => {
+    return orderTrackingStages[orderId] || 'Transit';
+  };
+
+  const updateOrderTrackingStage = (orderId: string, stage: 'Transit' | 'Delivered') => {
+    const updated = { ...orderTrackingStages, [orderId]: stage };
+    setOrderTrackingStages(updated);
+    localStorage.setItem('luxora_order_tracking', JSON.stringify(updated));
+  };
 
   const handleCancelConfirm = () => {
     if (!orderToCancel) return;
@@ -88,6 +123,35 @@ export default function LoginModal({
       console.error('Error cancelling order:', err);
     } finally {
       setOrderToCancel(null);
+    }
+  };
+
+  const handleFeedbackSubmit = () => {
+    if (!feedbackOrder) return;
+
+    try {
+      const savedReviewsStr = localStorage.getItem('luxora_reviews') || '{}';
+      const savedReviews = JSON.parse(savedReviewsStr);
+
+      savedReviews[feedbackOrder.id] = {
+        rating: feedbackRating,
+        review: feedbackReview,
+        timestamp: new Date().toISOString()
+      };
+
+      localStorage.setItem('luxora_reviews', JSON.stringify(savedReviews));
+      setOrderReviews(savedReviews);
+
+      // Show toast
+      setToastMessage(isRTL ? 'تم حفظ تقييمك الملكي بنجاح!' : 'Your royal feedback has been preserved!');
+      setTimeout(() => {
+        setToastMessage(null);
+      }, 4000);
+
+    } catch (err) {
+      console.error('Error saving feedback:', err);
+    } finally {
+      setFeedbackOrder(null);
     }
   };
 
@@ -148,7 +212,7 @@ export default function LoginModal({
     setTimeout(() => {
       const normalizedEmail = email.toLowerCase().trim();
       
-      if (normalizedEmail === 'owner@luxoradubai.ae' && password === 'DubaiLuxury2026') {
+      if (normalizedEmail === 'owner@stylesandgrace.ae' && password === 'DubaiLuxury2026') {
         onLoginSuccess(normalizedEmail, true);
         setIsLoading(false);
         onClose();
@@ -167,17 +231,6 @@ export default function LoginModal({
     }, 850);
   };
 
-  const handleQuickFill = (role: 'owner' | 'vip') => {
-    if (role === 'owner') {
-      setEmail('owner@luxoradubai.ae');
-      setPassword('DubaiLuxury2026');
-    } else {
-      setEmail('guild.vip@luxoradubai.ae');
-      setPassword('VIP2026');
-    }
-    setError('');
-  };
-
   // Re-share PDF Generation and Web Share API flow
   const handleShareInvoiceForOrder = async (order: Order) => {
     setSharingOrderId(order.id);
@@ -193,23 +246,23 @@ export default function LoginModal({
       const blob = await pdf(doc).toBlob();
 
       // 2. Convert to File Object
-      const file = new File([blob], `LUXORA_Sovereign_Invoice_${order.id}.pdf`, { type: 'application/pdf' });
+      const file = new File([blob], `Styles_Grace_Invoice_${order.id}.pdf`, { type: 'application/pdf' });
 
       // 3. Implement Web Share API for Files
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: `LUXORA Sovereign Invoice ${order.id}`,
+          title: `Styles & Grace Invoice ${order.id}`,
           text: isRTL 
-            ? `فاتورة مقتنياتك الملكية رقم ${order.id} من لوكسورا دبي.` 
-            : `Your curated masterpiece invoice ${order.id} from LUXORA Dubai.`
+            ? `فاتورة مقتنياتك رقم ${order.id} من ستايلز آند جريس دبي.` 
+            : `Your invoice ${order.id} from Styles & Grace Dubai.`
         });
       } else {
         // Fallback: If native file sharing is not supported by the browser, trigger download
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `LUXORA_Sovereign_Invoice_${order.id}.pdf`;
+        a.download = `Styles_Grace_Invoice_${order.id}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -489,8 +542,178 @@ export default function LoginModal({
                                     <span>{isRTL ? 'إلغاء' : 'Cancel'}</span>
                                   </button>
                                 )}
+
+                                {order.status !== 'Cancelled' && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setExpandedTracking(prev => ({ ...prev, [order.id]: !prev[order.id] }));
+                                    }}
+                                    className={`bg-transparent hover:bg-[#e5c158]/10 border text-[9px] font-serif uppercase tracking-widest font-bold px-2 py-1.5 rounded-md transition-all active:scale-95 flex items-center gap-1 cursor-pointer shrink-0 ${
+                                      expandedTracking[order.id] 
+                                        ? 'border-[#e5c158] bg-[#e5c158]/10 text-[#e5c158]' 
+                                        : 'border-[#e5c158]/40 hover:border-[#e5c158] text-[#e5c158]'
+                                    }`}
+                                    title={isRTL ? 'تتبع الشحنة الفاخرة' : 'Track Luxury Shipment'}
+                                  >
+                                    <Truck className="h-3 w-3" />
+                                    <span>{isRTL ? 'تتبع الشحنة' : 'Track'}</span>
+                                  </button>
+                                )}
+
+                                {order.status !== 'Cancelled' && (order.status === 'Delivered' || getOrderTrackingStage(order.id) === 'Delivered') && (
+                                  <div className="shrink-0">
+                                    {orderReviews[order.id] ? (
+                                      <span className="inline-flex items-center gap-1 px-2 py-1.5 rounded-md bg-[#e5c158]/10 border border-[#e5c158]/20 text-[#e5c158] text-[9px] font-mono uppercase tracking-wider font-bold">
+                                        <Star className="h-2.5 w-2.5 fill-[#e5c158] text-[#e5c158]" />
+                                        <span>{isRTL ? 'تم التقييم' : 'Rated'}</span>
+                                      </span>
+                                    ) : (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setFeedbackOrder(order);
+                                          setFeedbackRating(5);
+                                          setHoverRating(0);
+                                          setFeedbackReview('');
+                                        }}
+                                        className="bg-[#e5c158]/15 hover:bg-[#e5c158]/25 border border-[#e5c158]/60 hover:border-[#e5c158] text-[#e5c158] text-[9px] font-serif uppercase tracking-widest font-bold px-2 py-1.5 rounded-md transition-all active:scale-95 flex items-center gap-1 cursor-pointer shrink-0 animate-pulse"
+                                        title={isRTL ? 'تقديم تقييم للتحفة' : 'Provide Masterpiece Feedback'}
+                                      >
+                                        <Star className="h-3 w-3 fill-[#e5c158]" />
+                                        <span>{isRTL ? 'تقييم الخدمة' : 'Feedback'}</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </div>
+
+                            {/* Timeline Accordion Expansion */}
+                            <AnimatePresence initial={false}>
+                              {expandedTracking[order.id] && order.status !== 'Cancelled' && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: 'auto', opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                  className="overflow-hidden border-t border-[#262626]/60 mt-3 pt-3"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <div className="bg-black/40 border border-gold/15 rounded-lg p-3.5 space-y-3.5">
+                                    <div className="flex justify-between items-center border-b border-[#262626]/60 pb-2">
+                                      <span className="text-[10px] font-serif uppercase tracking-widest text-[#e5c158] font-bold">
+                                        {isRTL ? 'تتبع الشحنة السيادية' : 'Sovereign Transit Logistics'}
+                                      </span>
+                                      {getOrderTrackingStage(order.id) !== 'Delivered' && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            updateOrderTrackingStage(order.id, 'Delivered');
+                                          }}
+                                          className="text-[9px] font-mono text-[#e5c158] hover:text-white border border-[#e5c158]/30 hover:border-[#e5c158] rounded px-2 py-0.5 transition-colors cursor-pointer shrink-0"
+                                        >
+                                          {isRTL ? 'محاكاة الوصول' : 'Simulate Arrival'}
+                                        </button>
+                                      )}
+                                    </div>
+                                    
+                                    <div className={`relative ${isRTL ? 'pr-6' : 'pl-6'} space-y-4 text-start`}>
+                                      {/* Thin gold connecting line */}
+                                      <div className={`absolute ${isRTL ? 'right-[9px]' : 'left-[9px]'} top-1.5 bottom-1.5 w-0.5 bg-[#a99260]/20`}>
+                                        <div 
+                                          className="absolute top-0 left-0 w-full bg-[#a99260] transition-all duration-500" 
+                                          style={{ height: getOrderTrackingStage(order.id) === 'Delivered' ? '100%' : '66%' }}
+                                        />
+                                      </div>
+
+                                      {/* Stage 1: Order Confirmed */}
+                                      <div className="flex gap-3 items-start relative">
+                                        <div className={`absolute ${isRTL ? '-right-[22px]' : '-left-[22px]'} flex items-center justify-center`}>
+                                          <div className="h-[18px] w-[18px] rounded-full bg-[#0d0d0d] border border-[#e5c158] flex items-center justify-center text-[#e5c158] z-10">
+                                            <Check className="h-3 w-3" />
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <p className="text-[11px] font-serif font-bold text-[#e5c158]">
+                                            {isRTL ? 'تأكيد الطلب السيادي' : 'Order Confirmed & Sealed'}
+                                          </p>
+                                          <p className="text-[9px] text-luxury-cream/50 leading-relaxed">
+                                            {isRTL ? 'تم حجز المستند المالي وتأمينه بنجاح' : 'Sovereign acquisition locked and registered'}
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      {/* Stage 2: Processing */}
+                                      <div className="flex gap-3 items-start relative">
+                                        <div className={`absolute ${isRTL ? '-right-[22px]' : '-left-[22px]'} flex items-center justify-center`}>
+                                          <div className="h-[18px] w-[18px] rounded-full bg-[#0d0d0d] border border-[#e5c158] flex items-center justify-center text-[#e5c158] z-10">
+                                            <Check className="h-3 w-3" />
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <p className="text-[11px] font-serif font-bold text-[#e5c158]">
+                                            {isRTL ? 'معالجة وتحضير التحفة' : 'Curatorial Preparation'}
+                                          </p>
+                                          <p className="text-[9px] text-luxury-cream/50 leading-relaxed">
+                                            {isRTL ? 'تدقيق وفحص جودة التحفة الفنية قبل النقل' : 'White-glove inspection and luxury validation complete'}
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      {/* Stage 3: Armored Transit */}
+                                      <div className="flex gap-3 items-start relative">
+                                        <div className={`absolute ${isRTL ? '-right-[22px]' : '-left-[22px]'} flex items-center justify-center`}>
+                                          {getOrderTrackingStage(order.id) === 'Delivered' ? (
+                                            <div className="h-[18px] w-[18px] rounded-full bg-[#0d0d0d] border border-[#e5c158] flex items-center justify-center text-[#e5c158] z-10">
+                                              <Check className="h-3 w-3" />
+                                            </div>
+                                          ) : (
+                                            <div className="h-[18px] w-[18px] rounded-full bg-[#0d0d0d] border border-[#e5c158] flex items-center justify-center z-10">
+                                              <span className="h-2 w-2 rounded-full bg-[#e5c158] animate-pulse" />
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div>
+                                          <p className={`text-[11px] font-serif font-bold ${getOrderTrackingStage(order.id) === 'Delivered' ? 'text-[#e5c158]' : 'text-white'}`}>
+                                            {isRTL ? 'نقل مدرع ودبلوماسي' : 'Armored Transit Secured'}
+                                          </p>
+                                          <p className="text-[9px] text-luxury-cream/50 leading-relaxed">
+                                            {isRTL ? 'التحفة في طريقها بمرافقة دبلوماسية خاصة' : 'En route via secure diplomatic courier service'}
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      {/* Stage 4: Delivered */}
+                                      <div className="flex gap-3 items-start relative">
+                                        <div className={`absolute ${isRTL ? '-right-[22px]' : '-left-[22px]'} flex items-center justify-center`}>
+                                          {getOrderTrackingStage(order.id) === 'Delivered' ? (
+                                            <div className="h-[18px] w-[18px] rounded-full bg-[#0d0d0d] border border-[#e5c158] flex items-center justify-center text-[#e5c158] z-10">
+                                              <Check className="h-3 w-3" />
+                                            </div>
+                                          ) : (
+                                            <div className="h-[18px] w-[18px] rounded-full bg-[#0d0d0d] border border-[#262626] flex items-center justify-center text-luxury-cream/30 z-10">
+                                              <div className="h-1.5 w-1.5 rounded-full bg-luxury-cream/30" />
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div>
+                                          <p className={`text-[11px] font-serif font-bold ${getOrderTrackingStage(order.id) === 'Delivered' ? 'text-gold' : 'text-luxury-cream/30'}`}>
+                                            {isRTL ? 'تم التسليم باليد' : 'Delivered & Handover'}
+                                          </p>
+                                          <p className="text-[9px] text-luxury-cream/50 leading-relaxed">
+                                            {getOrderTrackingStage(order.id) === 'Delivered' 
+                                              ? (isRTL ? 'تم تسليم التحفة المنسقة بنجاح إلى المقر' : 'Secure handover finalized with signature') 
+                                              : (isRTL ? 'في انتظار وصول الشحنة والمرافقة' : 'Awaiting arrival at destination coordinates')
+                                            }
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
                         ))}
                       </div>
@@ -503,10 +726,10 @@ export default function LoginModal({
                             <div className="flex justify-between items-center border-b border-gold/20 pb-3">
                               <div>
                                 <h4 className="font-serif text-sm font-bold tracking-widest text-gold uppercase">
-                                  LUXORA DUBAI
+                                  Styles & Grace
                                 </h4>
                                 <span className="text-[9px] uppercase tracking-wider text-luxury-cream/50 font-mono">
-                                  {isRTL ? 'معاينة المستند المالي' : 'Sovereign Deed Preview'}
+                                  {isRTL ? 'معاينة المستند المالي' : 'Deed Preview'}
                                 </span>
                               </div>
                               {selectedOrder.status === 'Cancelled' ? (
@@ -652,7 +875,31 @@ export default function LoginModal({
                             </div>
 
                             {/* Extra interactive visual action trigger inside preview */}
-                            <div className="flex justify-end gap-2.5 pt-2">
+                            <div className="flex justify-end gap-2.5 pt-2 flex-wrap">
+                              {selectedOrder.status !== 'Cancelled' && (selectedOrder.status === 'Delivered' || getOrderTrackingStage(selectedOrder.id) === 'Delivered') && (
+                                <>
+                                  {orderReviews[selectedOrder.id] ? (
+                                    <span className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#e5c158]/10 border border-[#e5c158]/20 text-[#e5c158] text-[10px] font-mono uppercase tracking-wider font-bold">
+                                      <Star className="h-3.5 w-3.5 fill-[#e5c158] text-[#e5c158]" />
+                                      <span>{isRTL ? 'تم التقييم الملكي' : 'Royal Feedback Submitted'}</span>
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={() => {
+                                        setFeedbackOrder(selectedOrder);
+                                        setFeedbackRating(5);
+                                        setHoverRating(0);
+                                        setFeedbackReview('');
+                                      }}
+                                      className="bg-[#e5c158]/15 hover:bg-[#e5c158]/25 border border-[#e5c158]/60 hover:border-[#e5c158] text-[#e5c158] text-[10px] font-serif uppercase tracking-widest font-bold px-4 py-2.5 rounded-lg transition-all active:scale-[0.97] flex items-center gap-1.5 cursor-pointer animate-pulse"
+                                      title={isRTL ? 'تقديم تقييم للتحفة' : 'Provide Masterpiece Feedback'}
+                                    >
+                                      <Star className="h-4 w-4 fill-[#e5c158]" />
+                                      <span>{isRTL ? 'تقييم التحفة' : 'Provide Feedback'}</span>
+                                    </button>
+                                  )}
+                                </>
+                              )}
                               {selectedOrder.status !== 'Cancelled' && (
                                 <button
                                   onClick={() => setOrderToCancel(selectedOrder)}
@@ -719,7 +966,7 @@ export default function LoginModal({
           <div className="p-8 space-y-6">
             <div className="text-center space-y-2">
               <div className="h-12 w-12 rounded-full bg-gold/10 border border-gold/25 flex items-center justify-center mx-auto mb-2">
-                <Sparkles className="h-5 w-5 text-gold animate-[pulse_3s_infinite]" />
+                <Crown className="h-5 w-5 text-[#e5c158] animate-[pulse_3s_infinite]" />
               </div>
               <h2 className="font-serif text-2xl font-bold tracking-widest text-white uppercase">
                 {isRTL ? 'بوابة النخبة والأعضاء' : 'Elite Vault & Entry'}
@@ -796,34 +1043,6 @@ export default function LoginModal({
                 )}
               </button>
             </form>
-
-            {/* Luxury Quick Demo Testing Helper Panel */}
-            <div className="border-t border-gold/10 pt-4 space-y-3">
-              <span className="block text-[9px] uppercase font-mono tracking-widest text-luxury-cream/45 text-center">
-                {isRTL ? 'روابط الوصول التجريبي السريع' : 'Quick Sovereign Sandbox Access'}
-              </span>
-              <div className="grid grid-cols-2 gap-3 text-[10px]">
-                <button
-                  onClick={() => handleQuickFill('owner')}
-                  className="bg-gold/5 hover:bg-gold/15 border border-gold/20 hover:border-gold/50 rounded-lg p-2.5 text-center transition-all cursor-pointer group space-y-1"
-                >
-                  <span className="block font-serif font-bold text-gold group-hover:text-white transition-colors">
-                    {isRTL ? 'صاحب المتجر (المالك)' : 'Store Owner (Admin)'}
-                  </span>
-                  <span className="block text-luxury-cream/40 font-mono text-[9px]">owner@luxoradubai.ae</span>
-                </button>
-
-                <button
-                  onClick={() => handleQuickFill('vip')}
-                  className="bg-luxury-cream/5 hover:bg-luxury-cream/10 border border-luxury-cream/15 hover:border-gold/30 rounded-lg p-2.5 text-center transition-all cursor-pointer group space-y-1"
-                >
-                  <span className="block font-serif font-bold text-luxury-cream/80 group-hover:text-gold transition-colors">
-                    {isRTL ? 'عضو كبار الشخصيات' : 'VIP Guild Guest'}
-                  </span>
-                  <span className="block text-luxury-cream/40 font-mono text-[9px]">guild.vip@luxoradubai.ae</span>
-                </button>
-              </div>
-            </div>
           </div>
         )}
       </div>
@@ -877,6 +1096,115 @@ export default function LoginModal({
                 {isRTL ? 'إلغاء الاستحواذ' : 'Revoke Deed'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {feedbackOrder && (
+        <div className="fixed inset-0 z-110 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setFeedbackOrder(null)} />
+          <div className="relative w-full max-w-md bg-[#0d0d0d] border border-[#e5c158]/40 rounded-xl shadow-[0_10px_40px_rgba(229,193,88,0.1)] overflow-hidden p-6 text-center space-y-5 animate-slide-up" dir={isRTL ? 'rtl' : 'ltr'}>
+            <button 
+              onClick={() => setFeedbackOrder(null)}
+              className="absolute top-4 right-4 text-luxury-cream/40 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="space-y-2">
+              <h3 className="font-serif text-base font-bold tracking-widest text-[#e5c158] uppercase">
+                {isRTL ? 'تقييم التحفة الاستثنائية' : 'Curatorial Feedback'}
+              </h3>
+              <p className="text-xs text-luxury-cream/70 leading-relaxed font-serif">
+                {isRTL 
+                  ? 'رأيكم الكريم يساهم في الحفاظ على أعلى معايير الفخامة والخدمة السيادية لدينا.' 
+                  : 'Your esteemed perspective shapes the pinnacle of our sovereign luxury standards.'
+                }
+              </p>
+            </div>
+
+            {/* Selected Masterpiece Detail Mini Card */}
+            <div className="bg-[#121212] border border-[#262626] rounded-lg p-3 text-start text-[11px] space-y-1">
+              <div className="flex justify-between">
+                <span className="text-luxury-cream/40">{isRTL ? 'التحفة المقتناة:' : 'Masterpiece:'}</span>
+                <span className="text-white truncate max-w-[220px] font-medium font-serif">{feedbackOrder.productName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-luxury-cream/40 font-mono">{isRTL ? 'الرقم المرجعي:' : 'Reference ID:'}</span>
+                <span className="text-[#e5c158] font-mono font-bold">{feedbackOrder.id}</span>
+              </div>
+            </div>
+
+            {/* Interactive 5-Star Rating */}
+            <div className="space-y-1.5">
+              <span className="block text-[10px] uppercase tracking-widest text-gold/60 font-serif">
+                {isRTL ? 'درجة الرضا الملكية' : 'Sovereign Rating'}
+              </span>
+              <div className="flex items-center justify-center gap-2.5 py-1">
+                {[1, 2, 3, 4, 5].map((star) => {
+                  const isFilled = (hoverRating || feedbackRating) >= star;
+                  return (
+                    <button
+                      key={star}
+                      type="button"
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      onClick={() => setFeedbackRating(star)}
+                      className="text-2xl transition-all active:scale-[0.85] cursor-pointer"
+                    >
+                      <Star 
+                        className={`h-7 w-7 transition-colors ${
+                          isFilled ? 'text-[#e5c158] fill-[#e5c158]' : 'text-luxury-cream/15 border-none'
+                        }`} 
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Textarea review */}
+            <div className="space-y-1.5 text-start">
+              <span className="block text-[10px] uppercase tracking-widest text-gold/60 font-serif">
+                {isRTL ? 'ملاحظاتكم الاستثنائية' : 'Bespoke Experience Notes'}
+              </span>
+              <textarea
+                value={feedbackReview}
+                onChange={(e) => setFeedbackReview(e.target.value)}
+                placeholder={isRTL ? 'شاركنا تفاصيل تجربتك الاستثنائية مع هذه التحفة الملكية...' : 'Share your experience with this curated masterpiece...'}
+                className="w-full min-h-[90px] bg-[#121212] border border-[#262626] focus:border-[#e5c158]/50 text-white rounded-lg p-3 text-xs outline-none focus:ring-1 focus:ring-[#e5c158]/30 transition-all font-sans resize-none"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setFeedbackOrder(null)}
+                className="flex-1 bg-transparent hover:bg-white/5 border border-luxury-cream/20 text-luxury-cream text-xs font-serif uppercase tracking-widest font-bold py-2.5 rounded-lg transition-all active:scale-95 cursor-pointer"
+              >
+                {isRTL ? 'إلغاء' : 'Cancel'}
+              </button>
+              <button
+                onClick={handleFeedbackSubmit}
+                className="flex-1 bg-[#e5c158] hover:bg-[#e5c158]/90 text-luxury-black text-xs font-serif uppercase tracking-widest font-bold py-2.5 rounded-lg transition-all active:scale-95 cursor-pointer"
+              >
+                {isRTL ? 'إرسال التقييم' : 'Submit Review'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-120 flex items-center gap-3 bg-[#0d0d0d] border border-[#e5c158]/50 px-5 py-3.5 rounded-xl shadow-[0_4px_20px_rgba(229,193,88,0.15)] animate-slide-up" dir={isRTL ? 'rtl' : 'ltr'}>
+          <div className="h-6 w-6 rounded-full bg-[#e5c158]/10 border border-[#e5c158]/30 flex items-center justify-center text-[#e5c158] text-xs">
+            ✓
+          </div>
+          <div>
+            <p className="text-xs text-white font-serif font-bold tracking-wider">
+              {isRTL ? 'تأكيد التقييم الملكي' : 'Royal Feedback Confirmed'}
+            </p>
+            <p className="text-[10px] text-luxury-cream/60 font-sans">
+              {toastMessage}
+            </p>
           </div>
         </div>
       )}

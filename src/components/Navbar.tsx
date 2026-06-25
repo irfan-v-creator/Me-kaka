@@ -24,7 +24,7 @@ export const navItems: NavItem[] = [
   { labelEn: 'Shop Collection', labelAr: 'تسوق المجموعة', href: 'shop' },
   { labelEn: 'Categories', labelAr: 'الفئات', href: 'categories' },
   { labelEn: 'Bespoke Experience', labelAr: 'التجربة الخاصة', href: 'bespoke' },
-  { labelEn: 'About Luxora', labelAr: 'عن لوكسورا', href: 'about' }
+  { labelEn: 'About Styles & Grace', labelAr: 'عن ستايلز آند جريس', href: 'about' }
 ];
 
 export default function Navbar({ 
@@ -80,14 +80,17 @@ export default function Navbar({
             <button 
               id="brand-logo-btn"
               onClick={() => onNavigate('home')}
-              className="flex flex-col items-start text-left focus:outline-none"
+              className={`flex items-center gap-2.5 text-left focus:outline-none group ${isRTL ? 'flex-row-reverse text-right' : 'flex-row'}`}
             >
-              <span className="font-serif text-2xl font-bold tracking-[0.2em] text-gold hover:text-gold-light transition-all duration-300">
-                LUXORA
-              </span>
-              <span className={`text-[9px] font-mono tracking-[0.4em] uppercase text-luxury-cream/60 ${isRTL ? 'mr-0.5' : 'ml-0.5'}`}>
-                {isRTL ? 'دبي' : 'DUBAI'}
-              </span>
+              <Crown className="h-6 w-6 text-[#e5c158] transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110 shrink-0" />
+              <div className="flex flex-col">
+                <span className="font-serif text-xl sm:text-2xl font-bold tracking-[0.08em] text-gold hover:text-gold-light transition-all duration-300">
+                  Styles & Grace
+                </span>
+                <span className={`text-[8px] font-mono tracking-[0.2em] uppercase text-luxury-cream/60 ${isRTL ? 'mr-0.5' : 'ml-0.5'}`}>
+                  {isRTL ? 'الكرامة - دبي' : 'KARAMA - DUBAI'}
+                </span>
+              </div>
             </button>
           </div>
 

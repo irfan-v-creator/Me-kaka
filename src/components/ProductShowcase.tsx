@@ -450,8 +450,8 @@ export default function ProductShowcase({
                                   setValidationError(false);
 
                                   // WhatsApp Fast Alert
-                                  const formattedMsg = `✨ *LUXORA Dubai - New Order Alert* ✨\n\nProduct: ${selectedProduct.nameEn}\nValue: ${selectedProduct.priceAED.toLocaleString()} AED\nCustomer Contact: ${clientPhone.trim()}`;
-                                  const whatsappUrl = `https://wa.me/917510447887?text=${encodeURIComponent(formattedMsg)}`;
+                                  const formattedMsg = `✨ *Styles & Grace - New Order Alert* ✨\n\nProduct: ${selectedProduct.nameEn}\nValue: ${selectedProduct.priceAED.toLocaleString()} AED\nCustomer Contact: ${clientPhone.trim()}`;
+                                  const whatsappUrl = `https://wa.me/971588257372?text=${encodeURIComponent(formattedMsg)}`;
                                   window.open(whatsappUrl, '_blank');
                                 }
                               }}

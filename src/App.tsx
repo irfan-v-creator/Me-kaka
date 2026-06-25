@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Phone, MapPin, Globe, Sparkles, Trash2, Minus, Plus, ArrowLeft, ShoppingBag, Send, Check, Share2, Printer, X, FileText } from 'lucide-react';
+import { Mail, Phone, MapPin, Globe, Sparkles, Trash2, Minus, Plus, ArrowLeft, ShoppingBag, Send, Check, Share2, Printer, X, FileText, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
@@ -90,8 +90,8 @@ export default function App() {
         clientName: 'VIP Member Guild',
         deliveryCoordinates: 'Penthouse 4, Address Boulevard, Downtown Dubai',
         bespokeNotes: 'Escorted armored courier requested.',
-        userEmail: 'guild.vip@luxoradubai.ae',
-        customerEmail: 'guild.vip@luxoradubai.ae',
+        userEmail: 'vip@stylesandgrace.ae',
+        customerEmail: 'vip@stylesandgrace.ae',
         items: [{ product: LUXURY_PRODUCTS[0], quantity: 1 }],
         subtotal: 145000,
         discount: 14500,
@@ -107,8 +107,8 @@ export default function App() {
         clientName: 'VIP Member Guild',
         deliveryCoordinates: 'Penthouse 4, Address Boulevard, Downtown Dubai',
         bespokeNotes: 'Deliver after sunset.',
-        userEmail: 'guild.vip@luxoradubai.ae',
-        customerEmail: 'guild.vip@luxoradubai.ae',
+        userEmail: 'vip@stylesandgrace.ae',
+        customerEmail: 'vip@stylesandgrace.ae',
         items: [{ product: LUXURY_PRODUCTS[2], quantity: 1 }],
         subtotal: 4200,
         discount: 420,
@@ -225,7 +225,7 @@ export default function App() {
 
   const handleLoginRaw = (email: string, pass: string): boolean => {
     const normalizedEmail = email.toLowerCase().trim();
-    if (normalizedEmail === 'owner@luxoradubai.ae' && pass === 'DubaiLuxury2026') {
+    if (normalizedEmail === 'owner@stylesandgrace.ae' && pass === 'DubaiLuxury2026') {
       handleLoginSuccess(normalizedEmail, true);
       return true;
     } else if (normalizedEmail && pass.length >= 4) {
@@ -359,7 +359,7 @@ export default function App() {
 
     const lineDivider = '════════════════════════════';
     
-    let msg = `⚜️ *LUXORA DUBAI - ROYAL ORDER REQUEST* ⚜️\n`;
+    let msg = `⚜️ *STYLES & GRACE - ORDER REQUEST* ⚜️\n`;
     msg += `${lineDivider}\n\n`;
     msg += `👤 *Client / العميل الكريم:* ${checkoutName.trim()}\n`;
     msg += `📞 *Phone / الاتصال:* ${checkoutPhone.trim()}\n`;
@@ -392,10 +392,10 @@ export default function App() {
     msg += `   • UAE VAT ${vatPercentage}% / ضريبة القيمة المضافة: ${vat.toLocaleString()} AED\n`;
     msg += `   • *Grand Total / الإجمالي النهائي:* *${total.toLocaleString()} AED*\n`;
     msg += `${lineDivider}\n\n`;
-    msg += `✨ _This sovereign dispatch request is locked and certified under Emirati high-jewelry protection guidelines. A luxury client director will contact you on WhatsApp shortly to complete transaction details._`;
+    msg += `✨ _This dispatch request is locked and certified under Styles & Grace protection guidelines. A luxury client director will contact you on WhatsApp shortly to complete transaction details._`;
 
-    // Target Phone Number is updated directly as requested: 7510447887
-    const whatsappUrl = `https://wa.me/7510447887?text=${encodeURIComponent(msg)}`;
+    // Target Phone Number is updated directly as requested: +971 58 825 7372
+    const whatsappUrl = `https://wa.me/971588257372?text=${encodeURIComponent(msg)}`;
     window.open(whatsappUrl, '_blank');
 
     // Save states for post-purchase invoice display
@@ -461,22 +461,22 @@ export default function App() {
         />
       );
       const blob = await pdf(doc).toBlob();
-      const file = new File([blob], 'LUXORA_Sovereign_Invoice.pdf', { type: 'application/pdf' });
+      const file = new File([blob], 'Styles_Grace_Invoice.pdf', { type: 'application/pdf' });
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: isRTL ? 'فاتورة لوكسورا دبي السيادية' : 'LUXORA Sovereign Invoice',
+          title: isRTL ? 'فاتورة ستايلز آند جريس دبي' : 'Styles & Grace Invoice',
           text: isRTL 
-            ? 'فاتورة مقتنياتك الفاخرة المنسقة من لوكسورا دبي.' 
-            : 'Your curated masterpiece invoice from LUXORA Dubai.'
+            ? 'فاتورة مشترياتك من ستايلز آند جريس دبي.' 
+            : 'Your invoice from Styles & Grace Dubai.'
         });
       } else {
         // Fallback: If native file sharing is not supported by the browser, automatically trigger a direct file download as fallback.
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'LUXORA_Sovereign_Invoice.pdf';
+        a.download = 'Styles_Grace_Invoice.pdf';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -506,7 +506,7 @@ export default function App() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'LUXORA_Invoice.pdf';
+      link.download = 'Styles_Grace_Invoice.pdf';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -618,8 +618,8 @@ export default function App() {
                 <div className="w-16 h-[1px] bg-gold mx-auto" />
                 <p className="text-luxury-cream/70 text-sm sm:text-base leading-relaxed tracking-wide font-light">
                   {isRTL 
-                    ? 'نرحب بكم في عصر جديد للتسوق المترف. إن لوكسورا دبي هي بوابتكم لنخبة المنتجات المنسوجة والمرصعة بالذهب الخالص والماس. سيتم قريبًا الكشف عن المجموعة الحصرية لربيع وصيف ٢٠٢٦.' 
-                    : 'We welcome you to a new dawn in elite luxury e-commerce. LUXORA Dubai is your private portal to solid-gold timepieces and diamond-studded high jewelry. The full preview of our curated Spring/Summer 2026 collection is coming next in our grand launch.'
+                    ? 'نرحب بكم في عصر جديد للتسوق المترف. إن ستايلز آند جريس هي بوابتكم لأرقى الفضة الإيطالية عيار ٩٢٥ الخالية من البهتان، عطور النخبة الفاخرة، الساعات الأنيقة، والمحافظ والنظارات الشمسية والأحزمة المصنوعة يدوياً.' 
+                    : 'We welcome you to a new dawn in elegant luxury. Styles & Grace is your private portal to authentic 925 Italian sterling silver, non-tarnish fine jewelry, premium boutique perfumes, luxury watches, handcrafted wallets, sunglasses, and elegant belts.'
                   }
                 </p>
               </div>
@@ -981,16 +981,16 @@ export default function App() {
             </div>
             <h2 className="font-serif text-3xl font-bold tracking-widest text-white uppercase">
               {isRTL ? (
-                <>قريباً | <span className="text-gold">لوكسورا دبي</span></>
+                <>قريباً | <span className="text-gold">ستايلز آند جريس</span></>
               ) : (
-                <>Coming Soon | <span className="text-gold">LUXORA DUBAI</span></>
+                <>Coming Soon | <span className="text-gold">Styles & Grace</span></>
               )}
             </h2>
             <div className="w-12 h-[1px] bg-gold" />
             <p className="text-luxury-cream/70 max-w-lg text-sm leading-relaxed">
               {isRTL 
-                ? `جاري الآن تهيئة صفحة "${activePage.toUpperCase()}" بالتعاون مع دور الموضة والصياغة الفلورانسيّة والسويسرية من رتبة كبار المقتنين.`
-                : `We are hand-assembling the bespoke module for "${activePage.toUpperCase()}" with Florence or Swiss high artisans to host your private viewing session.`
+                ? `جاري الآن تهيئة صفحة "${activePage.toUpperCase()}" بالتعاون مع دور الموضة والصياغة الفلورانسيّة والسويسرية.`
+                : `We are hand-assembling the bespoke module for "${activePage.toUpperCase()}" to host your private viewing session.`
               }
             </p>
             <button
@@ -1009,11 +1009,11 @@ export default function App() {
           
           {/* Brand Col */}
           <div className="space-y-3">
-            <h4 className="font-serif text-lg tracking-[0.2em] font-extrabold text-gold">LUXORA</h4>
+            <h4 className="font-serif text-lg tracking-[0.2em] font-extrabold text-gold">Styles & Grace</h4>
             <p className="max-w-xs mx-auto md:mx-0">
               {isRTL 
-                ? 'الوجهة الموثوقة الأولى لاقتناء أفخر السلع والمجوهرات الحصرية في دولة الإمارات العربية المتحدة.'
-                : 'The premier destination for certified fine horology, bespoke gems, and elite products in the United Arab Emirates.'
+                ? 'الوجهة الموثوقة الأولى لاقتناء أفخر الفضة الإيطالية، العطور الفاخرة، الساعات والإكسسوارات في الكرامة، دبي، الإمارات العربية المتحدة.'
+                : 'The premier destination for 925 Italian silver, luxury perfumes, watches, and premium accessories in Karama - Dubai, UAE.'
               }
             </p>
           </div>
@@ -1023,11 +1023,11 @@ export default function App() {
             <span className="font-serif text-[11px] font-bold text-gold uppercase tracking-widest mb-1">{isRTL ? 'تواصل معنا' : 'Concierge Desk'}</span>
             <div className="flex items-center space-x-2 space-x-reverse justify-center md:justify-start">
               <Phone className="h-3.5 w-3.5 text-gold" />
-              <span>7510447887</span>
+              <span>+971 58 825 7372</span>
             </div>
             <div className="flex items-center space-x-2 space-x-reverse justify-center md:justify-start">
               <Mail className="h-3.5 w-3.5 text-gold" />
-              <span>vVIP@luxoradubai.ae</span>
+              <span>info@stylesandgrace.ae</span>
             </div>
           </div>
 
@@ -1036,7 +1036,7 @@ export default function App() {
             <span className="font-serif text-[11px] font-bold text-gold uppercase tracking-widest mb-1">{isRTL ? 'موقعنا' : 'Bespoke Lounge'}</span>
             <div className="flex items-center space-x-2 space-x-reverse justify-center md:justify-start text-center md:text-start">
               <MapPin className="h-3.5 w-3.5 text-gold flex-shrink-0" />
-              <span>{isRTL ? 'بوليفارد الشيخ محمد بن راشد، وسط مدينة دبي، الإمارات العربية المتحدة' : 'Sheikh Mohammed bin Rashid Blvd, Downtown Dubai, United Arab Emirates'}</span>
+              <span>{isRTL ? 'محل ٢٢، مجمع العطار للتسوق، الكرامة - دبي، الإمارات العربية المتحدة' : 'Shop 22, Al Attar Shopping Mall, Karama - Dubai, UAE'}</span>
             </div>
           </div>
 
@@ -1044,7 +1044,7 @@ export default function App() {
 
         <div className="max-w-7xl mx-auto border-t border-gold/10 mt-10 pt-6 text-center text-[10px] text-luxury-cream/35 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p>
-            © {new Date().getFullYear()} LUXORA DUBAI. {isRTL ? 'جميع الحقوق محفوظة.' : 'All Sovereign Rights Reserved.'}
+            © {new Date().getFullYear()} Styles & Grace. {isRTL ? 'جميع الحقوق محفوظة.' : 'All Rights Reserved.'}
           </p>
           <div className="flex space-x-6 space-x-reverse text-gold/60">
             <a href="#" className="hover:text-gold transition-colors">{isRTL ? 'الشروط والأحكام' : 'Terms of Use'}</a>
@@ -1227,16 +1227,19 @@ export default function App() {
               {/* Print-Only Letterhead (Hidden on web screen, visible on print) */}
               <div className="hidden print:flex flex-col pb-8 border-b-2 border-gold/25 mb-8 w-full text-luxury-cream" dir={isRTL ? 'rtl' : 'ltr'}>
                 <div className="flex justify-between items-start w-full">
-                  <div className="text-start">
-                    <h1 className="font-serif text-3xl font-black tracking-widest text-gold print-logo-gold leading-none uppercase">
-                      LUXORA DUBAI
-                    </h1>
-                    <p className="text-[11px] font-mono tracking-[0.25em] text-luxury-cream/80 uppercase mt-2 font-bold">
-                      SOVEREIGN RETAIL FLAGSHIP
-                    </p>
-                    <p className="text-[10px] font-sans text-luxury-cream/60 mt-2">
-                      Downtown Dubai, United Arab Emirates • VVIP@luxoradubai.ae
-                    </p>
+                  <div className={`text-start flex items-center gap-3.5 ${isRTL ? 'flex-row-reverse text-right' : 'flex-row'}`}>
+                    <Crown className="h-9 w-9 text-[#e5c158] print-logo-gold shrink-0" />
+                    <div>
+                      <h1 className="font-serif text-3xl font-black tracking-widest text-gold print-logo-gold leading-none uppercase">
+                        Styles & Grace
+                      </h1>
+                      <p className="text-[11px] font-mono tracking-[0.25em] text-luxury-cream/80 uppercase mt-2 font-bold">
+                        RETAIL FLAGSHIP
+                      </p>
+                      <p className="text-[10px] font-sans text-luxury-cream/60 mt-1">
+                        Shop 22, Al Attar Shopping Mall, Karama - Dubai, UAE • info@stylesandgrace.ae
+                      </p>
+                    </div>
                   </div>
                   <div className="text-right flex flex-col items-end">
                     <div className="border-2 border-gold/30 px-3 py-1.5 rounded-md bg-luxury-black/60">
@@ -1248,7 +1251,7 @@ export default function App() {
                       </p>
                     </div>
                     <p className="text-[9px] font-mono text-luxury-cream/40 mt-2">
-                      {isRTL ? 'مستند مالي معتمد ومعين قانونياً' : 'LEGALLY APPOINTED SOVEREIGN FINANCIAL LEDGER'}
+                      {isRTL ? 'مستند مالي معتمد ومعين قانونياً' : 'LEGALLY APPOINTED FINANCIAL LEDGER'}
                     </p>
                   </div>
                 </div>
@@ -1257,25 +1260,20 @@ export default function App() {
 
               {/* Premium Corporate Letterhead (Web Screen Only) */}
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-8 border-b border-gold/15 mb-8 print:hidden">
-                <div className="flex items-center gap-4">
+                <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse text-right' : 'flex-row'}`}>
                   {/* Company Logo Icon */}
                   <div className="h-14 w-14 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center print:border-neutral-300 print:bg-transparent">
-                    <svg className="h-9 w-9 text-gold print-logo-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <path d="M5 19h14M12 5l3 5 4-3-1 7H6l-1-7 4 3z" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="12" cy="5" r="1" fill="currentColor"/>
-                      <circle cx="19" cy="7" r="1" fill="currentColor"/>
-                      <circle cx="5" cy="7" r="1" fill="currentColor"/>
-                    </svg>
+                    <Crown className="h-9 w-9 text-[#e5c158] print-logo-gold shrink-0" />
                   </div>
                   <div className="text-start">
                     <h1 className="font-serif text-2xl sm:text-3xl font-extrabold tracking-widest text-white uppercase print-logo-gold leading-none">
-                      LUXORA
+                      Styles & Grace
                     </h1>
                     <p className="text-[10px] font-mono tracking-[0.2em] text-gold uppercase mt-1 print-logo-gold">
-                      {isRTL ? 'لوكسورا للمقتنيات الثمينة ش.ذ.م.م' : 'LUXORA LUXURY TRADING L.L.C.'}
+                      {isRTL ? 'ستايلز آند جريس ش.ذ.م.م' : 'Styles & Grace Trading L.L.C.'}
                     </p>
                     <p className="text-[9px] font-mono text-luxury-cream/40 mt-0.5 print-text-muted">
-                      {isRTL ? 'ترخيص رقم: ٩٨١٢٤٤ • دبي، الإمارات العربية المتحدة' : 'License No: 981244 • Dubai, UAE'}
+                      {isRTL ? 'ترخيص رقم: ١٠٤١٠٦٠ • دبي، الإمارات العربية المتحدة' : 'License No: 1041060 • Dubai, UAE'}
                     </p>
                   </div>
                 </div>
@@ -1291,11 +1289,11 @@ export default function App() {
                   </div>
                   <div>
                     <span className="text-luxury-cream/40 print-text-muted">{isRTL ? 'البريد الإلكتروني: ' : 'Email: '}</span>
-                    <span className="text-white print-text-dark">concierge@luxora.ae</span>
+                    <span className="text-white print-text-dark">info@stylesandgrace.ae</span>
                   </div>
                   <div>
                     <span className="text-luxury-cream/40 print-text-muted">{isRTL ? 'العنوان الرئيسي: ' : 'Address: '}</span>
-                    <span className="text-white print-text-dark">{isRTL ? 'برج برستيج، شارع الشيخ زايد، دبي' : 'Prestige Tower, Sheikh Zayed Rd, Dubai'}</span>
+                    <span className="text-white print-text-dark">{isRTL ? 'محل ٢٢، مجمع العطار للتسوق، الكرامة - دبي، الإمارات العربية المتحدة' : 'Shop 22, Al Attar Shopping Mall, Karama - Dubai, UAE'}</span>
                   </div>
                 </div>
               </div>
@@ -1303,7 +1301,7 @@ export default function App() {
               {/* Visual success pill */}
               {placedOrderInvoice.status === 'Cancelled' ? (
                 <div className="bg-red-500/10 border border-red-500/20 rounded-full px-4 py-1.5 flex items-center gap-2 mb-8 no-print print:hidden">
-                  <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                  <span className="h-2 w-2 rounded-full bg-red-500" />
                   <span className="text-xs text-red-500 tracking-wider uppercase font-serif font-bold">
                     {isRTL ? 'تم إلغاء الطلب وسحب مستند الاقتناء' : 'Order Revoked & Cancelled'}
                   </span>
@@ -1312,7 +1310,7 @@ export default function App() {
                 <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 flex items-center gap-2 mb-8 no-print print:hidden">
                   <Check className="h-4 w-4 text-emerald-400" />
                   <span className="text-xs text-emerald-400 tracking-wider uppercase font-serif font-bold">
-                    {isRTL ? 'تم حجز الطلب وتأكيد مستند الاقتناء' : 'Order Confirmed & Sovereign Lock Secured'}
+                    {isRTL ? 'تم حجز الطلب وتأكيد مستند الاقتناء' : 'Order Confirmed & Secure Lock Secured'}
                   </span>
                 </div>
               )}
@@ -1335,7 +1333,7 @@ export default function App() {
                     </div>
                     <div className="flex justify-between md:justify-start gap-4">
                       <span className="text-luxury-cream/40 uppercase tracking-wider w-32 print-text-muted">{isRTL ? 'الاعتماد التنظيمي:' : 'Regulatory Seal:'}</span>
-                      <span className="text-gold tracking-widest font-serif font-semibold print-logo-gold">LUXORA DUBAI DIRECT</span>
+                      <span className="text-gold tracking-widest font-serif font-semibold print-logo-gold">STYLES & GRACE DIRECT</span>
                     </div>
                   </div>
                 </div>
@@ -1504,8 +1502,8 @@ export default function App() {
               {/* Print Footer Signature */}
               <div className="text-center text-[9px] text-luxury-cream/35 italic mt-8 pt-4 border-t border-gold/5 uppercase tracking-widest font-serif">
                 {isRTL 
-                  ? 'طلب معتمد إلكترونياً وصادر بموجب لوائح الصياغة والحماية الملوكية بدبي • رقم الهاتف للتواصل المباشر: 7510447887' 
-                  : 'Sovereign Digitally Certified Order issued under Emirati Fine-Art Protection Guidelines • Phone: 7510447887'
+                  ? 'طلب معتمد إلكترونياً وصادر بموجب لوائح الصياغة والحماية بدبي • رقم الهاتف للتواصل المباشر: +971 58 825 7372' 
+                  : 'Digitally Certified Order issued under Emirati Fine-Art Guidelines • Phone: +971 58 825 7372'
                 }
               </div>
 

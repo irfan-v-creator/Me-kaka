@@ -273,7 +273,7 @@ export default function AdminPortal({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="owner@luxoradubai.ae"
+                  placeholder="owner@stylesandgrace.ae"
                   className="w-full bg-luxury-black/80 border border-gold/20 text-sm text-luxury-cream rounded px-4 py-3 focus:outline-none focus:border-gold font-mono"
                 />
               </div>
@@ -297,7 +297,7 @@ export default function AdminPortal({
             {/* Helper Credential Notice */}
             <div className="rounded bg-gold/5 p-3 text-[10px] text-gold/80 leading-relaxed font-sans border border-gold/10">
               <span className="font-bold underline">{isRTL ? 'ملاحظة الفحص' : 'Verification Credentials'}:</span><br />
-              Email: <span className="font-mono">owner@luxoradubai.ae</span><br />
+              Email: <span className="font-mono">owner@stylesandgrace.ae</span><br />
               Password: <span className="font-mono">DubaiLuxury2026</span>
             </div>
 
@@ -853,7 +853,7 @@ export default function AdminPortal({
                           {isRTL ? 'الاسم الكامل:' : 'Full Name:'}
                         </span>
                         <span className="text-xs font-serif font-bold text-white">
-                          {selectedOrder.clientName || (isRTL ? 'عميل لوكسورا الموقر' : 'Sovereign Luxora Patron')}
+                          {selectedOrder.clientName || (isRTL ? 'عميل ستايلز آند جريس الموقر' : 'Styles & Grace Patron')}
                         </span>
                       </div>
                       <div className="space-y-0.5">

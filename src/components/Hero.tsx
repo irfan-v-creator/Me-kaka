@@ -41,7 +41,7 @@ export default function Hero({ lang, onExplore }: HeroProps) {
       <div className="absolute inset-0 z-0">
         <img 
           src={heroImage} 
-          alt="Luxora Dubai Luxury Hero" 
+          alt="Styles & Grace Luxury Hero" 
           className="w-full h-full object-cover object-center opacity-45 scale-105 animate-[pulse_12s_infinite_alternate]"
           referrerPolicy="no-referrer"
         />
@@ -101,8 +101,8 @@ export default function Hero({ lang, onExplore }: HeroProps) {
               
               <p className="max-w-xl text-base sm:text-lg text-luxury-cream/80 leading-relaxed font-sans">
                 {isRTL 
-                  ? 'وصول حصري لأرقى الساعات السويسرية والمجوهرات المصنوعة خصيصاً لنخبة مجتمع دبي. فخامة تخاطب الوجدان بلمسات من الذهب والماس عيار ٢٤ قيراط.'
-                  : 'Exclusive curated Swiss horology & bespoke couture jewellery tailored for the Middle East elite. True artisan legacy adorned with solid 24K gold accents.'
+                  ? 'وصول حصري لأرقى تشكيلة من الفضة الإيطالية عيار ٩٢٥ والمجوهرات المقاومة لتغير اللون، العطور الفاخرة، الساعات، والمحافظ والنظارات والأحزمة الراقية.'
+                  : 'Exclusive access to premium 925 Italian Silver & non-tarnish jewelry, bespoke luxury perfumes, exquisite watches, leather wallets, sunglasses, and belts curated for you.'
                 }
               </p>
             </motion.div>

@@ -15,20 +15,20 @@ export default function SEOManager({ lang }: SEOManagerProps) {
   const isRTL = lang === 'ar';
   
   const title = isRTL 
-    ? "لوكسورا دبي | ساعات فاخرة وعطور راقية بدبي عيار ٢٤" 
-    : "LUXORA Dubai | Premium Luxury Watches & Haute Perfumery";
+    ? "ستايلز آند جريس دبي | فضة إيطالية ٩٢٥ ومجوهرات راقية وعطور" 
+    : "Styles & Grace | 925 Italian Silver & Luxury Perfumes Dubai";
     
   const description = isRTL 
-    ? "اكتشف البوابة الأولى والحصرية لأفخر الساعات السويسرية والماس عيار ٢٤ قيراط والعطور المخصصة لنخبة مجتمع دبي والخليج العربي مع خدمة التوصيل المصفح الآمن في دوان تاون دبي."
-    : "Immerse in Dubai's premier elite portal for 24K solid gold Swiss watches, custom eternity diamond jewelry, and royal Oud fragrances. Serving Downtown Dubai with secure armored escrows.";
+    ? "اكتشف تشكيلة ستايلز آند جريس من الفضة الإيطالية عيار ٩٢٥، المجوهرات المقاومة لتغير اللون، العطور الفاخرة، الساعات، المحافظ، النظارات الشمسية، والأحزمة الراقية في دبي الكرامة."
+    : "Discover Styles & Grace collection: 925 Italian Silver & non-tarnish jewelry, premium perfumes, luxury watches, leather wallets, sunglasses, and belts in Al Attar Shopping Mall, Karama, Dubai.";
 
   const keywords = isRTL
-    ? "ساعات دبي الفاخرة, عطور عود نادرة, مجوهرات دوان تاون, سلع ملكية دبي Mall, توصيل مصفح مجوهرات دبي, Luxora Dubai, ساعات رولكس دبي, عطور عود فاخرة"
-    : "Luxury watches UAE, luxury watches Dubai, bespoke jewelry Downtown Dubai, premium Oud fragrances, gift sets Dubai Mall boutique, Swiss tourbillon Dubai, Luxora Dubai, gold watches Middle East";
+    ? "فضة إيطالية ٩٢٥ دبي, مجوهرات مقاومة لتغير اللون الكرامة, عطور فاخرة, ساعات يد دبي, محافظ جلدية, نظارات شمسية دبي, أحزمة راقية, ستايلز آند جريس"
+    : "925 Italian Silver Dubai, non-tarnish jewelry Karama, luxury perfumes Dubai, watches UAE, premium leather wallets, designer sunglasses Dubai, luxury belts Al Attar Mall";
 
   // A breathtaking high-resolution curated cover image suited for Open Graph rich previews (1200 x 630 pixels)
   const ogImageUrl = "https://images.unsplash.com/photo-1547996160-81dfa63595aa?auto=format&fit=crop&q=80&w=1200&h=630";
-  const siteUrl = "https://luxoradubai.ae";
+  const siteUrl = "https://stylesandgrace.ae";
 
   return (
     <>
@@ -38,7 +38,7 @@ export default function SEOManager({ lang }: SEOManagerProps) {
       {/* Standard Meta Tags */}
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords} />
-      <meta name="author" content="LUXORA Dubai Corporate Office" />
+      <meta name="author" content="Styles & Grace Trading L.L.C" />
       <meta name="robots" content="index, follow" />
       <meta name="theme-color" content="#0A0A0A" />
       
@@ -48,7 +48,7 @@ export default function SEOManager({ lang }: SEOManagerProps) {
       <meta property="og:description" content={description} />
       <meta property="og:image" content={ogImageUrl} />
       <meta property="og:url" content={siteUrl} />
-      <meta property="og:site_name" content="LUXORA Dubai" />
+      <meta property="og:site_name" content="Styles & Grace" />
       <meta property="og:locale" content={isRTL ? "ar_AE" : "en_US"} />
       
       {/* Twitter Cards */}

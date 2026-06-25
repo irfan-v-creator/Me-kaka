@@ -1,6 +1,6 @@
 {
-  "name": "LUXORA Dubai",
-  "description": "High-end luxury e-commerce website centering Premium Dubai styles, dual English/Arabic languages, UAE VAT computation, and a discrete administration control suite.",
+  "name": "Styles & Grace",
+  "description": "High-end luxury e-commerce website centering authentic 925 Italian sterling silver, non-tarnish jewelry, premium perfumes, and designer accessories.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

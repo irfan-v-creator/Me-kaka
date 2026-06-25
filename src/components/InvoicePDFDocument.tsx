@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Svg, Path } from '@react-pdf/renderer';
 import { Order, CartItem } from '../types';
 
 const styles = StyleSheet.create({
@@ -284,12 +284,24 @@ export const InvoicePDFDocument: React.FC<InvoicePDFDocumentProps> = ({
         <View style={styles.mainContent}>
           {/* Header */}
           <View style={styles.headerContainer}>
-            <View>
-              <Text style={styles.logoText}>LUXORA DUBAI</Text>
-              <Text style={styles.subtitleText}>SOVEREIGN RETAIL FLAGSHIP</Text>
-              <Text style={{ fontSize: 7, color: '#a99260', marginTop: 3 }}>
-                Downtown Dubai, UAE • VVIP@luxoradubai.ae
-              </Text>
+            <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Svg viewBox="0 0 24 24" style={{ width: 28, height: 28 }}>
+                <Path
+                  d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"
+                  stroke="#e5c158"
+                  strokeWidth={1.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+              </Svg>
+              <View>
+                <Text style={styles.logoText}>STYLES & GRACE</Text>
+                <Text style={styles.subtitleText}>TRADING L.L.C</Text>
+                <Text style={{ fontSize: 7, color: '#a99260', marginTop: 3 }}>
+                  Shop 22, Al Attar Shopping Mall, Karama - Dubai, UAE • +971 58 825 7372
+                </Text>
+              </View>
             </View>
             <View style={styles.trnBox}>
               <Text style={styles.trnTitle}>OFFICIAL UAE TAX IDENTIFICATION</Text>
@@ -423,9 +435,9 @@ export const InvoicePDFDocument: React.FC<InvoicePDFDocumentProps> = ({
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text>Sovereign Digital Showroom - LUXORA - Dubai, United Arab Emirates</Text>
+          <Text>Styles & Grace - Trading L.L.C • Shop 22, Al Attar Shopping Mall, Karama - Dubai, UAE</Text>
           <Text style={{ marginTop: 2 }}>
-            This document is a legally appointed sovereign financial ledger and is processed under high security protocols.
+            Reference Phone: +971 55 395 7591 • This document is a legally appointed financial ledger.
           </Text>
         </View>
       </Page>
