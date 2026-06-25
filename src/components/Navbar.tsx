@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, Globe, ShoppingBag, User, Search, LogOut, Crown, ShieldAlert, Sparkles, Heart } from 'lucide-react';
+import { Menu, X, Globe, ShoppingBag, User, Search, LogOut, Crown, ShieldAlert, Sparkles, Heart, Award } from 'lucide-react';
 import { Language, NavItem } from '../types';
 
 interface NavbarProps {
@@ -17,6 +17,7 @@ interface NavbarProps {
   cartCount?: number;
   favoritesCount?: number;
   onOpenWishlist?: () => void;
+  onOpenAcquisitions?: () => void;
 }
 
 export const navItems: NavItem[] = [
@@ -40,7 +41,8 @@ export default function Navbar({
   onLogout,
   cartCount = 0,
   favoritesCount = 0,
-  onOpenWishlist
+  onOpenWishlist,
+  onOpenAcquisitions
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -128,6 +130,23 @@ export default function Navbar({
             </button>
 
             {/* Elegant Profile Authenticated Status & User Trigger */}
+            {isLoggedIn && (
+              <button
+                id="nav-link-desktop-acquisitions"
+                onClick={() => {
+                  if (onOpenAcquisitions) {
+                    onOpenAcquisitions();
+                  } else {
+                    onOpenLogin();
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-gold/20 bg-gold/5 hover:border-gold hover:bg-gold/15 text-gold text-xs uppercase tracking-widest font-serif font-bold transition-all cursor-pointer shadow-[0_0_10px_rgba(229,193,88,0.05)] hover:shadow-[0_0_15px_rgba(229,193,88,0.15)]"
+              >
+                <Award className="h-3.5 w-3.5" />
+                <span>{isRTL ? 'مقتنياتي' : 'MY ACQUISITIONS'}</span>
+              </button>
+            )}
+
             <div className="relative">
               <button 
                 id="user-profile-btn"
@@ -361,6 +380,23 @@ export default function Navbar({
                 </button>
               );
             })}
+            
+            {isLoggedIn && (
+              <button
+                id="nav-link-mobile-acquisitions"
+                onClick={() => {
+                  if (onOpenAcquisitions) {
+                    onOpenAcquisitions();
+                  } else {
+                    onOpenLogin();
+                  }
+                  setMobileMenuOpen(false);
+                }}
+                className="py-3 text-start font-serif text-base tracking-widest uppercase border-b border-gold/5 text-luxury-cream/80 hover:text-gold transition-all duration-300"
+              >
+                {isRTL ? 'مقتنياتي الملكية' : 'MY ACQUISITIONS'}
+              </button>
+            )}
             
             <div className="pt-4 flex items-center justify-between">
               <button

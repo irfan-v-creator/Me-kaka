@@ -38,9 +38,10 @@ export interface Order {
   deliveryCoordinates?: string;
   bespokeNotes?: string;
   vatAED?: number;
-  status?: 'Pending' | 'Dispatched';
+  status?: 'Pending' | 'Dispatched' | 'Secured' | 'Cancelled';
   checkoutMethod?: 'WhatsApp' | 'QuickBuy';
   userEmail?: string;
+  customerEmail?: string;
   items?: CartItem[];
   subtotal?: number;
   discount?: number;

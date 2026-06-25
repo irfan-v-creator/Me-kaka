@@ -91,6 +91,7 @@ export default function App() {
         deliveryCoordinates: 'Penthouse 4, Address Boulevard, Downtown Dubai',
         bespokeNotes: 'Escorted armored courier requested.',
         userEmail: 'guild.vip@luxoradubai.ae',
+        customerEmail: 'guild.vip@luxoradubai.ae',
         items: [{ product: LUXURY_PRODUCTS[0], quantity: 1 }],
         subtotal: 145000,
         discount: 14500,
@@ -107,6 +108,7 @@ export default function App() {
         deliveryCoordinates: 'Penthouse 4, Address Boulevard, Downtown Dubai',
         bespokeNotes: 'Deliver after sunset.',
         userEmail: 'guild.vip@luxoradubai.ae',
+        customerEmail: 'guild.vip@luxoradubai.ae',
         items: [{ product: LUXURY_PRODUCTS[2], quantity: 1 }],
         subtotal: 4200,
         discount: 420,
@@ -146,6 +148,12 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
+  const [loginModalInitialTab, setLoginModalInitialTab] = useState<'profile' | 'orders'>('profile');
+
+  const handleOpenLogin = (tab: 'profile' | 'orders' = 'profile') => {
+    setLoginModalInitialTab(tab);
+    setShowLoginModal(true);
+  };
 
   // Exquisite Shopping Cart Form input state controls
   const [checkoutName, setCheckoutName] = useState<string>('');
@@ -197,6 +205,22 @@ export default function App() {
     if (window.location.hash) {
       window.location.hash = '';
     }
+  };
+
+  const handleCancelOrder = (orderId: string) => {
+    setOrders(prev => prev.map(order => {
+      if (order.id === orderId) {
+        return { ...order, status: 'Cancelled' };
+      }
+      return order;
+    }));
+
+    setPlacedOrderInvoice(prev => {
+      if (prev && prev.id === orderId) {
+        return { ...prev, status: 'Cancelled' };
+      }
+      return prev;
+    });
   };
 
   const handleLoginRaw = (email: string, pass: string): boolean => {
@@ -269,6 +293,7 @@ export default function App() {
       vatAED: vatVal,
       checkoutMethod: 'QuickBuy',
       userEmail: isLoggedIn && userEmail ? userEmail : undefined,
+      customerEmail: isLoggedIn && userEmail ? userEmail : undefined,
       items: [{ product, quantity: 1 }],
       subtotal: subtotalVal,
       discount: discountVal
@@ -323,6 +348,7 @@ export default function App() {
       vatAED: vat,
       checkoutMethod: 'WhatsApp',
       userEmail: isLoggedIn && userEmail ? userEmail : undefined,
+      customerEmail: isLoggedIn && userEmail ? userEmail : undefined,
       items: [...cart],
       subtotal: subtotal,
       discount: discount
@@ -547,7 +573,8 @@ export default function App() {
         isLoggedIn={isLoggedIn}
         isAdmin={isAdmin}
         userEmail={userEmail}
-        onOpenLogin={() => setShowLoginModal(true)}
+        onOpenLogin={() => handleOpenLogin('profile')}
+        onOpenAcquisitions={() => handleOpenLogin('orders')}
         onLogout={handleLogout}
         cartCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
         favoritesCount={favorites.length}
@@ -811,7 +838,7 @@ export default function App() {
                         </span>
                         <button 
                           type="button"
-                          onClick={() => setShowLoginModal(true)}
+                          onClick={() => handleOpenLogin('profile')}
                           className="text-[9px] uppercase tracking-wider text-gold font-serif underline hover:text-white cursor-pointer font-bold bg-transparent border-none"
                         >
                           {isRTL ? 'تفويض الدخول' : 'Sign In'}
@@ -1042,7 +1069,10 @@ export default function App() {
           setInvoiceDiscount(order.discount || 0);
           setInvoiceSubtotal(order.subtotal || order.priceAED);
         }}
+        onCancelOrder={handleCancelOrder}
         onLogout={handleLogout}
+        vatPercentage={vatPercentage}
+        initialTab={loginModalInitialTab}
       />
 
       {/* Sovereign Wishlist Drawer */}
@@ -1271,12 +1301,21 @@ export default function App() {
               </div>
 
               {/* Visual success pill */}
-              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 flex items-center gap-2 mb-8 no-print print:hidden">
-                <Check className="h-4 w-4 text-emerald-400" />
-                <span className="text-xs text-emerald-400 tracking-wider uppercase font-serif font-bold">
-                  {isRTL ? 'تم حجز الطلب وتأكيد مستند الاقتناء' : 'Order Confirmed & Sovereign Lock Secured'}
-                </span>
-              </div>
+              {placedOrderInvoice.status === 'Cancelled' ? (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-full px-4 py-1.5 flex items-center gap-2 mb-8 no-print print:hidden">
+                  <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                  <span className="text-xs text-red-500 tracking-wider uppercase font-serif font-bold">
+                    {isRTL ? 'تم إلغاء الطلب وسحب مستند الاقتناء' : 'Order Revoked & Cancelled'}
+                  </span>
+                </div>
+              ) : (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 flex items-center gap-2 mb-8 no-print print:hidden">
+                  <Check className="h-4 w-4 text-emerald-400" />
+                  <span className="text-xs text-emerald-400 tracking-wider uppercase font-serif font-bold">
+                    {isRTL ? 'تم حجز الطلب وتأكيد مستند الاقتناء' : 'Order Confirmed & Sovereign Lock Secured'}
+                  </span>
+                </div>
+              )}
 
               {/* Details Specifications Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-8 border-b border-gold/15 mb-8 text-xs">

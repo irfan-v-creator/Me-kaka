@@ -77,6 +77,25 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 1,
   },
+  badgeContainerCancelled: {
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderWidth: 1,
+    borderColor: '#ef4444',
+    borderRadius: 4,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    marginBottom: 15,
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeTextCancelled: {
+    color: '#ef4444',
+    fontSize: 8,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+  },
   sectionTitle: {
     fontSize: 9,
     color: '#e5c158',
@@ -279,11 +298,19 @@ export const InvoicePDFDocument: React.FC<InvoicePDFDocumentProps> = ({
           </View>
 
           {/* Badge */}
-          <View style={styles.badgeContainer}>
-            <Text style={styles.badgeText}>
-              ✓ ORDER CONFIRMED & SOVEREIGN LOCK SECURED
-            </Text>
-          </View>
+          {order.status === 'Cancelled' ? (
+            <View style={styles.badgeContainerCancelled}>
+              <Text style={styles.badgeTextCancelled}>
+                ✕ ORDER REVOKED & CANCELLED
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.badgeContainer}>
+              <Text style={styles.badgeText}>
+                ✓ ORDER CONFIRMED & SOVEREIGN LOCK SECURED
+              </Text>
+            </View>
+          )}
 
           {/* Details Grid */}
           <View style={styles.gridContainer}>
