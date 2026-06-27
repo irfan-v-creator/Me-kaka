@@ -3,7 +3,9 @@ import {
   signInWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
-  User
+  User,
+  GoogleAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 import { 
   doc, 
@@ -43,10 +45,13 @@ export async function registerUser(email: string, pass: string, role: 'user' | '
   const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
   const user = userCredential.user;
   
+  const normalizedEmail = email.toLowerCase().trim();
+  const resolvedRole = (normalizedEmail === 'konami5miv@gmail.com' || normalizedEmail === 'miv3game@gmail.com') ? 'admin' : role;
+
   // Create user document mapping uid to { email, role }
   await setDoc(doc(db, 'users', user.uid), {
-    email: email.toLowerCase().trim(),
-    role: role,
+    email: normalizedEmail,
+    role: resolvedRole,
     createdAt: serverTimestamp()
   });
 
@@ -64,14 +69,18 @@ export async function loginUser(email: string, pass: string): Promise<{ user: Us
   const profileDoc = await getDoc(doc(db, 'users', user.uid));
   let profile: UserProfile = { email: user.email || email, role: 'user' };
   
+  const normalizedEmail = email.toLowerCase().trim();
+  const isAdminEmail = normalizedEmail === 'konami5miv@gmail.com' || normalizedEmail === 'miv3game@gmail.com';
+
   if (profileDoc.exists()) {
     profile = profileDoc.data() as UserProfile;
+    if (isAdminEmail && profile.role !== 'admin') {
+      profile.role = 'admin';
+      await updateDoc(doc(db, 'users', user.uid), { role: 'admin' });
+    }
   } else {
     // Fallback: Create profile if it somehow doesn't exist yet
-    // If it's the default owner, assign admin role
-    const normalizedEmail = email.toLowerCase().trim();
-    const isOwner = normalizedEmail === 'owner@stylesandgrace.ae';
-    profile.role = isOwner ? 'admin' : 'user';
+    profile.role = isAdminEmail ? 'admin' : 'user';
     
     await setDoc(doc(db, 'users', user.uid), {
       email: normalizedEmail,
@@ -80,6 +89,40 @@ export async function loginUser(email: string, pass: string): Promise<{ user: Us
     });
   }
 
+  return { user, profile };
+}
+
+/**
+ * Sign in with Google and ensure user profile exists in Firestore.
+ */
+export async function signInWithGoogle(): Promise<{ user: User; profile: UserProfile }> {
+  const provider = new GoogleAuthProvider();
+  const userCredential = await signInWithPopup(auth, provider);
+  const user = userCredential.user;
+  
+  const profileDoc = await getDoc(doc(db, 'users', user.uid));
+  const email = user.email || '';
+  let profile: UserProfile = { email: email, role: 'user' };
+  
+  const normalizedEmail = email.toLowerCase().trim();
+  const isAdminEmail = normalizedEmail === 'konami5miv@gmail.com' || normalizedEmail === 'miv3game@gmail.com';
+  
+  if (profileDoc.exists()) {
+    profile = profileDoc.data() as UserProfile;
+    // Auto-elevate to admin if they are the admin email but profile was created as 'user'
+    if (isAdminEmail && profile.role !== 'admin') {
+      profile.role = 'admin';
+      await updateDoc(doc(db, 'users', user.uid), { role: 'admin' });
+    }
+  } else {
+    profile.role = isAdminEmail ? 'admin' : 'user';
+    await setDoc(doc(db, 'users', user.uid), {
+      email: normalizedEmail,
+      role: profile.role,
+      createdAt: serverTimestamp()
+    });
+  }
+  
   return { user, profile };
 }
 

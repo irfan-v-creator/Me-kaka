@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Language, Order } from '../types';
 import { pdf } from '@react-pdf/renderer';
 import { InvoicePDFDocument } from './InvoicePDFDocument';
-import { loginUser, registerUser, updateOrderStatus } from '../lib/firebaseService';
+import { loginUser, registerUser, updateOrderStatus, signInWithGoogle } from '../lib/firebaseService';
 
 
 interface LoginModalProps {
@@ -209,6 +209,31 @@ export default function LoginModal({
     }
   }, [isOpen, isLoggedIn, userEmail, isAdmin, orders, activeTab]);
 
+  const handleGoogleSignIn = async () => {
+    setError('');
+    setIsLoading(true);
+    try {
+      const { user, profile } = await signInWithGoogle();
+      onLoginSuccess(user.email || '', profile.role === 'admin');
+      onClose();
+    } catch (err: any) {
+      console.error('Google Auth error:', err);
+      if (err.code === 'auth/popup-blocked') {
+        setError(isRTL 
+          ? 'تم حظر النافذة المنبثقة لتسجيل الدخول من Google بواسطة متصفحك. يرجى تفعيل النوافذ المنبثقة لهذا الموقع من شريط العنوان (ابحث عن رمز حظر النوافذ المنبثقة 🚫 في أعلى اليمين) أو قم بفتح التطبيق في علامة تبويب جديدة ثم حاول مجدداً.' 
+          : 'The Google Sign-In popup was blocked by your browser. Please allow popups for this site in your browser\'s address bar (look for the blocked pop-up icon 🚫 or settings) or open this application in a new tab to sign in securely.'
+        );
+      } else {
+        setError(isRTL 
+          ? 'فشل تسجيل الدخول باستخدام Google. يرجى المحاولة مرة أخرى.' 
+          : 'Google Sign-In failed. Please try again.'
+        );
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -219,7 +244,7 @@ export default function LoginModal({
     try {
       if (isRegistering) {
         // Assign admin role if they sign up with the admin email
-        const role = normalizedEmail === 'owner@stylesandgrace.ae' ? 'admin' : 'user';
+        const role = (normalizedEmail === 'konami5miv@gmail.com' || normalizedEmail === 'miv3game@gmail.com') ? 'admin' : 'user';
         await registerUser(normalizedEmail, password, role);
         onLoginSuccess(normalizedEmail, role === 'admin');
         onClose();
@@ -234,7 +259,11 @@ export default function LoginModal({
         ? 'حدث خطأ أثناء المصادقة. يرجى التحقق من تفاصيل الدخول.' 
         : 'An error occurred during authentication. Please check your credentials.';
       
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+      if (err.code === 'auth/configuration-not-found') {
+        errorMsg = isRTL
+          ? 'المشرف السيادي: لم يتم تمكين تسجيل الدخول بالبريد الإلكتروني وكلمة المرور في لوحة تحكم Firebase بعد. يرجى تمكين "Email/Password" في لوحة تحكم Firebase (Authentication > Sign-in method)، أو استخدام خيار تسجيل الدخول الآمن من Google أدناه.'
+          : 'Sovereign Admin: The Email/Password sign-in method is not enabled in your Firebase console. Please go to Firebase Console > Authentication > Sign-in method and enable "Email/Password", or use the secure Google Sign-In option below.';
+      } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         errorMsg = isRTL 
           ? 'البريد الإلكتروني أو العبارة السرية غير صالحة.' 
           : 'Invalid email or passcode.';
@@ -1080,6 +1109,29 @@ export default function LoginModal({
                     </span>
                   </>
                 )}
+              </button>
+
+              {/* Divider */}
+              <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-gold/10"></div>
+                <span className="flex-shrink mx-4 text-gold/40 text-[10px] uppercase font-serif tracking-widest">{isRTL ? 'أو' : 'OR'}</span>
+                <div className="flex-grow border-t border-gold/10"></div>
+              </div>
+
+              {/* Google Sign-In Button */}
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={isLoading}
+                className="w-full bg-white/5 hover:bg-white/10 border border-gold/20 text-luxury-cream font-serif text-xs font-bold tracking-widest uppercase py-3.5 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2.5 cursor-pointer"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
+                </svg>
+                <span>{isRTL ? 'تسجيل الدخول بواسطة Google' : 'Sign In with Google'}</span>
               </button>
 
               <div className="text-center mt-4">

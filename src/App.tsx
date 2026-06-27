@@ -294,7 +294,7 @@ export default function App() {
 
   const handleLoginRaw = (email: string, pass: string): boolean => {
     const normalizedEmail = email.toLowerCase().trim();
-    if (normalizedEmail === 'owner@stylesandgrace.ae' && pass === 'DubaiLuxury2026') {
+    if (normalizedEmail === 'konami5miv@gmail.com' && pass === 'DubaiLuxury2026') {
       handleLoginSuccess(normalizedEmail, true);
       return true;
     } else if (normalizedEmail && pass.length >= 4) {
