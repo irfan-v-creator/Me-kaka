@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trash2, ShoppingBag, Heart, Sparkles } from 'lucide-react';
 import { Product, Language } from '../types';
 

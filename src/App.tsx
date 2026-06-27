@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Phone, MapPin, Globe, Sparkles, Trash2, Minus, Plus, ArrowLeft, ShoppingBag, Send, Check, Share2, Printer, X, FileText, Crown } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
+import HeroCarousel from './components/HeroCarousel';
+import HomepageGrids from './components/HomepageGrids';
 import ProductShowcase from './components/ProductShowcase';
 import AdminPortal from './components/AdminPortal';
 import SEOManager from './components/SEOManager';
@@ -12,9 +14,35 @@ import { Language, Product, CartItem, Order } from './types';
 import { LUXURY_PRODUCTS } from './data';
 import { pdf } from '@react-pdf/renderer';
 import { InvoicePDFDocument } from './components/InvoicePDFDocument';
+import { auth } from './lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { 
+  getUserProfile, 
+  getCartFromFirestore, 
+  saveCartToFirestore, 
+  getUserOrders, 
+  createOrderInFirestore, 
+  updateOrderStatus, 
+  logoutUser 
+} from './lib/firebaseService';
+
+
+const DUBAI_ZONES = [
+  { id: '1', nameEn: 'Downtown Dubai & Burj District', nameAr: 'وسط مدينة دبي ومنطقة برج خليفة', feeAED: 50, estimatedDays: 'Within 3 Hours', estimatedDaysAr: 'خلال ٣ ساعات' },
+  { id: '2', nameEn: 'Palm Jumeirah & Dubai Marina', nameAr: 'نخلة جميرا ومرسى دبي', feeAED: 75, estimatedDays: 'Within 4 Hours', estimatedDaysAr: 'خلال ٤ ساعات' },
+  { id: '3', nameEn: 'Emirates Hills & Jumeirah Golf Estates', nameAr: 'تلال الإمارات وعقارات جميرا للجولف', feeAED: 100, estimatedDays: 'Within 4 Hours', estimatedDaysAr: 'خلال ٤ ساعات' },
+  { id: '4', nameEn: 'Dubai Hills Estate & Meydan', nameAr: 'دبي هيلز ستيت وميدان', feeAED: 50, estimatedDays: 'Same Day (Order before 4 PM)', estimatedDaysAr: 'نفس اليوم (قبل ٤ مساءً)' }
+];
 
 export default function App() {
   const [lang, setLang] = useState<Language>('en');
+  const isRTL = lang === 'ar';
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
+  const [loginModalInitialTab, setLoginModalInitialTab] = useState<'profile' | 'orders'>('profile');
   const [activePage, setActivePage] = useState<string>('home');
   const [products, setProducts] = useState<Product[]>(LUXURY_PRODUCTS);
 
@@ -65,10 +93,14 @@ export default function App() {
   useEffect(() => {
     try {
       localStorage.setItem('luxora_cart', JSON.stringify(cart));
+      if (isLoggedIn && auth.currentUser) {
+        saveCartToFirestore(auth.currentUser.uid, cart);
+      }
     } catch (e) {
       console.error('Failed to sync shopping vault bag:', e);
     }
-  }, [cart]);
+  }, [cart, isLoggedIn]);
+
 
   // Professional Orders Log state with localStorage synchronization
   const [orders, setOrders] = useState<Order[]>(() => {
@@ -143,12 +175,39 @@ export default function App() {
     };
   }, []);
 
-  // Professional Session & Role-Based Authentication State
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
-  const [loginModalInitialTab, setLoginModalInitialTab] = useState<'profile' | 'orders'>('profile');
+  // Listen to Firebase Auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setIsLoggedIn(true);
+        setUserEmail(user.email);
+        
+        // Fetch role from Firestore
+        try {
+          const profile = await getUserProfile(user.uid);
+          const isAdminUser = profile?.role === 'admin';
+          setIsAdmin(isAdminUser);
+          
+          // Sync cart from Firestore
+          const dbCart = await getCartFromFirestore(user.uid);
+          if (dbCart && dbCart.length > 0) {
+            setCart(dbCart);
+          }
+          
+          // Fetch orders from Firestore (1-year history)
+          const dbOrders = await getUserOrders(user.uid);
+          setOrders(dbOrders);
+        } catch (err) {
+          console.error('Error fetching user profile/cart/orders from Firestore:', err);
+        }
+      } else {
+        setIsLoggedIn(false);
+        setIsAdmin(false);
+        setUserEmail(null);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleOpenLogin = (tab: 'profile' | 'orders' = 'profile') => {
     setLoginModalInitialTab(tab);
@@ -167,6 +226,10 @@ export default function App() {
     const saved = localStorage.getItem('luxora_vat_percentage');
     return saved !== null ? Number(saved) : 5;
   });
+
+  // Interactive mini calculator states for the UX engagement (Estimator)
+  const [selectedZone, setSelectedZone] = useState<string>('1');
+  const [estimatePrice, setEstimatePrice] = useState<number>(15000); // 15,000 AED representative watch buy
 
   // Invoice states for post-purchase success screen
   const [placedOrderInvoice, setPlacedOrderInvoice] = useState<Order | null>(null);
@@ -197,10 +260,16 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+    } catch (err) {
+      console.error('Failed to logout of Firebase:', err);
+    }
     setIsLoggedIn(false);
     setIsAdmin(false);
     setUserEmail(null);
+    setCart([]); // Clear cart upon logout to protect user privacy
     setActivePage('home');
     if (window.location.hash) {
       window.location.hash = '';
@@ -266,8 +335,7 @@ export default function App() {
     );
   };
 
-  const handlePlaceOrder = (product: Product, customerPhone: string) => {
-    const isRTL = lang === 'ar';
+  const handlePlaceOrder = async (product: Product, customerPhone: string) => {
     const subtotalVal = product.priceAED;
     const discountVal = (isLoggedIn && !isAdmin) ? (subtotalVal * 0.10) : 0;
     const taxableVal = subtotalVal - discountVal;
@@ -296,8 +364,20 @@ export default function App() {
       customerEmail: isLoggedIn && userEmail ? userEmail : undefined,
       items: [{ product, quantity: 1 }],
       subtotal: subtotalVal,
-      discount: discountVal
+      discount: discountVal,
+      status: 'Pending'
     };
+
+    try {
+      if (isLoggedIn && auth.currentUser) {
+        await createOrderInFirestore(newOrder, auth.currentUser.uid);
+      } else {
+        await createOrderInFirestore(newOrder);
+      }
+    } catch (err) {
+      console.error('Failed to create order in Firestore:', err);
+    }
+
     setOrders((prev) => [newOrder, ...prev]);
 
     // Save states for post-purchase invoice display
@@ -307,7 +387,7 @@ export default function App() {
     setInvoiceSubtotal(subtotalVal);
   };
 
-  const handleWhatsAppCheckout = () => {
+  const handleWhatsAppCheckout = async () => {
     // Basic validation
     const errors: { name?: boolean; phone?: boolean; address?: boolean } = {};
     if (!checkoutName.trim()) errors.name = true;
@@ -351,8 +431,19 @@ export default function App() {
       customerEmail: isLoggedIn && userEmail ? userEmail : undefined,
       items: [...cart],
       subtotal: subtotal,
-      discount: discount
+      discount: discount,
+      status: 'Pending'
     };
+
+    try {
+      if (isLoggedIn && auth.currentUser) {
+        await createOrderInFirestore(newOrder, auth.currentUser.uid);
+      } else {
+        await createOrderInFirestore(newOrder);
+      }
+    } catch (err) {
+      console.error('Failed to create order in Firestore:', err);
+    }
 
     // Push new order object to state array to instantly update admin dashboard stats and incoming logs
     setOrders((prev) => [newOrder, ...prev]);
@@ -446,8 +537,6 @@ export default function App() {
     }
   }, [lang]);
 
-  const isRTL = lang === 'ar';
-
   const handleShareInvoice = async () => {
     if (!placedOrderInvoice) return;
 
@@ -537,7 +626,12 @@ export default function App() {
     );
   };
 
-  const handleDispatchOrder = (id: string) => {
+  const handleDispatchOrder = async (id: string) => {
+    try {
+      await updateOrderStatus(id, { status: 'Dispatched' });
+    } catch (err) {
+      console.error('Failed to update order status in Firestore:', err);
+    }
     setOrders((prev) =>
       prev.map((order) =>
         order.id === id ? { ...order, status: 'Dispatched' } : order
@@ -549,11 +643,52 @@ export default function App() {
   const handleNavigate = (page: string) => {
     if (page === 'admin-portal') {
       window.location.hash = '#/admin-portal';
-    } else {
-      setActivePage(page);
-      if (window.location.hash) {
-        window.location.hash = '';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (page === 'silver') {
+      setSelectedCategory('Jewelry');
+      setActivePage('home');
+      setTimeout(() => {
+        const el = document.getElementById('product-showcase-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+      return;
+    }
+
+    if (page === 'watches') {
+      setSelectedCategory('Watches');
+      setActivePage('home');
+      setTimeout(() => {
+        const el = document.getElementById('product-showcase-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+      return;
+    }
+
+    if (page === 'fragrances') {
+      setSelectedCategory('Fragrance');
+      setActivePage('home');
+      setTimeout(() => {
+        const el = document.getElementById('product-showcase-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+      return;
+    }
+
+    if (page === 'contact') {
+      const el = document.getElementById('brand-footer-section');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
+      return;
+    }
+
+    // Default pages
+    setActivePage(page);
+    if (window.location.hash) {
+      window.location.hash = '';
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -605,37 +740,271 @@ export default function App() {
       <main id="luxora-main-content">
         {activePage === 'home' ? (
           <div>
-            {/* Majestic Hero Display */}
-            <Hero lang={lang} onExplore={() => handleNavigate('shop')} />
-            
-            {/* Elegant Welcome Note Section */}
-            <section className="bg-luxury-dark py-20 px-4 sm:px-6 lg:px-8 border-t border-gold/5 text-center">
-              <div className="max-w-3xl mx-auto space-y-6">
-                <Sparkles className="h-6 w-6 text-gold mx-auto animate-pulse" />
-                <h2 className="font-serif text-2xl sm:text-3xl font-semibold tracking-widest text-white uppercase">
-                  {isRTL ? 'إرث من الأصالة والفخامة المطلقة' : 'A Legacy of Pure Heritage & Distinction'}
-                </h2>
-                <div className="w-16 h-[1px] bg-gold mx-auto" />
-                <p className="text-luxury-cream/70 text-sm sm:text-base leading-relaxed tracking-wide font-light">
-                  {isRTL 
-                    ? 'نرحب بكم في عصر جديد للتسوق المترف. إن ستايلز آند جريس هي بوابتكم لأرقى الفضة الإيطالية عيار ٩٢٥ الخالية من البهتان، عطور النخبة الفاخرة، الساعات الأنيقة، والمحافظ والنظارات الشمسية والأحزمة المصنوعة يدوياً.' 
-                    : 'We welcome you to a new dawn in elegant luxury. Styles & Grace is your private portal to authentic 925 Italian sterling silver, non-tarnish fine jewelry, premium boutique perfumes, luxury watches, handcrafted wallets, sunglasses, and elegant belts.'
-                  }
-                </p>
-              </div>
-            </section>
- 
-            {/* Dynamic Product Catalog Gallery */}
-            <ProductShowcase 
-              lang={lang} 
-              products={products} 
-              searchQuery={searchQuery} 
-              onAddToCart={handleAddToCart} 
-              onPlaceOrder={handlePlaceOrder} 
-              favorites={favorites}
-              onToggleFavorite={handleToggleFavorite}
-              vatPercentage={vatPercentage}
-            />
+            {searchQuery ? (
+              <ProductShowcase 
+                lang={lang} 
+                products={products} 
+                searchQuery={searchQuery} 
+                onAddToCart={handleAddToCart} 
+                onPlaceOrder={handlePlaceOrder} 
+                favorites={favorites}
+                onToggleFavorite={handleToggleFavorite}
+                vatPercentage={vatPercentage}
+                selectedCategory={selectedCategory}
+                onCategoryChange={setSelectedCategory}
+              />
+            ) : (
+              <>
+                {/* Hero Carousel Banner Showcase */}
+                <HeroCarousel 
+                  lang={lang} 
+                  onExplore={() => {
+                    const el = document.getElementById('homepage-luxury-grids');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                />
+                
+                {/* Elegant Welcome Note Section */}
+                <section className="bg-luxury-dark py-20 px-4 sm:px-6 lg:px-8 border-b border-gold/5 text-center">
+                  <div className="max-w-3xl mx-auto space-y-6">
+                    <Sparkles className="h-6 w-6 text-gold mx-auto animate-pulse" />
+                    <h2 className="font-serif text-2xl sm:text-3xl font-extrabold tracking-widest text-white uppercase leading-relaxed">
+                      {isRTL ? 'إرث من الأصالة والفخامة المطلقة في دبي' : 'EXCLUSIVE TIMELESS CRAFTSMANSHIP & HERITAGE'}
+                    </h2>
+                    <div className="w-16 h-[1px] bg-gold mx-auto" />
+                    <p className="text-luxury-cream/70 text-sm sm:text-base leading-relaxed tracking-wide font-light">
+                      {isRTL 
+                        ? 'نرحب بكم في عصر جديد للتسوق المترف والمجوهرات الراقية. إن ستايلز آند جريس هي بوابتكم لأرقى الفضة الإيطالية عيار ٩٢٥ الخالية من البهتان، عطور النخبة الفاخرة، الساعات الأنيقة، والمحافظ والنظارات الشمسية والأحزمة المصنوعة يدوياً.' 
+                        : 'Welcome to an elite sanctuary of pure luxury. Styles & Grace is your private portal to authentic 925 Italian sterling silver and premium non-tarnish fine jewelry in Dubai. Experience our curated sovereign selection of boutique perfumes, luxury watches, handcrafted leather wallets, sunglasses, and elegant belts, designed for those who command distinction.'
+                      }
+                    </p>
+                  </div>
+                </section>
+
+                {/* Major Section: Curated Sovereign Catalog */}
+                <section className="bg-luxury-black pt-16 pb-6 px-4 sm:px-6 lg:px-8 text-center animate-fade-in" id="homepage-luxury-grids">
+                  <div className="max-w-3xl mx-auto space-y-4">
+                    <span className="text-[10px] tracking-[0.3em] font-mono text-gold uppercase font-bold">
+                      {isRTL ? 'معرض المقتنيات الحصرية' : 'CURATED SOVEREIGN SELECTION'}
+                    </span>
+                    <h2 className="font-serif text-3xl sm:text-4xl font-extrabold tracking-widest text-white uppercase leading-relaxed">
+                      {isRTL ? 'كتالوج الفخامة الإيطالية في دبي' : 'EXCLUSIVE CATALOG SHOWCASE'}
+                    </h2>
+                    <div className="w-16 h-[1px] bg-gold mx-auto my-3" />
+                    <p className="text-luxury-cream/70 text-sm sm:text-base leading-relaxed tracking-wide font-light">
+                      {isRTL 
+                        ? 'انغمس في تشكيلتنا الاستثنائية من الفضة الإيطالية الفاخرة والمجوهرات الراقية في دبي. صُنعت كل قطعة يدويًا لتجسيد الأناقة الخالدة والحرفية السويسرية الرفيعة.'
+                        : 'Explore our curated masterworks of premium Italian silver jewelry in Dubai, meticulously paired with timeless craftsmanship. Each exclusive masterpiece represents a high-end heritage, designed for the discerning individual.'
+                      }
+                    </p>
+                  </div>
+                </section>
+
+                {/* Categorized Luxury Grids */}
+                <HomepageGrids 
+                  lang={lang}
+                  onAddToCart={handleAddToCart}
+                  onPlaceOrder={handlePlaceOrder}
+                  favorites={favorites}
+                  onToggleFavorite={handleToggleFavorite}
+                  vatPercentage={vatPercentage}
+                />
+
+                {/* Major Section: Luxury Purchase Estimator */}
+                {(() => {
+                  const currentZone = DUBAI_ZONES.find(z => z.id === selectedZone) || DUBAI_ZONES[0];
+                  const appVatAmount = estimatePrice * 0.05;
+                  const appDeliveryFee = currentZone.feeAED;
+                  const appTotalPrice = estimatePrice + appVatAmount + appDeliveryFee;
+
+                  return (
+                    <section className="bg-luxury-dark py-20 px-4 sm:px-6 lg:px-8 border-t border-gold/15" id="luxury-estimator-section">
+                      <div className="max-w-7xl mx-auto">
+                        
+                        {/* Section Header */}
+                        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+                          <div className="inline-flex items-center space-x-2 space-x-reverse text-gold">
+                            <Sparkles className="h-4 w-4 animate-pulse" />
+                            <span className="font-serif text-xs tracking-[0.25em] uppercase font-semibold">
+                              {isRTL ? 'التخطيط الاستثماري الآمن' : 'SECURE INVESTMENT PLANNING'}
+                            </span>
+                          </div>
+                          
+                          <h2 className="font-serif text-3xl sm:text-4xl font-extrabold text-white tracking-widest uppercase leading-relaxed">
+                            {isRTL ? 'حاسبة الشراء والتوصيل الفاخر' : 'LUXURY PURCHASE ESTIMATOR'}
+                          </h2>
+                          
+                          <div className="w-20 h-[1.5px] bg-gradient-to-r from-transparent via-gold to-transparent mx-auto" />
+                          
+                          <p className="text-sm sm:text-base text-luxury-cream/70 leading-relaxed font-sans font-light">
+                            {isRTL 
+                              ? 'خطط لاستثمارك القادم بثقة واكتشف تكاليف التوصيل المؤمن وسرعة الطواقم في دبي.'
+                              : 'Configure your bespoke UAE VAT rate, secure armored delivery fees, and priority dispatch schedules to premium Dubai districts.'
+                            }
+                          </p>
+                        </div>
+
+                        {/* Content Grid */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                          {/* Left Column: Copywriting & trust accords */}
+                          <div className="lg:col-span-6 space-y-8 text-start">
+                            <div className="space-y-4">
+                              <span className="text-[10px] tracking-[0.3em] font-mono text-gold uppercase font-semibold">
+                                {isRTL ? 'ضمانات السيادة المطلقة' : 'SOVEREIGN TRUST ACCORD'}
+                              </span>
+                              <h3 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-wide uppercase">
+                                {isRTL ? 'صياغة فاخرة وتوصيل دبلوماسي محمي' : 'Exclusive Craftsmanship, Armored Protection'}
+                              </h3>
+                              <p className="text-sm leading-relaxed text-luxury-cream/70 font-light">
+                                {isRTL 
+                                  ? 'كل قطعة فنية يتم نقلها تخضع لرقابة أمنية مشددة مع تتبع فوري مباشر. نلتزم بأعلى معايير الأمان الدبلوماسي لضمان تسليم مقتنياتكم النادرة بخصوصية مطلقة لقصوركم ومقراتكم في دبي.'
+                                  : 'Our premium Italian silver jewelry in Dubai is delivered with white-glove courier protection. We employ dedicated safety escorts to ensure your exclusive assets, luxury watch designs, and diamond works are delivered in pristine royal condition with full insurance coverage.'
+                                }
+                              </p>
+                            </div>
+
+                            {/* List of high-end trust markers */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-gold/10 text-xs text-luxury-cream/80 uppercase tracking-widest font-serif">
+                              <div className="flex items-start gap-3">
+                                <div className="rounded-full bg-gold/10 p-2 border border-gold/20 text-gold mt-0.5 shrink-0">
+                                  <Check className="h-3.5 w-3.5" />
+                                </div>
+                                <div>
+                                  <p className="font-bold text-white mb-1">{isRTL ? 'أصالة معتمدة ١٠٠٪' : '100% CERTIFIED GENUINE'}</p>
+                                  <p className="text-[10px] lowercase text-luxury-cream/50 normal-case font-sans tracking-normal">{isRTL ? 'مرفق مع شهادة الفحص الإيطالية الرسمية.' : 'Supplied with formal Italian assay credentials.'}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-start gap-3">
+                                <div className="rounded-full bg-gold/10 p-2 border border-gold/20 text-gold mt-0.5 shrink-0">
+                                  <Check className="h-3.5 w-3.5" />
+                                </div>
+                                <div>
+                                  <p className="font-bold text-white mb-1">{isRTL ? 'توصيل مصفح سريع' : 'SECURE ARMORED DISPATCH'}</p>
+                                  <p className="text-[10px] lowercase text-luxury-cream/50 normal-case font-sans tracking-normal">{isRTL ? 'توصيل مباشر إلى الجناح الخاص في غضون ساعات.' : 'Direct-to-suite concierge transit in Dubai.'}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Right Column: Calculator Card */}
+                          <div className="lg:col-span-6">
+                            <div className="rounded-xl border border-gold/20 bg-luxury-black/90 p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative">
+                              <div className="absolute top-0 right-0 h-16 w-16 bg-gold/5 rounded-tr-xl rounded-bl-full pointer-events-none" />
+                              
+                              <div className="mb-6 border-b border-gold/10 pb-4">
+                                <h3 className="font-serif text-lg font-bold text-gold tracking-widest uppercase">
+                                  {isRTL ? 'حاسبة الاستثمار المباشر' : 'ESTIMATE TRANSACTION TOTAL'}
+                                </h3>
+                                <p className="text-xs text-luxury-cream/60">
+                                  {isRTL 
+                                    ? 'عدل القيمة التقديرية للقطعة المقتناة لمعاينة الرسوم المجدولة بدقة'
+                                    : 'Adjust target item value to preview instant UAE VAT rates and priority delivery schedules'
+                                  }
+                                </p>
+                              </div>
+
+                              {/* Slider for representative item value */}
+                              <div className="space-y-4 mb-6">
+                                <div className="flex justify-between text-xs tracking-wider">
+                                  <span className="text-luxury-cream/80 uppercase font-serif">{isRTL ? 'قيمة القطعة التقديرية' : 'Estimated Item Price'}</span>
+                                  <span className="text-gold font-mono font-bold text-sm sm:text-base">{estimatePrice.toLocaleString()} AED</span>
+                                </div>
+                                <input
+                                  id="price-range-slider-main"
+                                  type="range"
+                                  min="1000"
+                                  max="50000"
+                                  step="500"
+                                  value={estimatePrice}
+                                  onChange={(e) => setEstimatePrice(Number(e.target.value))}
+                                  className="w-full accent-gold bg-luxury-dark h-1.5 rounded cursor-pointer"
+                                />
+                                <div className="flex justify-between text-[10px] text-luxury-cream/50 font-mono">
+                                  <span>1,000 AED</span>
+                                  <span>50,000 AED</span>
+                                </div>
+                              </div>
+
+                              {/* District Area Selector */}
+                              <div className="space-y-4 mb-6">
+                                <label className="block text-xs uppercase font-serif tracking-widest text-luxury-cream/80">
+                                  {isRTL ? 'اختر منطقة التسليم الفاخر في دبي' : 'Select Premium Dubai Delivery District'}
+                                </label>
+                                <div className="relative">
+                                  <select
+                                    id="delivery-zone-selector-main"
+                                    value={selectedZone}
+                                    onChange={(e) => setSelectedZone(e.target.value)}
+                                    className="w-full bg-luxury-dark text-xs text-luxury-cream border border-gold/20 rounded p-3 focus:outline-none focus:border-gold cursor-pointer"
+                                  >
+                                    {DUBAI_ZONES.map((zone) => (
+                                      <option key={zone.id} value={zone.id}>
+                                        {isRTL ? zone.nameAr : zone.nameEn}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+
+                              {/* Financial Calculation breakdown */}
+                              <div className="bg-luxury-dark/80 rounded-lg p-4 space-y-3.5 border border-gold/5 text-xs text-luxury-cream/70 font-sans">
+                                <div className="flex justify-between">
+                                  <span>{isRTL ? 'قيمة القطعة الأساسية' : 'Curated Value'}</span>
+                                  <span className="font-mono text-white">{estimatePrice.toLocaleString()} AED</span>
+                                </div>
+                                
+                                {/* VAT calculation based on active VAT rate state */}
+                                <div className="flex justify-between items-center text-luxury-cream/60">
+                                  <span className="flex items-center gap-1.5">
+                                    <FileText className="h-3.5 w-3.5 text-gold" />
+                                    {isRTL ? `ضريبة القيمة المضافة لدولة الإمارات (${vatPercentage}%)` : `UAE VAT Rate (${vatPercentage}%)`}
+                                  </span>
+                                  <span className="font-mono text-white">+{appVatAmount.toLocaleString()} AED</span>
+                                </div>
+
+                                <div className="flex justify-between items-center text-luxury-cream/60">
+                                  <span className="flex items-center gap-1.5">
+                                    <MapPin className="h-3.5 w-3.5 text-gold" />
+                                    {isRTL ? 'خدمة الشحن والتأمين المصفح' : 'Secured Armored Shipping'}
+                                  </span>
+                                  <span className="font-mono text-white">{appDeliveryFee === 0 ? 'Free' : `+${appDeliveryFee} AED`}</span>
+                                </div>
+
+                                {/* Estimate Speed */}
+                                <div className="border-t border-gold/10 pt-3.5 mt-1 flex justify-between items-center">
+                                  <span className="text-gold font-serif tracking-wider uppercase text-[11px]">{isRTL ? 'السرعة المتوقعة للتوصيل' : 'Delivery Lead Time'}</span>
+                                  <span className="text-white font-serif font-bold text-[10px] sm:text-[11px] bg-gold/10 border border-gold/20 px-2.5 py-0.5 rounded">
+                                    {isRTL ? currentZone.estimatedDaysAr : currentZone.estimatedDays}
+                                  </span>
+                                </div>
+
+                                {/* Secure Total */}
+                                <div className="border-t border-gold/20 pt-4 mt-2 flex justify-between items-center text-sm font-serif">
+                                  <span className="text-white font-bold uppercase tracking-widest">{isRTL ? 'مجموع الاستثمار الكلي الكلي المجدول' : 'Secured Transaction Total'}</span>
+                                  <span className="text-gold font-mono font-bold text-base filter drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]">
+                                    {appTotalPrice.toLocaleString()} AED
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Footer pledge warning */}
+                              <div className="mt-4 text-[10px] text-center text-luxury-cream/40 italic">
+                                {isRTL 
+                                  ? '* متاح النقل مجاناً للطلبيات فوق ٢٠,٠٠٠ درهم شاملة الحماية الدبلوماسية.'
+                                  : '* Complementary diplomatic courier for transactions exceeding 20,000 AED.'
+                                }
+                              </div>
+
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+                  );
+                })()}
+              </>
+            )}
           </div>
         ) : activePage === 'shop' ? (
           <div className="py-6">
@@ -648,6 +1017,8 @@ export default function App() {
               favorites={favorites}
               onToggleFavorite={handleToggleFavorite}
               vatPercentage={vatPercentage}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
             />
           </div>
         ) : activePage === 'admin-portal' ? (

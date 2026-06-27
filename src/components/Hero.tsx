@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { ShieldCheck, MapPin, Sparkles, Receipt, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Language, DeliveryZone } from '../types';
 import heroImage from '../assets/images/luxury_watch_hero_1782107472977.jpg';
@@ -7,6 +7,7 @@ import heroImage from '../assets/images/luxury_watch_hero_1782107472977.jpg';
 interface HeroProps {
   lang: Language;
   onExplore: () => void;
+  onBookViewing?: () => void;
 }
 
 const DUBAI_ZONES: DeliveryZone[] = [
@@ -16,7 +17,7 @@ const DUBAI_ZONES: DeliveryZone[] = [
   { id: '4', nameEn: 'Dubai Hills Estate & Meydan', nameAr: 'دبي هيلز ستيت وميدان', feeAED: 50, estimatedDays: 'Same Day (Order before 4 PM)', estimatedDaysAr: 'نفس اليوم (قبل ٤ مساءً)' }
 ];
 
-export default function Hero({ lang, onExplore }: HeroProps) {
+export default function Hero({ lang, onExplore, onBookViewing }: HeroProps) {
   const isRTL = lang === 'ar';
   
   // Interactive mini calculator states for the UX engagement
@@ -125,7 +126,8 @@ export default function Hero({ lang, onExplore }: HeroProps) {
 
               <button
                 id="bespoke-viewing-btn"
-                className="rounded-md border border-gold/40 bg-luxury-black/40 px-8 py-4 font-serif text-sm font-bold tracking-widest uppercase text-gold backdrop-blur-sm transition-all duration-300 hover:border-gold hover:bg-gold/10 hover:text-white"
+                onClick={onBookViewing}
+                className="rounded-md border border-gold/40 bg-luxury-black/40 px-8 py-4 font-serif text-sm font-bold tracking-widest uppercase text-gold backdrop-blur-sm transition-all duration-300 hover:border-gold hover:bg-gold/10 hover:text-white cursor-pointer"
               >
                 {isRTL ? 'احجز عرضاً خاصاً في دبي' : 'Book Private Viewing'}
               </button>

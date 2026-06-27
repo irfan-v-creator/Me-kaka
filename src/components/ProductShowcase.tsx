@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Shield, RefreshCw, X, ShoppingBag, Eye, Heart } from 'lucide-react';
 import { Product, Language } from '../types';
 import { LUXURY_PRODUCTS } from '../data';
+import ProductReviews from './ProductReviews';
+
 
 interface ProductShowcaseProps {
   lang: Language;
@@ -13,6 +15,8 @@ interface ProductShowcaseProps {
   favorites?: string[];
   onToggleFavorite?: (id: string) => void;
   vatPercentage?: number;
+  selectedCategory?: string;
+  onCategoryChange?: (category: string) => void;
 }
 
 export default function ProductShowcase({ 
@@ -23,11 +27,15 @@ export default function ProductShowcase({
   onPlaceOrder,
   favorites: propFavorites,
   onToggleFavorite,
-  vatPercentage = 5
+  vatPercentage = 5,
+  selectedCategory: propSelectedCategory,
+  onCategoryChange: propOnCategoryChange
 }: ProductShowcaseProps) {
   const isRTL = lang === 'ar';
   
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [localCategory, setLocalCategory] = useState<string>('All');
+  const selectedCategory = propSelectedCategory !== undefined ? propSelectedCategory : localCategory;
+  const setSelectedCategory = propOnCategoryChange || setLocalCategory;
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [localFavorites, setLocalFavorites] = useState<string[]>([]);
   
@@ -51,6 +59,69 @@ export default function ProductShowcase({
   const [clientPhone, setClientPhone] = useState<string>('');
   const [validationError, setValidationError] = useState<boolean>(false);
 
+  // Fallback placeholder products for Styles & Grace (Italian Silver Rings, Luxury Watches, Oud Perfumes)
+  const FALLBACK_LUXURY_PRODUCTS: Product[] = [
+    {
+      id: 'fallback_ring_1',
+      nameEn: 'Styles & Grace Imperial Sterling Ring (925 Silver)',
+      nameAr: 'خاتم إمبراطوري فضة إيطالية ٩٢٥ من ستايلز آند جريس',
+      priceAED: 1350,
+      originalPriceAED: 1650,
+      image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&q=80&w=600',
+      categoryEn: '925 Italian Silver & Non-Tarnish Jewelry',
+      categoryAr: 'فضة إيطالية ٩٢٥ ومجوهرات راقية',
+      descriptionEn: 'An exquisite hand-carved 925 Italian sterling silver ring with high-polish tarnish protection, mirroring royal Dubai craftsmanship.',
+      descriptionAr: 'خاتم مصنوع يدوياً من الفضة الإيطالية عيار ٩٢٥ الفاخرة المقاومة للبهتان مع طبقة حماية فائقة البريق.',
+      stockStatus: 'In Stock',
+      stockStatusAr: 'متوفر',
+      isPremium: true,
+      stock: 12
+    },
+    {
+      id: 'fallback_watch_1',
+      nameEn: 'Grace Sovereignty Chrono Gold-Steel Watch',
+      nameAr: 'ساعة جريس السيادية الكرونوغراف المطلية بالذهب',
+      priceAED: 5400,
+      originalPriceAED: 6200,
+      image: 'https://images.unsplash.com/photo-1547996160-81dfa63595aa?auto=format&fit=crop&q=80&w=600',
+      categoryEn: 'Luxury Perfumes & Watches',
+      categoryAr: 'عطور وساعات فاخرة',
+      descriptionEn: 'Majestic automatic gold-plated masterpiece featuring premium Swiss chronometer movement and durable sapphire crystal armor.',
+      descriptionAr: 'تحفة ميكانيكية أوتوماتيكية فاخرة مطلية بالذهب بعيار دقيق وهيكل مصفح بالياقوت الكريستالي المقاوم للخدش.',
+      stockStatus: 'In Stock',
+      stockStatusAr: 'متوفر',
+      isPremium: true,
+      stock: 8
+    },
+    {
+      id: 'fallback_perfume_1',
+      nameEn: 'Styles & Grace Royal Oud Supreme Perfume',
+      nameAr: 'عطر ستايلز آند جريس العود الملكي الفاخر',
+      priceAED: 1450,
+      originalPriceAED: 1750,
+      image: 'https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&q=80&w=600',
+      categoryEn: 'Luxury Perfumes & Watches',
+      categoryAr: 'عطور وساعات فاخرة',
+      descriptionEn: 'Pure royal oud oil extract blended with amber, Damascene rose nectar, and sandalwood for intense, long-lasting presence.',
+      descriptionAr: 'خلاصة دهن العود الملكي النقي الممزوج بالعنبر والورد الدمشقي وخشب الصندل لنفحات قوية تدوم طويلاً.',
+      stockStatus: 'In Stock',
+      stockStatusAr: 'متوفر',
+      isPremium: false,
+      stock: 15
+    }
+  ];
+
+  // Luxury Skeleton Loader state which triggers on category change or initial load for responsive feel
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  React.useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [selectedCategory]);
+
   React.useEffect(() => {
     if (selectedProduct) {
       setClientPhone('');
@@ -70,9 +141,31 @@ export default function ProductShowcase({
 
   const categories = ['All', 'Watches', 'Jewelry', 'Fragrance', 'Accessories'];
 
-  const filteredProducts = products.filter(p => {
+  const matchCategory = (productCategory: string, selected: string): boolean => {
+    if (selected === 'All') return true;
+    const prod = productCategory.toLowerCase();
+    const sel = selected.toLowerCase();
+    if (sel === 'watches') {
+      return prod.includes('watch') || prod.includes('timepiece');
+    }
+    if (sel === 'jewelry') {
+      return prod.includes('jewelry') || prod.includes('silver');
+    }
+    if (sel === 'fragrance') {
+      return prod.includes('fragrance') || prod.includes('perfume') || prod.includes('aromatic');
+    }
+    if (sel === 'accessories') {
+      return prod.includes('wallet') || prod.includes('sunglasses') || prod.includes('belt') || prod.includes('accessory') || prod.includes('accessories');
+    }
+    return prod === sel;
+  };
+
+  // Determine current active product pool (falls back to custom placeholders if database is empty)
+  const productPool = products.length > 0 ? products : FALLBACK_LUXURY_PRODUCTS;
+
+  const filteredProducts = productPool.filter(p => {
     // Check category filter
-    const matchesCategory = selectedCategory === 'All' || p.categoryEn === selectedCategory;
+    const matchesCategory = matchCategory(p.categoryEn, selectedCategory);
     
     // Check search query
     if (!searchQuery) return matchesCategory;
@@ -144,7 +237,36 @@ export default function ProductShowcase({
         {/* Products Matrix / Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           <AnimatePresence mode="popLayout">
-            {filteredProducts.length === 0 ? (
+            {isLoading ? (
+              // Luxury Skeleton Loader Grid
+              Array.from({ length: 4 }).map((_, idx) => (
+                <div
+                  key={`skeleton-${idx}`}
+                  className="relative rounded-xl border border-gold/5 bg-luxury-dark/35 p-4 overflow-hidden animate-pulse flex flex-col justify-between h-[480px]"
+                >
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="h-4 w-20 bg-gold/10 rounded" />
+                    <div className="h-6 w-6 rounded-full bg-gold/10" />
+                  </div>
+                  <div className="relative h-64 w-full rounded-lg bg-gold/5 overflow-hidden mb-4">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gold/5 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite]" />
+                  </div>
+                  <div className="space-y-2 flex-grow">
+                    <div className="h-3 w-16 bg-gold/10 rounded" />
+                    <div className="h-5 w-4/5 bg-gold/15 rounded animate-pulse" />
+                    <div className="h-4 w-full bg-gold/5 rounded" />
+                  </div>
+                  <div className="pt-3 border-t border-gold/5 mt-3 flex items-center justify-between">
+                    <div className="space-y-1">
+                      <div className="h-2.5 w-12 bg-gold/5 rounded" />
+                      <div className="h-5 w-24 bg-gold/20 rounded animate-pulse" />
+                    </div>
+                    <div className="h-4 w-16 bg-gold/10 rounded-full" />
+                  </div>
+                  <div className="h-9 w-full bg-gold/10 rounded mt-4" />
+                </div>
+              ))
+            ) : filteredProducts.length === 0 ? (
               <motion.div
                 key="empty-state"
                 initial={{ opacity: 0, y: 15 }}
@@ -192,7 +314,9 @@ export default function ProductShowcase({
                           {isRTL ? 'إصدار ملكي' : 'Royal Edition'}
                         </span>
                       ) : (
-                        <span className="text-transparent text-[9px] px-2 py-0.5 select-none font-serif">Empty</span>
+                        <span className="bg-gold/5 border border-gold/10 text-[9px] font-serif font-semibold text-gold/60 tracking-widest px-2 py-0.5 rounded uppercase">
+                          {isRTL ? 'إصدار خاص' : 'Signature Craft'}
+                        </span>
                       )}
 
                       <div className="flex items-center gap-2">
@@ -224,12 +348,12 @@ export default function ProductShowcase({
                       </div>
                     </div>
 
-                    {/* Image container with subtle parallax/slight zoom */}
+                    {/* Image container with smooth subtle zoom */}
                     <div className="relative h-64 w-full rounded-lg overflow-hidden bg-luxury-black mb-4">
                       <img
                         src={product.image}
                         alt={lang === 'ar' ? product.nameAr : product.nameEn}
-                        className={`w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ${
+                        className={`w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-1000 ease-out ${
                           product.stockStatus === 'Out of Stock' ? 'opacity-40 grayscale' : ''
                         }`}
                         referrerPolicy="no-referrer"
@@ -242,12 +366,12 @@ export default function ProductShowcase({
                         </div>
                       )}
                       
-                      {/* Dark gradient overlay showing only on hover */}
+                      {/* Premium Hover Overlay Triggering Quick View "View Masterpiece" */}
                       {product.stockStatus !== 'Out of Stock' ? (
-                        <div className="absolute inset-0 bg-luxury-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                          <div className="rounded-full bg-gold text-luxury-black px-4 py-2 font-serif text-xs font-bold tracking-widest uppercase flex items-center space-x-2 space-x-reverse shadow-lg">
-                            <Eye className="h-3.5 w-3.5" />
-                            <span>{isRTL ? 'عرض التفاصيل والضمان' : 'Assess Creation'}</span>
+                        <div className="absolute inset-0 bg-luxury-black/70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                          <div className="rounded-full bg-gold text-luxury-black px-5 py-2.5 font-serif text-xs font-bold tracking-widest uppercase flex items-center space-x-2 space-x-reverse shadow-2xl scale-90 group-hover:scale-100 transition-all duration-300 hover:bg-white hover:text-luxury-black">
+                            <Sparkles className="h-3.5 w-3.5 animate-spin-slow" />
+                            <span>{isRTL ? 'معاينة التحفة الفنية' : 'View Masterpiece'}</span>
                           </div>
                         </div>
                       ) : (
@@ -276,16 +400,23 @@ export default function ProductShowcase({
                         </p>
                       </div>
 
-                      {/* Stock Status + Value Area */}
+                      {/* Pricing with Original Price Struck Through & highlighted active price next to it */}
                       <div className="pt-3 border-t border-gold/5 mt-3 flex items-center justify-between">
                         <div className="flex flex-col text-start">
                           <span className="text-[9px] text-luxury-cream/40 uppercase font-mono tracking-wider">{isRTL ? 'المبلغ التقديري' : 'Investment Value'}</span>
-                          <span className="font-mono text-[15px] font-bold text-gold">
-                            {product.priceAED.toLocaleString()} AED
-                          </span>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {product.originalPriceAED && (
+                              <span className="font-mono text-xs text-gray-500 line-through">
+                                {product.originalPriceAED.toLocaleString()} AED
+                              </span>
+                            )}
+                            <span className="font-mono text-[15px] font-bold text-gold">
+                              {product.priceAED.toLocaleString()} AED
+                            </span>
+                          </div>
                         </div>
 
-                        {/* Stock badge with light bullet */}
+                        {/* Stock status indicator */}
                         <span className={`text-[10px] font-serif tracking-wider px-2 py-0.5 rounded flex items-center gap-1.5 ${
                           product.stockStatus === 'In Stock' 
                             ? 'text-emerald-400 bg-emerald-950/10' 
@@ -297,11 +428,15 @@ export default function ProductShowcase({
                       </div>
                     </div>
 
-                    {/* Action view details Button for accessibility */}
+                    {/* Action button */}
                     <button 
                       id={`view-details-${product.id}`}
                       name="view-details"
-                      className="mt-4 w-full text-center py-2 text-xs border border-gold/20 hover:border-gold hover:bg-gold/5 text-luxury-cream tracking-widest font-serif uppercase rounded"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedProduct(product);
+                      }}
+                      className="mt-4 w-full text-center py-2 text-xs border border-gold/20 hover:border-gold hover:bg-gold/5 text-luxury-cream tracking-widest font-serif uppercase rounded cursor-pointer transition-all duration-300"
                     >
                       {isRTL ? 'معاينة التحفة الفنية' : 'Inspect Creation'}
                     </button>
@@ -322,7 +457,7 @@ export default function ProductShowcase({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 30 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 150 }}
-                className="bg-luxury-dark border border-gold/30 rounded-xl max-w-3xl w-full p-6 sm:p-8 relative overflow-hidden"
+                className="bg-luxury-dark border border-gold/30 rounded-xl max-w-3xl w-full p-6 sm:p-8 relative overflow-y-auto max-h-[90vh] custom-scrollbar"
                 id="luxury-product-inspector"
               >
                 {/* Visual aesthetic gold strip */}
@@ -512,6 +647,9 @@ export default function ProductShowcase({
                     </div>
                   </div>
                 </div>
+
+                <ProductReviews productId={selectedProduct.id} lang={lang} />
+
 
               </motion.div>
             </div>

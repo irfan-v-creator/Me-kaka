@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { X, Lock, Mail, ShieldAlert, Sparkles, User, ShieldCheck, Crown, ExternalLink, Calendar, CreditCard, LogOut, Award, Clock, Eye, Share2, Star, Truck, Check } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Language, Order } from '../types';
 import { pdf } from '@react-pdf/renderer';
 import { InvoicePDFDocument } from './InvoicePDFDocument';
+import { loginUser, registerUser, updateOrderStatus } from '../lib/firebaseService';
+
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -43,6 +45,7 @@ export default function LoginModal({
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isRegistering, setIsRegistering] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'orders'>(initialTab);
   const [localOrders, setLocalOrders] = useState<Order[]>([]);
   const [sharingOrderId, setSharingOrderId] = useState<string | null>(null);
@@ -83,10 +86,13 @@ export default function LoginModal({
     localStorage.setItem('luxora_order_tracking', JSON.stringify(updated));
   };
 
-  const handleCancelConfirm = () => {
+  const handleCancelConfirm = async () => {
     if (!orderToCancel) return;
     
     try {
+      // Update in Firebase Firestore
+      await updateOrderStatus(orderToCancel.id, { status: 'Cancelled' });
+
       const saved = localStorage.getItem('luxora_orders');
       if (saved) {
         const parsed = JSON.parse(saved) as Order[];
@@ -203,32 +209,51 @@ export default function LoginModal({
     }
   }, [isOpen, isLoggedIn, userEmail, isAdmin, orders, activeTab]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Simulate an ultra-premium cryptographic delay
-    setTimeout(() => {
-      const normalizedEmail = email.toLowerCase().trim();
-      
-      if (normalizedEmail === 'owner@stylesandgrace.ae' && password === 'DubaiLuxury2026') {
-        onLoginSuccess(normalizedEmail, true);
-        setIsLoading(false);
-        onClose();
-      } else if (normalizedEmail && password.length >= 4) {
-        // Any other authentic looking user is a Customer VIP Guest
-        onLoginSuccess(normalizedEmail, false);
-        setIsLoading(false);
+    const normalizedEmail = email.toLowerCase().trim();
+
+    try {
+      if (isRegistering) {
+        // Assign admin role if they sign up with the admin email
+        const role = normalizedEmail === 'owner@stylesandgrace.ae' ? 'admin' : 'user';
+        await registerUser(normalizedEmail, password, role);
+        onLoginSuccess(normalizedEmail, role === 'admin');
         onClose();
       } else {
-        setError(isRTL 
-          ? 'يرجى إدخال بريد إلكتروني صحيح وكلمة مرور من ٤ خانات على الأقل.' 
-          : 'Please enter a valid email and a password with at least 4 characters.'
-        );
-        setIsLoading(false);
+        const { profile } = await loginUser(normalizedEmail, password);
+        onLoginSuccess(normalizedEmail, profile.role === 'admin');
+        onClose();
       }
-    }, 850);
+    } catch (err: any) {
+      console.error('Auth error:', err);
+      let errorMsg = isRTL 
+        ? 'حدث خطأ أثناء المصادقة. يرجى التحقق من تفاصيل الدخول.' 
+        : 'An error occurred during authentication. Please check your credentials.';
+      
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        errorMsg = isRTL 
+          ? 'البريد الإلكتروني أو العبارة السرية غير صالحة.' 
+          : 'Invalid email or passcode.';
+      } else if (err.code === 'auth/email-already-in-use') {
+        errorMsg = isRTL 
+          ? 'هذا البريد الإلكتروني مسجل بالفعل.' 
+          : 'This email is already in use.';
+      } else if (err.code === 'auth/weak-password') {
+        errorMsg = isRTL 
+          ? 'كلمة المرور ضعيفة للغاية. يرجى استخدام كلمة مرور أقوى.' 
+          : 'Password is too weak. Please use a stronger passcode.';
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      
+      setError(errorMsg);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Re-share PDF Generation and Web Share API flow
@@ -969,12 +994,21 @@ export default function LoginModal({
                 <Crown className="h-5 w-5 text-[#e5c158] animate-[pulse_3s_infinite]" />
               </div>
               <h2 className="font-serif text-2xl font-bold tracking-widest text-white uppercase">
-                {isRTL ? 'بوابة النخبة والأعضاء' : 'Elite Vault & Entry'}
+                {isRegistering 
+                  ? (isRTL ? 'تسجيل مقتني سيادي جديد' : 'Sovereign VIP Registration')
+                  : (isRTL ? 'بوابة النخبة والأعضاء' : 'Elite Vault & Entry')
+                }
               </h2>
               <p className="text-xs text-luxury-cream/60">
-                {isRTL 
-                  ? 'قم بتسجيل الدخول كمالك للوصول للمعرض، أو كعضو VIP لعروض خاصة.' 
-                  : 'Sign in under Royal Owner credentials or as a premium VIP Guild Member.'
+                {isRegistering
+                  ? (isRTL 
+                      ? 'سجل حسابك كعضو VIP للاستمتاع بخصم ١٠٪ وتتبع فوري للطلبات وحفظ حقيبتك.' 
+                      : 'Create a VIP profile to enjoy 10% elite discounts, cart sync, and real-time tracking.'
+                    )
+                  : (isRTL 
+                      ? 'قم بتسجيل الدخول كمالك للوصول للمعرض، أو كعضو VIP لعروض خاصة.' 
+                      : 'Sign in under Royal Owner credentials or as a premium VIP Guild Member.'
+                    )
                 }
               </p>
             </div>
@@ -1038,10 +1072,31 @@ export default function LoginModal({
                 ) : (
                   <>
                     <ShieldCheck className="h-4 w-4" />
-                    <span>{isRTL ? 'اعتماد الدخول وبدء الجلسة' : 'Authorize Secure Session'}</span>
+                    <span>
+                      {isRegistering
+                        ? (isRTL ? 'إنشاء حساب سيادي جديد' : 'Create Sovereign VIP Account')
+                        : (isRTL ? 'اعتماد الدخول وبدء الجلسة' : 'Authorize Secure Session')
+                      }
+                    </span>
                   </>
                 )}
               </button>
+
+              <div className="text-center mt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRegistering(!isRegistering);
+                    setError('');
+                  }}
+                  className="text-gold/80 hover:text-white text-[10px] font-serif uppercase tracking-widest cursor-pointer underline transition-colors"
+                >
+                  {isRegistering
+                    ? (isRTL ? 'لديك حساب بالفعل؟ تسجيل الدخول' : 'Already have an account? Sign In')
+                    : (isRTL ? 'مقتني جديد؟ إنشاء حساب كبار الشخصيات' : 'New patron? Create Sovereign VIP Account')
+                  }
+                </button>
+              </div>
             </form>
           </div>
         )}

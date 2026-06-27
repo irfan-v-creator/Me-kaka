@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, User, ShieldAlert, CheckCircle, Plus, Sparkles, TrendingUp, DollarSign, Coins, Eye, Image, Trash2, X, FileText, Shield, Phone, MapPin, Check, Bell } from 'lucide-react';
 import { Product, Language, Order } from '../types';
+import { loginUser } from '../lib/firebaseService';
+
 
 interface AdminPortalProps {
   lang: Language;
@@ -38,6 +40,7 @@ export default function AdminPortal({
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [loginError, setLoginError] = useState<string>('');
+  const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
 
   // Form states for adding products
   const [nameEn, setNameEn] = useState<string>('');
@@ -159,13 +162,23 @@ export default function AdminPortal({
     vatCollected: 172500 + Math.round(liveOrdersRevenue * (vatPercentage / (100 + vatPercentage)))
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const isSuccess = onLogin(email, password);
-    if (isSuccess) {
-      setLoginError('');
-    } else {
-      setLoginError(isRTL ? 'بيانات الاعتماد غير صالحة. يرجى المحاولة مرة أخرى.' : 'Invalid sovereign credentials. Access restricted.');
+    setLoginError('');
+    setIsLoggingIn(true);
+    
+    try {
+      const { profile } = await loginUser(email, password);
+      if (profile.role === 'admin') {
+        setLoginError('');
+      } else {
+        setLoginError(isRTL ? 'هذا الحساب ليس لديه صلاحيات الإدارة.' : 'This account does not have administrator privileges.');
+      }
+    } catch (err: any) {
+      console.error('Admin login error:', err);
+      setLoginError(isRTL ? 'بيانات الاعتماد غير صالحة. يرجى المحاولة مرة أخرى.' : 'Invalid credentials or passcode.');
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -304,9 +317,14 @@ export default function AdminPortal({
             <button
               id="admin-submit"
               type="submit"
-              className="w-full bg-gradient-to-r from-gold via-gold-light to-gold text-luxury-black font-serif text-xs font-bold tracking-widest uppercase py-3.5 rounded shadow-lg hover:shadow-gold/10 active:scale-[0.98] transition-all"
+              disabled={isLoggingIn}
+              className="w-full bg-gradient-to-r from-gold via-gold-light to-gold text-luxury-black font-serif text-xs font-bold tracking-widest uppercase py-3.5 rounded shadow-lg hover:shadow-gold/10 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
             >
-              {isRTL ? 'فك تشفير وبوابة الدخول' : 'Decrypt & Enter Vault'}
+              {isLoggingIn ? (
+                <span className="h-4 w-4 border-2 border-luxury-black border-t-transparent rounded-full animate-spin" />
+              ) : (
+                isRTL ? 'فك تشفير وبوابة الدخول' : 'Decrypt & Enter Vault'
+              )}
             </button>
           </form>
         </div>

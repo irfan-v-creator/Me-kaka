@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Menu, X, Globe, ShoppingBag, User, Search, LogOut, Crown, ShieldAlert, Sparkles, Heart, Award } from 'lucide-react';
 import { Language, NavItem } from '../types';
+import { LUXURY_PRODUCTS } from '../data';
 
 interface NavbarProps {
   lang: Language;
@@ -21,10 +22,10 @@ interface NavbarProps {
 }
 
 export const navItems: NavItem[] = [
-  { labelEn: 'Shop Collection', labelAr: 'تسوق المجموعة', href: 'shop' },
-  { labelEn: 'Categories', labelAr: 'الفئات', href: 'categories' },
-  { labelEn: 'Bespoke Experience', labelAr: 'التجربة الخاصة', href: 'bespoke' },
-  { labelEn: 'About Styles & Grace', labelAr: 'عن ستايلز آند جريس', href: 'about' }
+  { labelEn: 'Silver Collection', labelAr: 'المقتنيات الفضية', href: 'silver' },
+  { labelEn: 'Luxury Timepieces', labelAr: 'الساعات الفاخرة', href: 'watches' },
+  { labelEn: 'Aromatics/Perfumes', labelAr: 'النفحات العطرية', href: 'fragrances' },
+  { labelEn: 'Contact Us', labelAr: 'تواصل معنا', href: 'contact' }
 ];
 
 export default function Navbar({ 
@@ -46,6 +47,20 @@ export default function Navbar({
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 15) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const toggleLanguage = () => {
     setLang(lang === 'en' ? 'ar' : 'en');
@@ -66,17 +81,31 @@ export default function Navbar({
     onLogout();
   };
 
+  // Filter products for dynamic auto-suggest dropdown
+  const suggestions = searchQuery.trim()
+    ? LUXURY_PRODUCTS.filter(p =>
+        p.nameEn.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.nameAr && p.nameAr.includes(searchQuery)) ||
+        p.categoryEn.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.categoryAr && p.categoryAr.includes(searchQuery))
+      ).slice(0, 5)
+    : [];
+
   return (
     <nav 
       id="main-navbar" 
-      className="sticky top-0 z-50 w-full border-b border-gold/10 bg-luxury-black/90 backdrop-blur-md transition-all duration-300"
+      className={`sticky top-0 z-50 w-full border-b transition-all duration-300 ${
+        scrolled 
+          ? 'bg-[#0d0d0d] border-gold/20 shadow-lg py-1' 
+          : 'bg-luxury-black/95 backdrop-blur-md border-gold/10 py-2.5'
+      }`}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-20 items-center justify-between">
+        <div className="flex h-20 items-center justify-between gap-4">
           
-          {/* Brand/Logo */}
-          <div className="flex items-center">
+          {/* Brand/Logo & Navigation Links Right Next To It */}
+          <div className="flex items-center gap-6 lg:gap-8">
             <button 
               id="brand-logo-btn"
               onClick={() => onNavigate('home')}
@@ -84,7 +113,7 @@ export default function Navbar({
             >
               <Crown className="h-6 w-6 text-[#e5c158] transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110 shrink-0" />
               <div className="flex flex-col">
-                <span className="font-serif text-xl sm:text-2xl font-bold tracking-[0.08em] text-gold hover:text-gold-light transition-all duration-300">
+                <span className="font-serif text-lg sm:text-xl font-bold tracking-[0.08em] text-gold hover:text-gold-light transition-all duration-300">
                   Styles & Grace
                 </span>
                 <span className={`text-[8px] font-mono tracking-[0.2em] uppercase text-luxury-cream/60 ${isRTL ? 'mr-0.5' : 'ml-0.5'}`}>
@@ -92,42 +121,124 @@ export default function Navbar({
                 </span>
               </div>
             </button>
-          </div>
 
-          {/* Desktop Navigation Links */}
-          <div className="hidden md:flex items-center space-x-1 lg:space-x-4">
-            <div className={`flex items-center ${isRTL ? 'space-x-reverse space-x-8' : 'space-x-8'}`}>
-              {navItems.map((item) => {
-                const isActive = activePage === item.href;
-                return (
-                  <button
-                    key={item.href}
-                    id={`nav-link-${item.href}`}
-                    onClick={() => onNavigate(item.href)}
-                    className={`relative py-2 font-serif text-sm tracking-widest uppercase transition-colors duration-300 hover:text-gold ${
-                      isActive ? 'text-gold' : 'text-luxury-cream/80'
-                    }`}
-                  >
-                    {isRTL ? item.labelAr : item.labelEn}
-                    {isActive && (
-                      <span className="absolute bottom-0 left-0 h-[1px] w-full bg-gold shadow-[0_1px_8px_rgba(212,175,55,0.6)]" />
-                    )}
-                  </button>
-                );
-              })}
+            {/* Desktop Navigation Links (Mega Menu style) next to Logo */}
+            <div className="hidden xl:flex items-center">
+              <div className={`flex items-center ${isRTL ? 'space-x-reverse space-x-6' : 'space-x-6'}`}>
+                {navItems.map((item) => {
+                  const isActive = activePage === item.href;
+                  return (
+                    <button
+                      key={item.href}
+                      id={`nav-link-${item.href}`}
+                      onClick={() => onNavigate(item.href)}
+                      className={`relative py-2 font-serif text-[11px] lg:text-xs tracking-widest uppercase transition-all duration-300 hover:text-gold whitespace-nowrap cursor-pointer ${
+                        isActive ? 'text-gold font-bold' : 'text-luxury-cream/70 hover:text-gold'
+                      }`}
+                    >
+                      {isRTL ? item.labelAr : item.labelEn}
+                      {isActive && (
+                        <span className="absolute bottom-0 left-0 h-[1.5px] w-full bg-gold shadow-[0_1px_8px_rgba(212,175,55,0.6)]" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
+          {/* Centered Prominent Search Bar with Auto-suggest */}
+          <div className="hidden md:block flex-1 max-w-md mx-auto relative group">
+            <div className="relative flex items-center bg-black/60 border border-gold/25 hover:border-gold/50 rounded-full py-2 px-4 transition-all duration-300 focus-within:border-gold focus-within:ring-1 focus-within:ring-gold/30 focus-within:shadow-[0_0_15px_rgba(212,175,55,0.2)]">
+              <Search className={`h-4 w-4 text-gold shrink-0 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+              <input
+                id="luxury-search-input"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 250)}
+                placeholder={isRTL ? 'ابحث عن الإبداعات الفاخرة...' : 'Search luxury creations...'}
+                className="w-full bg-transparent text-xs text-luxury-cream placeholder:text-luxury-cream/40 focus:outline-none border-none py-1 focus:ring-0 focus:border-transparent"
+                dir={isRTL ? 'rtl' : 'ltr'}
+              />
+              {searchQuery && (
+                <button
+                  id="clear-search-btn"
+                  onClick={() => setSearchQuery('')}
+                  className="text-luxury-cream/40 hover:text-gold transition-colors p-1 shrink-0 cursor-pointer"
+                  title={isRTL ? 'مسح البحث' : 'Clear Search'}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Auto-suggest UI Dropdown container */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div 
+                className={`absolute top-full left-0 right-0 mt-2 bg-[#0d0d0d] border border-gold/30 rounded-lg shadow-2xl overflow-hidden z-50 text-start animate-fade-in`} 
+                dir={isRTL ? 'rtl' : 'ltr'}
+              >
+                <div className="p-2.5 border-b border-gold/10 bg-gold/5">
+                  <span className="text-[9px] tracking-widest text-gold uppercase font-serif font-bold">
+                    {isRTL ? 'مقترحات حصرية' : 'Exclusive Suggestions'}
+                  </span>
+                </div>
+                <div className="divide-y divide-gold/10 max-h-[350px] overflow-y-auto">
+                  {suggestions.map((product) => (
+                    <button
+                      key={product.id}
+                      onClick={() => {
+                        setSearchQuery(product.nameEn);
+                        setShowSuggestions(false);
+                        onNavigate('home');
+                        setTimeout(() => {
+                          const el = document.getElementById('product-showcase-section');
+                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 100);
+                      }}
+                      className="w-full flex items-center gap-3 p-3 hover:bg-gold/10 text-left transition-colors cursor-pointer"
+                    >
+                      <div className="w-8 h-8 rounded bg-luxury-dark border border-gold/20 flex items-center justify-center text-gold shrink-0 overflow-hidden">
+                        <img 
+                          src={product.image} 
+                          alt={product.nameEn} 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-serif text-[11px] text-white font-medium truncate">
+                          {isRTL ? product.nameAr : product.nameEn}
+                        </h4>
+                        <p className="text-[8px] text-gold font-mono uppercase">
+                          {isRTL ? product.categoryAr : product.categoryEn}
+                        </p>
+                      </div>
+                      <div className="text-[10px] text-gold font-mono shrink-0">
+                        AED {product.priceAED}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Luxury Utility Tools: Language, Cart, Profile */}
-          <div className={`hidden md:flex items-center ${isRTL ? 'space-x-reverse space-x-6' : 'space-x-6'}`}>
+          <div className={`hidden md:flex items-center ${isRTL ? 'space-x-reverse space-x-5' : 'space-x-5'}`}>
             {/* Language Toggle Button */}
             <button
               id="lang-toggle-desktop"
               onClick={toggleLanguage}
-              className="group flex items-center space-x-2 space-x-reverse rounded-full border border-gold/20 bg-luxury-dark px-4 py-1.5 text-xs tracking-wider text-luxury-cream transition-all duration-300 hover:border-gold hover:bg-gold/5"
+              className="group flex items-center space-x-1.5 space-x-reverse rounded-full border border-gold/20 bg-luxury-dark px-3 py-1.5 text-xs tracking-wider text-luxury-cream transition-all duration-300 hover:border-gold hover:bg-gold/5 cursor-pointer"
             >
               <Globe className="h-3.5 w-3.5 text-gold group-hover:rotate-12 transition-transform duration-300" />
-              <span className="font-medium">
+              <span className="font-medium text-[10px]">
                 {lang === 'en' ? 'العربية' : 'English'}
               </span>
             </button>
@@ -143,10 +254,10 @@ export default function Navbar({
                     onOpenLogin();
                   }
                 }}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-gold/20 bg-gold/5 hover:border-gold hover:bg-gold/15 text-gold text-xs uppercase tracking-widest font-serif font-bold transition-all cursor-pointer shadow-[0_0_10px_rgba(229,193,88,0.05)] hover:shadow-[0_0_15px_rgba(229,193,88,0.15)]"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gold/20 bg-gold/5 hover:border-gold hover:bg-gold/15 text-gold text-[10px] uppercase tracking-widest font-serif font-bold transition-all cursor-pointer shadow-[0_0_10px_rgba(229,193,88,0.05)]"
               >
                 <Award className="h-3.5 w-3.5" />
-                <span>{isRTL ? 'مقتنياتي' : 'MY ACQUISITIONS'}</span>
+                <span>{isRTL ? 'مقتنياتي' : 'ACQUISITIONS'}</span>
               </button>
             )}
 
@@ -166,7 +277,7 @@ export default function Navbar({
                   </span>
                 )}
                 {isLoggedIn && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse animate-duration-1000" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 )}
               </button>
 
@@ -233,7 +344,7 @@ export default function Navbar({
                         <ul className="list-disc pl-3 space-y-0.5 text-luxury-cream/80 text-[9px]" dir={isRTL ? 'rtl' : 'ltr'}>
                           <li>{isRTL ? 'تصفح مخزون الخزنة الملكية الخاص' : 'Access Royal Vault items'}</li>
                           <li>{isRTL ? 'دخول صالات كبار الشخصيات بنادي دبي مول' : 'Dubai Mall VIP Lounge access'}</li>
-                          <li>{isRTL ? 'توصيل مصفح ومؤمّن مجانيّ بالكامل' : 'Complimentary armored delivery'}</li>
+                          <li>{isRTL ? 'توصيل مصفح ومؤمّن مجانيّ بالكامل' : 'Armored delivery'}</li>
                         </ul>
                       </div>
                     )}
@@ -260,13 +371,13 @@ export default function Navbar({
             >
               <Heart className="h-5 w-5" />
               {favoritesCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[9px] font-bold text-luxury-black animate-pulse">
+                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[8px] font-bold text-luxury-black animate-pulse shadow-[0_0_8px_#e5c158]">
                   {favoritesCount}
                 </span>
               )}
             </button>
 
-            {/* Cart Button */}
+            {/* Cart Button with premium badge */}
             <button
               id="cart-btn"
               onClick={() => onNavigate('cart')}
@@ -275,7 +386,7 @@ export default function Navbar({
             >
               <ShoppingBag className="h-5 w-5" />
               {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[9px] font-bold text-luxury-black animate-pulse">
+                <span className="absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#e5c158] text-[9px] font-black text-luxury-black animate-bounce shadow-[0_0_10px_#e5c158] border border-[#0d0d0d]">
                   {cartCount}
                 </span>
               )}
@@ -283,12 +394,12 @@ export default function Navbar({
           </div>
 
           {/* Mobile Menu Action Button */}
-          <div className="flex md:hidden items-center space-x-4 space-x-reverse">
+          <div className="flex md:hidden items-center space-x-3 space-x-reverse">
             {/* Mobile language switch shortcut */}
             <button
               id="lang-toggle-mobile"
               onClick={toggleLanguage}
-              className="rounded-full border border-gold/20 px-2 py-1 text-[10px] uppercase text-gold"
+              className="rounded-full border border-gold/20 px-2 py-0.5 text-[10px] uppercase text-gold"
             >
               {lang === 'en' ? 'AR' : 'EN'}
             </button>
@@ -333,25 +444,25 @@ export default function Navbar({
         </div>
       </div>
 
-      {/* Premium Minimalist Luxury Search Bar */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-4">
+      {/* Mobile-only Search Bar */}
+      <div className="mx-auto max-w-7xl px-4 pb-4 md:hidden">
         <div className="max-w-md mx-auto relative group">
-          <div className="relative flex items-center bg-black/40 border border-gold/25 hover:border-gold/50 rounded-full py-1 px-4 transition-all duration-300 focus-within:border-gold focus-within:ring-1 focus-within:ring-gold/30 focus-within:shadow-[0_0_15px_rgba(212,175,55,0.15)]">
+          <div className="relative flex items-center bg-black/40 border border-gold/25 hover:border-gold/50 rounded-full py-1.5 px-4 transition-all duration-300 focus-within:border-gold">
             <Search className={`h-4 w-4 text-gold shrink-0 ${isRTL ? 'ml-2' : 'mr-2'}`} />
             <input
-              id="luxury-search-input"
+              id="luxury-search-input-mobile"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={isRTL ? 'ابحث عن الإبداعات الفاخرة...' : 'Search luxury creations...'}
-              className="w-full bg-transparent text-xs text-luxury-cream placeholder:text-luxury-cream/40 focus:outline-none border-none py-1.5 focus:ring-0 focus:border-transparent"
+              className="w-full bg-transparent text-xs text-luxury-cream placeholder:text-luxury-cream/40 focus:outline-none border-none py-1 focus:ring-0 focus:border-transparent"
               dir={isRTL ? 'rtl' : 'ltr'}
             />
             {searchQuery && (
               <button
-                id="clear-search-btn"
+                id="clear-search-btn-mobile"
                 onClick={() => setSearchQuery('')}
-                className="text-luxury-cream/40 hover:text-gold transition-colors p-1 shrink-0"
+                className="text-luxury-cream/40 hover:text-gold transition-colors p-1 shrink-0 cursor-pointer"
                 title={isRTL ? 'مسح البحث' : 'Clear Search'}
               >
                 <X className="h-3.5 w-3.5" />

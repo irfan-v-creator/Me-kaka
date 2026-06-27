@@ -21,6 +21,7 @@ export interface Product {
   stockStatusAr: 'متوفر' | 'كمية محدودة' | 'نفذت الكمية';
   isPremium?: boolean;
   stock?: number;
+  originalPriceAED?: number;
 }
 
 export interface CartItem {
