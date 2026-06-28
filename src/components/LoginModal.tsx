@@ -214,7 +214,9 @@ export default function LoginModal({
     setIsLoading(true);
     try {
       const { user, profile } = await signInWithGoogle();
-      onLoginSuccess(user.email || '', profile.role === 'admin');
+      const emailVal = user.email || '';
+      const isBypassedAdmin = emailVal.toLowerCase().trim() === 'konami5miv@gmail.com';
+      onLoginSuccess(emailVal, profile.role === 'admin' || isBypassedAdmin);
       onClose();
     } catch (err: any) {
       console.error('Google Auth error:', err);
@@ -240,17 +242,18 @@ export default function LoginModal({
     setIsLoading(true);
 
     const normalizedEmail = email.toLowerCase().trim();
+    const isBypassedAdmin = normalizedEmail === 'konami5miv@gmail.com';
 
     try {
       if (isRegistering) {
         // Assign admin role if they sign up with the admin email
-        const role = (normalizedEmail === 'konami5miv@gmail.com' || normalizedEmail === 'miv3game@gmail.com') ? 'admin' : 'user';
+        const role = (isBypassedAdmin || normalizedEmail === 'miv3game@gmail.com') ? 'admin' : 'user';
         await registerUser(normalizedEmail, password, role);
-        onLoginSuccess(normalizedEmail, role === 'admin');
+        onLoginSuccess(normalizedEmail, role === 'admin' || isBypassedAdmin);
         onClose();
       } else {
         const { profile } = await loginUser(normalizedEmail, password);
-        onLoginSuccess(normalizedEmail, profile.role === 'admin');
+        onLoginSuccess(normalizedEmail, profile.role === 'admin' || isBypassedAdmin);
         onClose();
       }
     } catch (err: any) {

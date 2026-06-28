@@ -182,12 +182,16 @@ export default function App() {
         setIsLoggedIn(true);
         setUserEmail(user.email);
         
-        // Fetch role from Firestore
+        const isBypassedAdmin = user.email?.toLowerCase().trim() === 'konami5miv@gmail.com';
+        setIsAdmin(isBypassedAdmin); // Only konami5miv@gmail.com is granted admin privileges
+        
+        if (isBypassedAdmin) {
+          setActivePage('admin-portal');
+          window.location.hash = '#/admin-portal';
+        }
+        
+        // Fetch cart and orders from Firestore
         try {
-          const profile = await getUserProfile(user.uid);
-          const isAdminUser = profile?.role === 'admin';
-          setIsAdmin(isAdminUser);
-          
           // Sync cart from Firestore
           const dbCart = await getCartFromFirestore(user.uid);
           if (dbCart && dbCart.length > 0) {
@@ -198,7 +202,7 @@ export default function App() {
           const dbOrders = await getUserOrders(user.uid);
           setOrders(dbOrders);
         } catch (err) {
-          console.error('Error fetching user profile/cart/orders from Firestore:', err);
+          console.error('Error fetching user cart/orders from Firestore:', err);
         }
       } else {
         setIsLoggedIn(false);
@@ -246,16 +250,20 @@ export default function App() {
 
   const handleLoginSuccess = (email: string, adminStatus: boolean) => {
     setIsLoggedIn(true);
-    setIsAdmin(adminStatus);
+    const isBypassedAdmin = email.toLowerCase().trim() === 'konami5miv@gmail.com';
+    setIsAdmin(isBypassedAdmin); // Strictly enforce only konami5miv@gmail.com as admin
     setUserEmail(email);
     
-    if (adminStatus) {
+    if (isBypassedAdmin) {
       setActivePage('admin-portal');
       window.location.hash = '#/admin-portal';
     } else {
-      setActivePage('shop');
-      if (window.location.hash) {
-        window.location.hash = '';
+      // Regular customer should never see the Admin Vault screen
+      if (activePage === 'admin-portal') {
+        setActivePage('home');
+        if (window.location.hash) {
+          window.location.hash = '';
+        }
       }
     }
   };
@@ -514,16 +522,33 @@ export default function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash;
-      if (hash === '#admin-portal' || hash === '#/admin-portal') {
-        setActivePage('admin-portal');
+      const isBypassedAdmin = userEmail?.toLowerCase().trim() === 'konami5miv@gmail.com';
+
+      if (isLoggedIn && isBypassedAdmin) {
+        // Admin must ALWAYS be on admin-portal
+        if (activePage !== 'admin-portal') {
+          setActivePage('admin-portal');
+        }
+        if (hash !== '#/admin-portal' && hash !== '#admin-portal') {
+          window.location.hash = '#/admin-portal';
+        }
+        return;
+      }
+
+      if (hash === '#admin-portal' || hash === '#/admin-portal' || hash === '#admin' || hash === '#/admin') {
+        // Guests or non-admin users must NEVER access the admin page
+        setActivePage('home');
+        window.location.hash = '';
       } else if (hash === '#home' || hash === '#/home' || !hash) {
         setActivePage('home');
       }
     };
-    handleHashChange(); // Trigger once on mount
+
+    handleHashChange();
+
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  }, [isLoggedIn, userEmail, activePage]);
 
   // Multi-lingual RTL alignment management on document root
   useEffect(() => {
@@ -1035,6 +1060,7 @@ export default function App() {
             vatPercentage={vatPercentage}
             onUpdateVatPercentage={handleUpdateVatPercentage}
             onUpdateProduct={handleUpdateProduct}
+            userEmail={userEmail}
           />
         ) : activePage === 'cart' ? (
           <div className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 animate-slide-up" dir={isRTL ? 'rtl' : 'ltr'}>

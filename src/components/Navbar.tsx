@@ -261,6 +261,17 @@ export default function Navbar({
               </button>
             )}
 
+            {isLoggedIn && userEmail?.toLowerCase().trim() === 'konami5miv@gmail.com' && (
+              <button
+                id="nav-link-desktop-admin-portal"
+                onClick={() => onNavigate('admin-portal')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gold/40 bg-gold/10 hover:bg-gold hover:text-luxury-black text-[#e5c158] hover:text-luxury-black text-[10px] uppercase tracking-widest font-serif font-bold transition-all duration-300 cursor-pointer shadow-[0_0_15px_rgba(212,175,55,0.2)] hover:shadow-[0_0_20px_rgba(212,175,55,0.4)]"
+              >
+                <Crown className="h-3.5 w-3.5 text-gold" />
+                <span>{isRTL ? 'الخزنة الملكية' : 'Sovereign Vault'}</span>
+              </button>
+            )}
+
             <div className="relative">
               <button 
                 id="user-profile-btn"
@@ -270,14 +281,18 @@ export default function Navbar({
                 }`}
                 title={isRTL ? 'حسابي وبوابتي' : 'My Account & Gateway'}
               >
-                <User className="h-4.5 w-4.5" />
-                {isLoggedIn && (
-                  <span className="text-[10px] uppercase tracking-widest font-serif max-w-[85px] truncate">
-                    {isAdmin ? (isRTL ? 'صاحب المتجر' : 'Owner') : (isRTL ? 'عضو نخبة' : 'VIP Member')}
+                <User className="h-4 w-4 text-gold" />
+                {isLoggedIn ? (
+                  <>
+                    <span className="text-[10px] uppercase tracking-widest font-serif max-w-[85px] truncate">
+                      {userEmail?.toLowerCase().trim() === 'konami5miv@gmail.com' ? (isRTL ? 'صاحب المتجر' : 'Owner') : (isRTL ? 'عضو نخبة' : 'VIP Member')}
+                    </span>
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  </>
+                ) : (
+                  <span className="text-[10px] uppercase tracking-widest font-serif font-bold text-gold">
+                    {isRTL ? 'تسجيل الدخول' : 'Sign In / Login'}
                   </span>
-                )}
-                {isLoggedIn && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 )}
               </button>
 
@@ -326,7 +341,7 @@ export default function Navbar({
 
                   {/* Context Links */}
                   <div className="space-y-2">
-                    {isAdmin && (
+                    {isLoggedIn && userEmail?.toLowerCase().trim() === 'konami5miv@gmail.com' && (
                       <button
                         onClick={() => {
                           setShowProfileDropdown(false);
@@ -509,6 +524,19 @@ export default function Navbar({
                 className="py-3 text-start font-serif text-base tracking-widest uppercase border-b border-gold/5 text-luxury-cream/80 hover:text-gold transition-all duration-300"
               >
                 {isRTL ? 'مقتنياتي الملكية' : 'MY ACQUISITIONS'}
+              </button>
+            )}
+
+            {isLoggedIn && userEmail?.toLowerCase().trim() === 'konami5miv@gmail.com' && (
+              <button
+                id="nav-link-mobile-admin-portal"
+                onClick={() => {
+                  onNavigate('admin-portal');
+                  setMobileMenuOpen(false);
+                }}
+                className="py-3 text-start font-serif text-base tracking-widest uppercase border-b border-gold/5 text-gold hover:text-white transition-all duration-300"
+              >
+                {isRTL ? 'الخزنة الملكية' : 'SOVEREIGN VAULT'}
               </button>
             )}
             
