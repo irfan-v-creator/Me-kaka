@@ -306,12 +306,12 @@ export default function AdminPortal({
               <Lock className="h-5 w-5 text-gold animate-[pulse_2s_infinite]" />
             </div>
             <h2 className="font-serif text-2xl font-bold tracking-widest text-white uppercase">
-              {isRTL ? 'بوابة المالك الخاصة' : 'Owner Sovereign Vault'}
+              {isRTL ? 'بوابة المالك الخاصة' : 'Admin Dashboard'}
             </h2>
             <p className="text-xs text-luxury-cream/60">
               {isRTL 
                 ? 'يرجى إدخال رمز الأمان الخاص بك لتعديل تشكيلة لوكسورا دبي.' 
-                : 'Cryptographic credentials required to execute catalog modifications.'
+                : 'Enter your email and password to access the admin panel.'
               }
             </p>
           </div>
@@ -370,7 +370,7 @@ export default function AdminPortal({
               {isLoggingIn ? (
                 <span className="h-4 w-4 border-2 border-luxury-black border-t-transparent rounded-full animate-spin" />
               ) : (
-                isRTL ? 'فك تشفير وبوابة الدخول' : 'Decrypt & Enter Vault'
+                isRTL ? 'فك تشفير وبوابة الدخول' : 'Login as Admin'
               )}
             </button>
 
@@ -428,23 +428,23 @@ export default function AdminPortal({
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
             <span className="text-[10px] font-mono tracking-widest uppercase text-emerald-400">
-              {isRTL ? 'قناة اتصال مشفرة نشطة' : 'Encrypted Client Terminal Active'}
+              {isRTL ? 'قناة اتصال مشفرة نشطة' : 'Admin Session Active'}
             </span>
           </div>
           <h2 className="font-serif text-3xl font-extrabold text-white tracking-widest uppercase">
-            {isRTL ? 'لوحة تحكم الإدارة الملكية' : 'Sovereign Control Suite'}
+            {isRTL ? 'لوحة تحكم الإدارة الملكية' : 'Admin Dashboard'}
           </h2>
           <p className="text-xs text-luxury-cream/60">
-            {isRTL ? 'مرحبًا بك، المالك الموقر لمجموعة لوكسورا.' : 'Welcome back, Private Administrator.'}
+            {isRTL ? 'مرحبًا بك، المالك الموقر لمجموعة لوكسورا.' : 'Welcome back, Administrator.'}
           </p>
         </div>
 
         <button
           id="logout-btn"
           onClick={onLogout}
-          className="rounded border border-gold/30 hover:border-gold px-4 py-1.5 text-xs font-serif tracking-widest lowercase text-luxury-cream/80 hover:text-gold transition-colors cursor-pointer"
+          className="rounded border border-gold/30 hover:border-gold px-4 py-1.5 text-xs font-serif tracking-widest uppercase text-luxury-cream/80 hover:text-gold transition-colors cursor-pointer"
         >
-          {isRTL ? 'قفل الخزنة (تسجيل الخروج)' : 'Lock Vault (Logout)'}
+          {isRTL ? 'قفل الخزنة (تسجيل الخروج)' : 'Logout'}
         </button>
       </div>
 
@@ -455,7 +455,7 @@ export default function AdminPortal({
         <div className="bg-luxury-dark/90 border border-gold/15 p-6 rounded-xl flex items-center justify-between relative overflow-hidden text-start">
           <div className="space-y-1">
             <span className="text-[10px] uppercase font-serif tracking-widest text-luxury-cream/50">
-              {isRTL ? 'إيرادات الشهر الحالي التقديرية' : 'Monthly Premium Revenue'}
+              {isRTL ? 'إيرادات الشهر الحالي التقديرية' : 'Monthly Revenue'}
             </span>
             <h4 className="text-2xl font-mono font-bold text-gold">
               {stats.monthlyRevenue.toLocaleString()} AED
@@ -475,13 +475,13 @@ export default function AdminPortal({
         <div className="bg-luxury-dark/90 border border-gold/15 p-6 rounded-xl flex items-center justify-between relative overflow-hidden text-start">
           <div className="space-y-1">
             <span className="text-[10px] uppercase font-serif tracking-widest text-luxury-cream/50">
-              {isRTL ? 'حجوزات الحسابات الخاصة النشطة' : 'Private Portfolio Orders'}
+              {isRTL ? 'حجوزات الحسابات الخاصة النشطة' : 'Customer Orders'}
             </span>
             <h4 className="text-2xl font-mono font-bold text-white">
               {stats.activeOrders}
             </h4>
             <span className="text-[9px] text-luxury-cream/40">
-              {isRTL ? 'تم شحنها بمركبات مدرعة بالكامل' : 'Armored dispatch logs ready'}
+              {isRTL ? 'تم شحنها بمركبات مدرعة بالكامل' : 'Customer Orders'}
             </span>
           </div>
           <div className="p-4 bg-gold/5 border border-gold/10 rounded-lg text-gold">
@@ -493,13 +493,13 @@ export default function AdminPortal({
         <div className="bg-luxury-dark/90 border border-gold/15 p-6 rounded-xl flex items-center justify-between relative overflow-hidden text-start">
           <div className="space-y-1">
             <span className="text-[10px] uppercase font-serif tracking-widest text-luxury-cream/50">
-              {isRTL ? `مجموع ضريبة القيمة المضافة المحسوبة (${vatPercentage}٪)` : `Dubai VAT Retained (${vatPercentage}%)`}
+              {isRTL ? `مجموع ضريبة القيمة المضافة المحسوبة (${vatPercentage}٪)` : `VAT Collected (${vatPercentage}%)`}
             </span>
             <h4 className="text-2xl font-mono font-bold text-gold">
               {stats.vatCollected.toLocaleString()} AED
             </h4>
             <span className="text-[9px] text-gold-light">
-              {isRTL ? 'جاهز للتقرير الضريبي الإلكتروني' : 'Direct e-file format compatible'}
+              {isRTL ? 'جاهز للتقرير الضريبي الإلكتروني' : 'Ready for tax reporting'}
             </span>
           </div>
           <div className="p-4 bg-gold/5 border border-gold/10 rounded-lg text-gold">
@@ -516,10 +516,10 @@ export default function AdminPortal({
           <div>
             <h3 className="font-serif text-lg font-bold text-white tracking-widest uppercase flex items-center gap-2">
               <Coins className="h-4.5 w-4.5 text-gold" />
-              <span>{isRTL ? 'إعدادات النظام والضريبة الملكية' : 'Sovereign Configuration & Royal Policies'}</span>
+              <span>{isRTL ? 'إعدادات النظام والضريبة الملكية' : 'Website Settings'}</span>
             </h3>
             <p className="text-xs text-luxury-cream/60">
-              {isRTL ? 'إدارة نسبة ضريبة القيمة المضافة لدولة الإمارات المطبقة على مبيعات المعروضات الثمينة.' : 'Manage UAE regulatory VAT parameters applied across all digital showrooms.'}
+              {isRTL ? 'إدارة نسبة ضريبة القيمة المضافة لدولة الإمارات المطبقة على مبيعات المعروضات الثمينة.' : 'Manage VAT percentage for the store.'}
             </p>
           </div>
         </div>
@@ -551,7 +551,7 @@ export default function AdminPortal({
               </span>
             </div>
             <p className="text-[10px] text-luxury-cream/40 italic">
-              {isRTL ? 'التعديل يطبق فوراً في سلة المشتريات ومستندات تدقيق الطلبات الإلكترونية.' : 'Modifications propagate instantly to client carts and financial audit logs.'}
+              {isRTL ? 'التعديل يطبق فوراً في سلة المشتريات ومستندات تدقيق الطلبات الإلكترونية.' : 'Changes apply immediately to customer carts and checkout totals.'}
             </p>
           </div>
         </div>
@@ -564,15 +564,15 @@ export default function AdminPortal({
           <div>
             <h3 className="font-serif text-lg font-bold text-white tracking-widest uppercase flex items-center gap-2">
               <Sparkles className="h-4.5 w-4.5 text-gold animate-pulse" />
-              <span>{isRTL ? 'منصة توثيق الحجوزات والطلبات الواردة' : 'Sovereign Control Suite: Incoming Orders'}</span>
+              <span>{isRTL ? 'منصة توثيق الحجوزات والطلبات الواردة' : 'Admin Dashboard: Incoming Orders'}</span>
             </h3>
             <p className="text-xs text-luxury-cream/60">
-              {isRTL ? 'تتبع فوري لمبيعات القطع الثمينة وقنوات الاتصال المباشرة مع كبار الشخصيات.' : 'Instantly track, monitor and clear incoming client dispatches.'}
+              {isRTL ? 'تتبع فوري لمبيعات القطع الثمينة وقنوات الاتصال المباشرة مع كبار الشخصيات.' : 'Track and manage incoming customer orders.'}
             </p>
           </div>
           <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 px-2.5 py-1 rounded-full uppercase tracking-widest animate-pulse font-semibold flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-[pulse_1.5s_infinite]" />
-            <span>{isRTL ? 'اتصال آمن نشط' : 'Sovereign Feeds Active'}</span>
+            <span>{isRTL ? 'اتصال آمن نشط' : 'Live Feed Active'}</span>
           </span>
         </div>
 
@@ -637,10 +637,10 @@ export default function AdminPortal({
           <div className="border-b border-gold/10 pb-4">
             <h3 className="font-serif text-lg font-bold text-gold tracking-wide flex items-center gap-2">
               <Plus className="h-5 w-5" />
-              {isRTL ? 'إدراج تحفة أو قطعة جديدة' : 'Adorn Catalog (Add Product)'}
+              {isRTL ? 'إدراج تحفة أو قطعة جديدة' : 'Add New Product'}
             </h3>
             <p className="text-xs text-luxury-cream/60">
-              {isRTL ? 'املأ التفاصيل بعناية لنشر وتحديث واجهة المتجر على الفور.' : 'Populate properties below. High-net worth metadata logic applies automatically.'}
+              {isRTL ? 'املأ التفاصيل بعناية لنشر وتحديث واجهة المتجر على الفور.' : 'Fill in the details below to add a new product to the catalog.'}
             </p>
           </div>
 
@@ -782,7 +782,7 @@ export default function AdminPortal({
               type="submit"
               className="w-full bg-gradient-to-r from-gold-dark via-gold to-gold-dark text-luxury-black font-serif text-xs font-bold tracking-widest uppercase py-3 rounded shadow-lg active:scale-95 transition-all mt-4"
             >
-              {isRTL ? 'إدراج المنتج ونشره على الموقع' : 'Authorize & Broadcast Creation'}
+              {isRTL ? 'إدراج المنتج ونشره على الموقع' : 'Save Product'}
             </button>
           </form>
         </div>
@@ -791,10 +791,10 @@ export default function AdminPortal({
         <div className="lg:col-span-5 bg-luxury-dark border border-gold/15 p-6 rounded-xl space-y-6">
           <div className="border-b border-gold/10 pb-4">
             <h3 className="font-serif text-lg font-bold text-white tracking-wide">
-              {isRTL ? 'قائمة المعروضات النشطة' : 'Active Catalog Master List'}
+              {isRTL ? 'قائمة المعروضات النشطة' : 'Active Products List'}
             </h3>
             <p className="text-xs text-luxury-cream/60">
-              {isRTL ? 'تحكّم وأزل القطع غير المتوفرة لحفظ هيبة التشكيلة.' : 'Configure status or permanently retire creations.'}
+              {isRTL ? 'تحكّم وأزل القطع غير المتوفرة لحفظ هيبة التشكيلة.' : 'Manage or delete existing products.'}
             </p>
           </div>
 
@@ -839,10 +839,10 @@ export default function AdminPortal({
         <div className="border-b border-gold/10 pb-4">
           <h3 className="font-serif text-lg font-bold text-gold tracking-wide flex items-center gap-2">
             <Shield className="h-4.5 w-4.5 text-gold animate-pulse" />
-            <span>{isRTL ? 'إدارة المخزون الملكي' : 'Manage Vault Inventory'}</span>
+            <span>{isRTL ? 'إدارة المخزون الملكي' : 'Inventory Management'}</span>
           </h3>
           <p className="text-xs text-luxury-cream/60">
-            {isRTL ? 'لوحة تحكم كبار المشرفين لتعديل كميات وأسعار المعروضات الثمينة فورياً.' : 'Owner Master Dashboard to update asset prices, modify stock levels, and toggle immediate client availability.'}
+            {isRTL ? 'لوحة تحكم كبار المشرفين لتعديل كميات وأسعار المعروضات الثمينة فورياً.' : 'Update prices, manage stock levels, and toggle product availability.'}
           </p>
         </div>
 
@@ -850,9 +850,9 @@ export default function AdminPortal({
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-gold/20 text-gold uppercase font-serif tracking-widest">
-                <th className="py-3 px-3 text-start">{isRTL ? 'البيان والتحفة' : 'Masterpiece Description'}</th>
-                <th className="py-3 px-3">{isRTL ? 'سعر الاستثمار' : 'Investment Price'}</th>
-                <th className="py-3 px-3">{isRTL ? 'الكمية النشطة' : 'Active Stock'}</th>
+                <th className="py-3 px-3 text-start">{isRTL ? 'البيان والتحفة' : 'Product Name'}</th>
+                <th className="py-3 px-3">{isRTL ? 'سعر الاستثمار' : 'Price'}</th>
+                <th className="py-3 px-3">{isRTL ? 'الكمية النشطة' : 'Stock'}</th>
                 <th className="py-3 px-3">{isRTL ? 'الحالة والتوفر' : 'Availability'}</th>
                 <th className="py-3 px-3 text-end">{isRTL ? 'الإجراء الملكي' : 'Actions'}</th>
               </tr>
@@ -910,7 +910,7 @@ export default function AdminPortal({
                         </span>
                       </div>
                       <h4 className="font-serif text-sm font-bold text-white tracking-widest uppercase mt-1">
-                        {isRTL ? 'تفاصيل الحجز الملكي' : 'Sovereign Order Audit'}
+                        {isRTL ? 'تفاصيل الحجز الملكي' : 'Order Details'}
                       </h4>
                     </div>
                   </div>
@@ -933,13 +933,13 @@ export default function AdminPortal({
                     <div className="flex items-center gap-2">
                       <Shield className="h-4 w-4" />
                       <span className="uppercase tracking-widest font-semibold text-[10px]">
-                        {isRTL ? 'حالة الحجز الجاري:' : 'Logistics Security State:'}
+                        {isRTL ? 'حالة الحجز الجاري:' : 'Order Status:'}
                       </span>
                     </div>
                     <span className="font-mono font-bold uppercase tracking-widest text-[9px]">
                       {selectedOrder.status === 'Dispatched' 
-                        ? (isRTL ? 'تم الإرسال والترخيص' : 'Dispatched & Cleared') 
-                        : (isRTL ? 'قيد الحراسة والمعالجة' : 'Armed Processing')}
+                        ? (isRTL ? 'تم الإرسال والترخيص' : 'Shipped') 
+                        : (isRTL ? 'قيد الحراسة والمعالجة' : 'Processing')}
                     </span>
                   </div>
 
@@ -1020,7 +1020,7 @@ export default function AdminPortal({
                       {/* Financial Sum list */}
                       <div className="space-y-1.5 pt-1 text-[11px]">
                         <div className="flex justify-between text-luxury-cream/50">
-                          <span>{isRTL ? 'القيمة الأساسية (قبل الضريبة):' : 'Bespoke Subtotal:'}</span>
+                          <span>{isRTL ? 'القيمة الأساسية (قبل الضريبة):' : 'Subtotal:'}</span>
                           <span>{((selectedOrder.priceAED) / (1 + vatPercentage / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })} AED</span>
                         </div>
                         <div className="flex justify-between text-luxury-cream/50">
@@ -1028,7 +1028,7 @@ export default function AdminPortal({
                           <span>{(selectedOrder.priceAED * vatPercentage / (100 + vatPercentage)).toLocaleString(undefined, { maximumFractionDigits: 2 })} AED</span>
                         </div>
                         <div className="flex justify-between text-gold font-bold text-xs pt-2 border-t border-gold/10 font-serif">
-                          <span className="uppercase tracking-widest">{isRTL ? 'الإجمالي النهائي الموثق:' : 'Sovereign Grand Total:'}</span>
+                          <span className="uppercase tracking-widest">{isRTL ? 'الإجمالي النهائي الموثق:' : 'Grand Total:'}</span>
                           <span>{selectedOrder.priceAED.toLocaleString()} AED</span>
                         </div>
                       </div>
@@ -1042,7 +1042,7 @@ export default function AdminPortal({
                     onClick={() => setSelectedOrder(null)}
                     className="w-full sm:w-1/3 py-2.5 border border-gold/15 text-luxury-cream/70 hover:text-white hover:border-gold/30 rounded-lg text-xs font-serif uppercase tracking-widest transition-all duration-300 cursor-pointer"
                   >
-                    {isRTL ? 'إغلاق المراجعة' : 'Close Audit'}
+                    {isRTL ? 'إغلاق المراجعة' : 'Close'}
                   </button>
 
                   {selectedOrder.status !== 'Dispatched' && (

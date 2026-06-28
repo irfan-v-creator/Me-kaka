@@ -416,17 +416,17 @@ export const InvoicePDFDocument: React.FC<InvoicePDFDocumentProps> = ({
               </View>
               
               <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>VIP Elite Member Discount (10%):</Text>
+                <Text style={styles.totalLabel}>VIP Member Discount (10%):</Text>
                 <Text style={styles.totalValue}>-{discount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED</Text>
               </View>
 
               <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>UAE VAT Regulatory ({vatPercentage}%):</Text>
+                <Text style={styles.totalLabel}>UAE VAT ({vatPercentage}%):</Text>
                 <Text style={styles.totalValue}>{vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED</Text>
               </View>
 
               <View style={styles.grandTotalRow}>
-                <Text style={styles.grandTotalLabel}>Sovereign Grand Total:</Text>
+                <Text style={styles.grandTotalLabel}>Grand Total:</Text>
                 <Text style={styles.grandTotalValue}>{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED</Text>
               </View>
             </View>

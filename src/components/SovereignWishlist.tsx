@@ -60,11 +60,11 @@ export default function SovereignWishlist({
                 <Heart className="h-5 w-5 text-gold fill-gold animate-pulse" />
                 <div>
                   <h2 className="font-serif text-lg font-bold text-white tracking-widest uppercase">
-                    {isRTL ? 'قائمة الأمنيات الملكية' : 'Sovereign Wishlist'}
+                    {isRTL ? 'قائمة الأمنيات الملكية' : 'My Wishlist'}
                   </h2>
                   <p className="text-[10px] uppercase tracking-wider text-gold font-mono leading-none mt-1">
                     {favoritedProducts.length}{' '}
-                    {isRTL ? 'تحف فنية مختارة' : 'Masterpieces Reserved'}
+                    {isRTL ? 'تحف فنية مختارة' : 'Saved Items'}
                   </p>
                 </div>
               </div>
@@ -91,7 +91,7 @@ export default function SovereignWishlist({
                     <p className="text-xs text-luxury-cream/40 max-w-xs mx-auto">
                       {isRTL
                         ? 'تصفح تشكيلتنا الحصرية وقم بتمييز المقتنيات بالضغط على رمز القلب لحفظها هنا.'
-                        : 'Curate your absolute favorites from our exclusive collections to easily view or reserve them here.'}
+                        : 'Save your favorite items from our collections to easily find them later.'}
                     </p>
                   </div>
                   <button
@@ -165,7 +165,7 @@ export default function SovereignWishlist({
               <div className="p-6 border-t border-gold/10 bg-luxury-black/40 space-y-4">
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-luxury-cream/60">
-                    {isRTL ? 'إجمالي القيمة التقديرية:' : 'Combined Worth:'}
+                    {isRTL ? 'إجمالي القيمة التقديرية:' : 'Total Value:'}
                   </span>
                   <span className="font-mono font-bold text-sm text-gold">
                     {favoritedProducts.reduce((sum, p) => sum + p.priceAED, 0).toLocaleString()} AED
@@ -175,7 +175,7 @@ export default function SovereignWishlist({
                 <p className="text-[10px] text-center text-luxury-cream/40 leading-relaxed">
                   {isRTL 
                     ? 'الأسعار تشمل الحراسة الخاصة والشحن المصفح الدبلوماسي.' 
-                    : 'Values are premium inclusive of armored diplomatic delivery service.'}
+                    : 'Prices include shipping and standard delivery.'}
                 </p>
               </div>
             )}

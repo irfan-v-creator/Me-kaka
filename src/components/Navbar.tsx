@@ -268,7 +268,7 @@ export default function Navbar({
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gold/40 bg-gold/10 hover:bg-gold hover:text-luxury-black text-[#e5c158] hover:text-luxury-black text-[10px] uppercase tracking-widest font-serif font-bold transition-all duration-300 cursor-pointer shadow-[0_0_15px_rgba(212,175,55,0.2)] hover:shadow-[0_0_20px_rgba(212,175,55,0.4)]"
               >
                 <Crown className="h-3.5 w-3.5 text-gold" />
-                <span>{isRTL ? 'الخزنة الملكية' : 'Sovereign Vault'}</span>
+                <span>{isRTL ? 'الخزنة الملكية' : 'Admin Panel'}</span>
               </button>
             )}
 
@@ -307,7 +307,7 @@ export default function Navbar({
                   {/* Account Header */}
                   <div className="space-y-1">
                     <span className="block text-[8px] uppercase tracking-widest text-gold/60 font-mono">
-                      {isRTL ? 'بيانات الجلسة المعتمدة' : 'SECURED SESSION ACTIVE'}
+                      {isRTL ? 'بيانات الجلسة المعتمدة' : 'VIP SESSION ACTIVE'}
                     </span>
                     <h5 className="font-serif text-xs font-bold text-white max-w-[200px] truncate">
                       {userEmail}
@@ -315,12 +315,12 @@ export default function Navbar({
                     {isAdmin ? (
                       <span className="inline-flex items-center gap-1 bg-gold/10 border border-gold/30 text-[9px] text-gold uppercase px-1.5 py-0.5 font-serif rounded">
                         <Crown className="h-2.5 w-2.5" />
-                        {isRTL ? 'المالك الموقر' : 'Royal Administrator'}
+                        {isRTL ? 'المالك الموقر' : 'Admin'}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 bg-emerald-950/20 border border-emerald-500/30 text-[9px] text-emerald-400 uppercase px-1.5 py-0.5 font-sans rounded">
                         <Sparkles className="h-2.5 w-2.5 text-gold" />
-                        {isRTL ? 'رتبة كبار المقتنين VIP' : 'Emerald Sovereign VIP'}
+                        {isRTL ? 'رتبة كبار المقتنين VIP' : 'VIP Account'}
                       </span>
                     )}
                   </div>
@@ -336,7 +336,7 @@ export default function Navbar({
                     className="w-full text-center bg-gold/10 hover:bg-gold/20 border border-gold/30 hover:border-gold rounded py-2 text-xs font-serif font-bold uppercase tracking-widest text-gold hover:text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <User className="h-3.5 w-3.5" />
-                    <span>{isRTL ? 'الملف وسجل الفواتير' : 'Profile & Invoices'}</span>
+                    <span>{isRTL ? 'الملف وسجل الفواتير' : 'Profile & Orders'}</span>
                   </button>
 
                   {/* Context Links */}
@@ -382,7 +382,7 @@ export default function Navbar({
               id="wishlist-btn"
               onClick={onOpenWishlist}
               className="relative text-luxury-cream/80 hover:text-gold transition-colors duration-300 pointer-events-auto cursor-pointer"
-              title={isRTL ? 'قائمة الأمنيات الملكية' : 'Sovereign Wishlist'}
+              title={isRTL ? 'قائمة الأمنيات الملكية' : 'Wishlist'}
             >
               <Heart className="h-5 w-5" />
               {favoritesCount > 0 && (
@@ -424,7 +424,7 @@ export default function Navbar({
               id="wishlist-btn-mobile"
               onClick={onOpenWishlist}
               className="relative text-luxury-cream/80 hover:text-gold transition-colors duration-300 cursor-pointer"
-              title={isRTL ? 'قائمة الأمنيات الملكية' : 'Sovereign Wishlist'}
+              title={isRTL ? 'قائمة الأمنيات الملكية' : 'Wishlist'}
             >
               <Heart className="h-5 w-5" />
               {favoritesCount > 0 && (

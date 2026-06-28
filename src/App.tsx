@@ -12,8 +12,6 @@ import LoginModal from './components/LoginModal';
 import SovereignWishlist from './components/SovereignWishlist';
 import { Language, Product, CartItem, Order } from './types';
 import { LUXURY_PRODUCTS } from './data';
-import { pdf } from '@react-pdf/renderer';
-import { InvoicePDFDocument } from './components/InvoicePDFDocument';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { 
@@ -567,13 +565,15 @@ export default function App() {
 
     setIsSharing(true);
     try {
-      const doc = (
-        <InvoicePDFDocument
-          order={placedOrderInvoice}
-          items={invoiceCartItems}
-          vatPercentage={vatPercentage}
-        />
-      );
+      // Dynamically import to prevent React fiber reconciliation mismatches on startup
+      const { pdf } = await import('@react-pdf/renderer');
+      const { InvoicePDFDocument } = await import('./components/InvoicePDFDocument');
+
+      const doc = React.createElement(InvoicePDFDocument, {
+        order: placedOrderInvoice,
+        items: invoiceCartItems,
+        vatPercentage: vatPercentage
+      });
       const blob = await pdf(doc).toBlob();
       const file = new File([blob], 'Styles_Grace_Invoice.pdf', { type: 'application/pdf' });
 
@@ -609,13 +609,15 @@ export default function App() {
     setIsPdfExporting(true);
 
     try {
-      const doc = (
-        <InvoicePDFDocument
-          order={placedOrderInvoice}
-          items={invoiceCartItems}
-          vatPercentage={vatPercentage}
-        />
-      );
+      // Dynamically import to prevent React fiber reconciliation mismatches on startup
+      const { pdf } = await import('@react-pdf/renderer');
+      const { InvoicePDFDocument } = await import('./components/InvoicePDFDocument');
+
+      const doc = React.createElement(InvoicePDFDocument, {
+        order: placedOrderInvoice,
+        items: invoiceCartItems,
+        vatPercentage: vatPercentage
+      });
       const blob = await pdf(doc).toBlob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -748,7 +750,7 @@ export default function App() {
           <span>
             {isRTL 
               ? `الملف الشخصي الفاخر نشط لـ (${userEmail}) • تم تفعيل خصم النخبة المضمون بنسبة ١٠٪`
-              : `Bespoke Sovereign VIP Session Active for ${userEmail} • Verified Member Discount Engaged`
+              : `Welcome, ${userEmail}! You have an active VIP session with a member discount.`
             }
           </span>
           <button 
@@ -800,7 +802,7 @@ export default function App() {
                     <p className="text-luxury-cream/70 text-sm sm:text-base leading-relaxed tracking-wide font-light">
                       {isRTL 
                         ? 'نرحب بكم في عصر جديد للتسوق المترف والمجوهرات الراقية. إن ستايلز آند جريس هي بوابتكم لأرقى الفضة الإيطالية عيار ٩٢٥ الخالية من البهتان، عطور النخبة الفاخرة، الساعات الأنيقة، والمحافظ والنظارات الشمسية والأحزمة المصنوعة يدوياً.' 
-                        : 'Welcome to an elite sanctuary of pure luxury. Styles & Grace is your private portal to authentic 925 Italian sterling silver and premium non-tarnish fine jewelry in Dubai. Experience our curated sovereign selection of boutique perfumes, luxury watches, handcrafted leather wallets, sunglasses, and elegant belts, designed for those who command distinction.'
+                        : 'Welcome to Styles & Grace, your destination for authentic 925 Italian sterling silver and premium jewelry in Dubai. Explore our curated selection of boutique perfumes, luxury watches, handcrafted leather wallets, sunglasses, and elegant belts.'
                       }
                     </p>
                   </div>
@@ -808,9 +810,9 @@ export default function App() {
 
                 {/* Major Section: Curated Sovereign Catalog */}
                 <section className="bg-luxury-black pt-16 pb-6 px-4 sm:px-6 lg:px-8 text-center animate-fade-in" id="homepage-luxury-grids">
-                  <div className="max-w-3xl mx-auto space-y-4">
+                   <div className="max-w-3xl mx-auto space-y-4">
                     <span className="text-[10px] tracking-[0.3em] font-mono text-gold uppercase font-bold">
-                      {isRTL ? 'معرض المقتنيات الحصرية' : 'CURATED SOVEREIGN SELECTION'}
+                      {isRTL ? 'معرض المقتنيات الحصرية' : 'OUR COLLECTION'}
                     </span>
                     <h2 className="font-serif text-3xl sm:text-4xl font-extrabold tracking-widest text-white uppercase leading-relaxed">
                       {isRTL ? 'كتالوج الفخامة الإيطالية في دبي' : 'EXCLUSIVE CATALOG SHOWCASE'}
@@ -875,15 +877,15 @@ export default function App() {
                           <div className="lg:col-span-6 space-y-8 text-start">
                             <div className="space-y-4">
                               <span className="text-[10px] tracking-[0.3em] font-mono text-gold uppercase font-semibold">
-                                {isRTL ? 'ضمانات السيادة المطلقة' : 'SOVEREIGN TRUST ACCORD'}
+                                {isRTL ? 'ضمانات السيادة المطلقة' : 'OUR TRUST GUARANTEE'}
                               </span>
                               <h3 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-wide uppercase">
-                                {isRTL ? 'صياغة فاخرة وتوصيل دبلوماسي محمي' : 'Exclusive Craftsmanship, Armored Protection'}
+                                {isRTL ? 'صياغة فاخرة وتوصيل دبلوماسي محمي' : 'Quality Craftsmanship, Secure Delivery'}
                               </h3>
                               <p className="text-sm leading-relaxed text-luxury-cream/70 font-light">
                                 {isRTL 
                                   ? 'كل قطعة فنية يتم نقلها تخضع لرقابة أمنية مشددة مع تتبع فوري مباشر. نلتزم بأعلى معايير الأمان الدبلوماسي لضمان تسليم مقتنياتكم النادرة بخصوصية مطلقة لقصوركم ومقراتكم في دبي.'
-                                  : 'Our premium Italian silver jewelry in Dubai is delivered with white-glove courier protection. We employ dedicated safety escorts to ensure your exclusive assets, luxury watch designs, and diamond works are delivered in pristine royal condition with full insurance coverage.'
+                                  : 'Our premium jewelry is delivered with secure courier protection. We ensure all your items are fully covered and delivered in perfect condition.'
                                 }
                               </p>
                             </div>
@@ -1221,7 +1223,7 @@ export default function App() {
                         <span>
                           {isRTL 
                             ? 'تم رصد وتفعيل خصم كبار الشخصيات بنسبة ١٠٪' 
-                            : 'Verified VIP Member: Elite 10% Discount active'
+                            : 'Verified VIP Member: 10% Discount Active'
                           }
                         </span>
                       </div>
@@ -1230,7 +1232,7 @@ export default function App() {
                         <span>
                           {isRTL 
                             ? 'سجل كعضو كبار الشخصيات لتطبيق خصم ١٠٪' 
-                            : 'Sign in to claim 10% sovereign discount'
+                            : 'Sign in to get 10% off your order'
                           }
                         </span>
                         <button 
@@ -1246,26 +1248,26 @@ export default function App() {
                     {/* Sovereign Deed Invoice calculations breakdown */}
                     <div className="space-y-3 text-xs mb-6 pb-4 border-b border-gold/10 font-mono">
                       <div className="flex justify-between text-luxury-cream/75">
-                        <span>{isRTL ? 'قيمة المجموعة الأساسية:' : 'Sovereign Subtotal:'}</span>
+                        <span>{isRTL ? 'قيمة المجموعة الأساسية:' : 'Subtotal:'}</span>
                         <span>{cart.reduce((sum, item) => sum + (item.product.priceAED * item.quantity), 0).toLocaleString()} AED</span>
                       </div>
                       
                       {isLoggedIn && !isAdmin && (
                         <div className="flex justify-between text-emerald-400">
-                          <span>{isRTL ? 'خصم النخبة (١٠٪)-' : 'Elite Loyalty Benefit (-10%):'}</span>
+                          <span>{isRTL ? 'خصم النخبة (١٠٪)-' : 'VIP Discount (-10%):'}</span>
                           <span>-{(cart.reduce((sum, item) => sum + (item.product.priceAED * item.quantity), 0) * 0.10).toLocaleString()} AED</span>
                         </div>
                       )}
 
                       <div className="flex justify-between text-luxury-cream/50">
-                        <span>{isRTL ? `ضريبة القيمة المضافة للإمارات (${vatPercentage}٪):` : `UAE VAT Regulatory (${vatPercentage}%):`}</span>
+                        <span>{isRTL ? `ضريبة القيمة المضافة للإمارات (${vatPercentage}٪):` : `UAE VAT (${vatPercentage}%):`}</span>
                         <span>
                           {((cart.reduce((sum, item) => sum + (item.product.priceAED * item.quantity), 0) - (isLoggedIn && !isAdmin ? cart.reduce((sum, item) => sum + (item.product.priceAED * item.quantity), 0) * 0.10 : 0)) * (vatPercentage / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED
                         </span>
                       </div>
 
                       <div className="flex justify-between text-white font-bold pt-2 border-t border-gold/10 font-serif text-sm">
-                        <span className="text-gold tracking-widest font-semibold">{isRTL ? 'قيمة الاستثمار الإجمالي:' : 'SOVEREIGN GRAND TOTAL:'}</span>
+                        <span className="text-gold tracking-widest font-semibold">{isRTL ? 'قيمة الاستثمار الإجمالي:' : 'GRAND TOTAL:'}</span>
                         <span className="text-gold font-mono font-semibold">
                           {(
                             (cart.reduce((sum, item) => sum + (item.product.priceAED * item.quantity), 0) - (isLoggedIn && !isAdmin ? cart.reduce((sum, item) => sum + (item.product.priceAED * item.quantity), 0) * 0.10 : 0)) * (1 + vatPercentage / 100)
@@ -1822,21 +1824,21 @@ export default function App() {
                 
                 {invoiceDiscount > 0 && (
                   <div className="flex justify-between text-gold">
-                    <span className="uppercase tracking-wider print-logo-gold">{isRTL ? 'خصم عضوية كبار الشخصيات (١٠٪):' : 'VIP Elite Member Discount:'}</span>
+                    <span className="uppercase tracking-wider print-logo-gold">{isRTL ? 'خصم عضوية كبار الشخصيات (١٠٪):' : 'VIP Member Discount:'}</span>
                     <span className="font-mono font-bold">-{invoiceDiscount.toLocaleString()} AED</span>
                   </div>
                 )}
                 
                 {/* Dynamic VAT based on system config */}
                 <div className="flex justify-between text-luxury-cream/50 border-t border-gold/5 pt-2.5">
-                  <span className="uppercase tracking-wider print-text-muted">{isRTL ? `ضريبة القيمة المضافة لدولة الإمارات (${vatPercentage}٪):` : `UAE VAT Regulatory (${vatPercentage}%):`}</span>
+                  <span className="uppercase tracking-wider print-text-muted">{isRTL ? `ضريبة القيمة المضافة لدولة الإمارات (${vatPercentage}٪):` : `UAE VAT (${vatPercentage}%):`}</span>
                   <span className="font-mono text-white print-text-dark">
                     {((invoiceSubtotal - invoiceDiscount) * (vatPercentage / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED
                   </span>
                 </div>
 
                 <div className="flex justify-between text-gold font-serif text-sm font-bold border-t border-gold/20 pt-3">
-                  <span className="uppercase tracking-widest print-logo-gold">{isRTL ? 'قيمة الاستثمار الملوكي الإجمالي:' : 'Sovereign Grand Total:'}</span>
+                  <span className="uppercase tracking-widest print-logo-gold">{isRTL ? 'قيمة الاستثمار الملوكي الإجمالي:' : 'Grand Total:'}</span>
                   <span className="font-mono text-base text-gold print-logo-gold">
                     {placedOrderInvoice.priceAED.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED
                   </span>

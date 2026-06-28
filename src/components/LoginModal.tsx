@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 import { X, Lock, Mail, ShieldAlert, Sparkles, User, ShieldCheck, Crown, ExternalLink, Calendar, CreditCard, LogOut, Award, Clock, Eye, Share2, Star, Truck, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Language, Order } from '../types';
-import { pdf } from '@react-pdf/renderer';
-import { InvoicePDFDocument } from './InvoicePDFDocument';
-import { loginUser, registerUser, updateOrderStatus, signInWithGoogle } from '../lib/firebaseService';
+import { loginUser, registerUser, updateOrderStatus, signInWithGoogle, unifiedAuth } from '../lib/firebaseService';
 
 
 interface LoginModalProps {
@@ -38,8 +36,6 @@ export default function LoginModal({
   vatPercentage = 5,
   initialTab = 'profile'
 }: LoginModalProps) {
-  if (!isOpen) return null;
-
   const isRTL = lang === 'ar';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -209,6 +205,8 @@ export default function LoginModal({
     }
   }, [isOpen, isLoggedIn, userEmail, isAdmin, orders, activeTab]);
 
+  if (!isOpen) return null;
+
   const handleGoogleSignIn = async () => {
     setError('');
     setIsLoading(true);
@@ -224,6 +222,12 @@ export default function LoginModal({
         setError(isRTL 
           ? 'تم حظر النافذة المنبثقة لتسجيل الدخول من Google بواسطة متصفحك. يرجى تفعيل النوافذ المنبثقة لهذا الموقع من شريط العنوان (ابحث عن رمز حظر النوافذ المنبثقة 🚫 في أعلى اليمين) أو قم بفتح التطبيق في علامة تبويب جديدة ثم حاول مجدداً.' 
           : 'The Google Sign-In popup was blocked by your browser. Please allow popups for this site in your browser\'s address bar (look for the blocked pop-up icon 🚫 or settings) or open this application in a new tab to sign in securely.'
+        );
+      } else if (err.code === 'auth/unauthorized-domain' || (err.message && err.message.includes('auth/unauthorized-domain'))) {
+        const hostname = window.location.hostname;
+        setError(isRTL
+          ? `خطأ نطاق غير مصرح به: هذا النطاق (${hostname}) غير مصرح به للمصادقة في مشروع Firebase الخاص بك. يرجى إضافة هذا النطاق إلى قائمة "Authorized Domains" في وحدة تحكم Firebase (Authentication > Settings > Authorized domains).`
+          : `Unauthorized Domain Error: This domain (${hostname}) is not authorized for authentication in your Firebase project. Please add this domain to the "Authorized Domains" list in your Firebase Console (Authentication > Settings > Authorized domains) to enable Google Sign-In.`
         );
       } else {
         setError(isRTL 
@@ -245,19 +249,11 @@ export default function LoginModal({
     const isBypassedAdmin = normalizedEmail === 'konami5miv@gmail.com';
 
     try {
-      if (isRegistering) {
-        // Assign admin role if they sign up with the admin email
-        const role = (isBypassedAdmin || normalizedEmail === 'miv3game@gmail.com') ? 'admin' : 'user';
-        await registerUser(normalizedEmail, password, role);
-        onLoginSuccess(normalizedEmail, role === 'admin' || isBypassedAdmin);
-        onClose();
-      } else {
-        const { profile } = await loginUser(normalizedEmail, password);
-        onLoginSuccess(normalizedEmail, profile.role === 'admin' || isBypassedAdmin);
-        onClose();
-      }
+      const { profile } = await unifiedAuth(normalizedEmail, password);
+      onLoginSuccess(normalizedEmail, profile.role === 'admin' || isBypassedAdmin);
+      onClose();
     } catch (err: any) {
-      console.error('Auth error:', err);
+      console.error('Unified Auth error:', err);
       let errorMsg = isRTL 
         ? 'حدث خطأ أثناء المصادقة. يرجى التحقق من تفاصيل الدخول.' 
         : 'An error occurred during authentication. Please check your credentials.';
@@ -266,14 +262,14 @@ export default function LoginModal({
         errorMsg = isRTL
           ? 'المشرف السيادي: لم يتم تمكين تسجيل الدخول بالبريد الإلكتروني وكلمة المرور في لوحة تحكم Firebase بعد. يرجى تمكين "Email/Password" في لوحة تحكم Firebase (Authentication > Sign-in method)، أو استخدام خيار تسجيل الدخول الآمن من Google أدناه.'
           : 'Sovereign Admin: The Email/Password sign-in method is not enabled in your Firebase console. Please go to Firebase Console > Authentication > Sign-in method and enable "Email/Password", or use the secure Google Sign-In option below.';
-      } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+      } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         errorMsg = isRTL 
-          ? 'البريد الإلكتروني أو العبارة السرية غير صالحة.' 
-          : 'Invalid email or passcode.';
-      } else if (err.code === 'auth/email-already-in-use') {
+          ? 'كلمة المرور غير صحيحة.' 
+          : 'Incorrect password';
+      } else if (err.code === 'auth/user-not-found') {
         errorMsg = isRTL 
-          ? 'هذا البريد الإلكتروني مسجل بالفعل.' 
-          : 'This email is already in use.';
+          ? 'البريد الإلكتروني غير مسجل.' 
+          : 'Email is not registered.';
       } else if (err.code === 'auth/weak-password') {
         errorMsg = isRTL 
           ? 'كلمة المرور ضعيفة للغاية. يرجى استخدام كلمة مرور أقوى.' 
@@ -292,14 +288,16 @@ export default function LoginModal({
   const handleShareInvoiceForOrder = async (order: Order) => {
     setSharingOrderId(order.id);
     try {
+      // Dynamically import to prevent React fiber reconciliation mismatches on startup
+      const { pdf } = await import('@react-pdf/renderer');
+      const { InvoicePDFDocument } = await import('./InvoicePDFDocument');
+
       // 1. Generate PDF Blob Dynamically
-      const doc = (
-        <InvoicePDFDocument
-          order={order}
-          items={order.items || []}
-          vatPercentage={vatPercentage}
-        />
-      );
+      const doc = React.createElement(InvoicePDFDocument, {
+        order: order,
+        items: order.items || [],
+        vatPercentage: vatPercentage
+      });
       const blob = await pdf(doc).toBlob();
 
       // 2. Convert to File Object
@@ -377,8 +375,8 @@ export default function LoginModal({
               </div>
               <h2 className="font-serif text-2xl font-bold tracking-widest text-white uppercase">
                 {isAdmin 
-                  ? (isRTL ? 'الخزينة والتحكم السيادي' : 'Sovereign Control Vault') 
-                  : (isRTL ? 'محفظة مقتنيات النخبة' : 'VIP Patron Portfolio')
+                  ? (isRTL ? 'الخزينة والتحكم السيادي' : 'Admin Dashboard') 
+                  : (isRTL ? 'محفظة مقتنيات النخبة' : 'VIP Account')
                 }
               </h2>
               <p className="text-xs text-luxury-cream/70 font-mono tracking-wide">
@@ -428,17 +426,17 @@ export default function LoginModal({
                     <div className="flex items-center gap-2 text-gold">
                       <Award className="h-4 w-4" />
                       <span className="text-xs uppercase font-serif tracking-widest font-bold">
-                        {isAdmin ? (isRTL ? 'رتبة المالك الملكي' : 'Royal Administrator Status') : (isRTL ? 'رتبة كبار المقتنين VIP' : 'Emerald Sovereign VIP Class')}
+                        {isAdmin ? (isRTL ? 'رتبة المالك الملكي' : 'Administrator') : (isRTL ? 'رتبة كبار المقتنين VIP' : 'VIP Account')}
                       </span>
                     </div>
                     <p className="text-xs text-luxury-cream/80 leading-relaxed font-sans">
                       {isAdmin 
                         ? (isRTL 
                           ? 'تتمتع بصلاحيات وصول مطلقة وغير مقيدة لكامل سجل المعرض ومؤشرات الاستثمار والطلبات الواردة.' 
-                          : 'Equipped with absolute administrative authorization. Unrestricted access to full catalog stock and sovereign customer invoices.')
+                          : 'Equipped with admin access to manage products and view customer orders.')
                         : (isRTL 
                           ? 'مرحباً بك في مجلس النخبة. حسابك المعتمد يمنحك امتيازات حصرية مبرمجة ومفعلة تلقائياً في صالة العرض.' 
-                          : 'Welcome back to the elite guild. Your secured VIP guest credentials unlock automated high-jewelry discounts and priority assistance.')
+                          : 'Welcome back! Your VIP account unlocks automatic discounts and free delivery.')
                       }
                     </p>
                   </div>
@@ -475,7 +473,7 @@ export default function LoginModal({
                 <div className="space-y-3.5 text-start">
                   {isAdmin && (
                     <div className="bg-[#e5c158]/10 border border-[#e5c158]/20 p-2.5 rounded-lg text-[10px] text-[#e5c158] font-mono tracking-wide text-center mb-2">
-                      ⚡ {isRTL ? 'عرض لوحة التحكم الإدارية لكافة الفواتير النشطة' : 'ADMIN VIEW: Master Sovereign Invoice Register'}
+                      ⚡ {isRTL ? 'عرض لوحة التحكم الإدارية لكافة الفواتير النشطة' : 'ADMIN VIEW: Customer Orders'}
                     </div>
                   )}
 
@@ -483,10 +481,10 @@ export default function LoginModal({
                     <div className="text-center py-12 space-y-3 bg-[#0d0d0d] border border-[#262626] rounded-xl p-6">
                       <ShieldAlert className="h-8 w-8 text-[#e5c158]/40 mx-auto animate-pulse" />
                       <p className="text-xs text-[#e5c158] font-serif uppercase tracking-widest font-bold">
-                        {isRTL ? 'خزنتك السيادية فارغة.' : 'Your sovereign vault is empty.'}
+                        {isRTL ? 'خزنتك السيادية فارغة.' : 'You have no orders yet.'}
                       </p>
                       <p className="text-[10px] text-luxury-cream/40">
-                        {isRTL ? 'القطع التي ستقتنيها مستقبلاً ستظهر هنا في سجلاتك المحمية.' : 'Your prestigious acquisitions will be securely registered here.'}
+                        {isRTL ? 'القطع التي ستقتنيها مستقبلاً ستظهر هنا في سجلاتك المحمية.' : 'Your orders will be listed here once you make a purchase.'}
                       </p>
                     </div>
                   ) : (
@@ -593,7 +591,7 @@ export default function LoginModal({
                                       setOrderToCancel(order);
                                     }}
                                     className="bg-transparent hover:bg-red-950/30 border border-red-900 text-red-500 text-[9px] font-serif uppercase tracking-widest font-bold px-2 py-1.5 rounded-md transition-all active:scale-95 flex items-center gap-1 cursor-pointer shrink-0"
-                                    title={isRTL ? 'إلغاء هذا الطلب السيادي' : 'Cancel This Sovereign Order'}
+                                    title={isRTL ? 'إلغاء هذا الطلب السيادي' : 'Cancel This Order'}
                                   >
                                     <span className="text-[10px] font-bold">✕</span>
                                     <span>{isRTL ? 'إلغاء' : 'Cancel'}</span>
@@ -650,6 +648,7 @@ export default function LoginModal({
                             <AnimatePresence initial={false}>
                               {expandedTracking[order.id] && order.status !== 'Cancelled' && (
                                 <motion.div
+                                  key={`tracking-${order.id}`}
                                   initial={{ height: 0, opacity: 0 }}
                                   animate={{ height: 'auto', opacity: 1 }}
                                   exit={{ height: 0, opacity: 0 }}
@@ -660,7 +659,7 @@ export default function LoginModal({
                                   <div className="bg-black/40 border border-gold/15 rounded-lg p-3.5 space-y-3.5">
                                     <div className="flex justify-between items-center border-b border-[#262626]/60 pb-2">
                                       <span className="text-[10px] font-serif uppercase tracking-widest text-[#e5c158] font-bold">
-                                        {isRTL ? 'تتبع الشحنة السيادية' : 'Sovereign Transit Logistics'}
+                                        {isRTL ? 'تتبع الشحنة السيادية' : 'Order Tracking'}
                                       </span>
                                       {getOrderTrackingStage(order.id) !== 'Delivered' && (
                                         <button
@@ -693,10 +692,10 @@ export default function LoginModal({
                                         </div>
                                         <div>
                                           <p className="text-[11px] font-serif font-bold text-[#e5c158]">
-                                            {isRTL ? 'تأكيد الطلب السيادي' : 'Order Confirmed & Sealed'}
+                                            {isRTL ? 'تأكيد الطلب السيادي' : 'Order Confirmed'}
                                           </p>
                                           <p className="text-[9px] text-luxury-cream/50 leading-relaxed">
-                                            {isRTL ? 'تم حجز المستند المالي وتأمينه بنجاح' : 'Sovereign acquisition locked and registered'}
+                                            {isRTL ? 'تم حجز المستند المالي وتأمينه بنجاح' : 'Your order is confirmed and is being processed'}
                                           </p>
                                         </div>
                                       </div>
@@ -919,14 +918,14 @@ export default function LoginModal({
                               ) : null}
                               
                               <div className="flex justify-between text-luxury-cream/40 border-t border-[#262626] pt-2">
-                                <span className="uppercase tracking-wider">{isRTL ? `ضريبة القيمة المضافة (${vatPercentage}%)` : `UAE VAT Regulatory (${vatPercentage}%)`}</span>
+                                <span className="uppercase tracking-wider">{isRTL ? `ضريبة القيمة المضافة (${vatPercentage}%)` : `VAT (${vatPercentage}%)`}</span>
                                 <span className="font-mono text-white">
                                   {(((selectedOrder.subtotal || selectedOrder.priceAED) - (selectedOrder.discount || 0)) * (vatPercentage / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED
                                 </span>
                               </div>
 
                               <div className="flex justify-between text-[#e5c158] font-serif font-bold border-t border-gold/20 pt-2.5 text-xs">
-                                <span className="uppercase tracking-widest">{isRTL ? 'قيمة الاستثمار الإجمالية' : 'Sovereign Total'}</span>
+                                <span className="uppercase tracking-widest">{isRTL ? 'قيمة الاستثمار الإجمالية' : 'Grand Total'}</span>
                                 <span className="font-mono text-[#e5c158]">{selectedOrder.priceAED.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED</span>
                               </div>
                             </div>
@@ -938,7 +937,7 @@ export default function LoginModal({
                                   {orderReviews[selectedOrder.id] ? (
                                     <span className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#e5c158]/10 border border-[#e5c158]/20 text-[#e5c158] text-[10px] font-mono uppercase tracking-wider font-bold">
                                       <Star className="h-3.5 w-3.5 fill-[#e5c158] text-[#e5c158]" />
-                                      <span>{isRTL ? 'تم التقييم الملكي' : 'Royal Feedback Submitted'}</span>
+                                      <span>{isRTL ? 'تم التقييم الملكي' : 'Review Submitted'}</span>
                                     </span>
                                   ) : (
                                     <button
@@ -1011,7 +1010,7 @@ export default function LoginModal({
                   className="bg-red-950/20 hover:bg-red-950/60 border border-red-500/25 text-red-400 hover:text-white px-3 py-1.5 rounded text-[10px] font-serif uppercase tracking-widest flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                 >
                   <LogOut className="h-3.5 w-3.5" />
-                  <span>{isRTL ? 'إنهاء الجلسة الآمنة' : 'Terminate Session'}</span>
+                  <span>{isRTL ? 'إنهاء الجلسة الآمنة' : 'Logout'}</span>
                 </button>
               </div>
             )}
@@ -1026,21 +1025,12 @@ export default function LoginModal({
                 <Crown className="h-5 w-5 text-[#e5c158] animate-[pulse_3s_infinite]" />
               </div>
               <h2 className="font-serif text-2xl font-bold tracking-widest text-white uppercase">
-                {isRegistering 
-                  ? (isRTL ? 'تسجيل مقتني سيادي جديد' : 'Sovereign VIP Registration')
-                  : (isRTL ? 'بوابة النخبة والأعضاء' : 'Elite Vault & Entry')
-                }
+                {isRTL ? 'بوابة النخبة والخدمة الذاتية' : 'Login / Sign Up'}
               </h2>
               <p className="text-xs text-luxury-cream/60">
-                {isRegistering
-                  ? (isRTL 
-                      ? 'سجل حسابك كعضو VIP للاستمتاع بخصم ١٠٪ وتتبع فوري للطلبات وحفظ حقيبتك.' 
-                      : 'Create a VIP profile to enjoy 10% elite discounts, cart sync, and real-time tracking.'
-                    )
-                  : (isRTL 
-                      ? 'قم بتسجيل الدخول كمالك للوصول للمعرض، أو كعضو VIP لعروض خاصة.' 
-                      : 'Sign in under Royal Owner credentials or as a premium VIP Guild Member.'
-                    )
+                {isRTL 
+                  ? 'سجل دخولك أو أنشئ حساباً جديداً تلقائياً للاستمتاع بخصم ١٠٪ وحفظ حقيبتك وتتبع طلباتك.' 
+                  : 'Sign in or create an account to get 10% off, save your cart, and track orders.'
                 }
               </p>
             </div>
@@ -1056,7 +1046,7 @@ export default function LoginModal({
               {/* Email Field */}
               <div className="space-y-1.5">
                 <label className="block text-[10px] uppercase font-serif tracking-widest text-gold/80">
-                  {isRTL ? 'البريد الإلكتروني المعتمد' : 'Authorized Credentials'}
+                  {isRTL ? 'البريد الإلكتروني المعتمد' : 'Email Address'}
                 </label>
                 <div className="relative">
                   <div className={`absolute inset-y-0 ${isRTL ? 'left-3' : 'right-3'} flex items-center pointer-events-none text-gold/30`}>
@@ -1067,7 +1057,7 @@ export default function LoginModal({
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder={isRTL ? 'الملك أو العضو الموقر' : 'Sovereign or VIP Member Email'}
+                    placeholder={isRTL ? 'الملك أو العضو الموقر' : 'Email'}
                     className="w-full bg-luxury-black/90 border border-gold/20 text-sm text-luxury-cream placeholder:text-luxury-cream/35 rounded-lg px-4 py-3 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/20 font-sans tracking-wide"
                   />
                 </div>
@@ -1076,7 +1066,7 @@ export default function LoginModal({
               {/* Password Field */}
               <div className="space-y-1.5">
                 <label className="block text-[10px] uppercase font-serif tracking-widest text-gold/80">
-                  {isRTL ? 'العبارة السرية الآمنة' : 'Secure Passcode'}
+                  {isRTL ? 'العبارة السرية الآمنة' : 'Password'}
                 </label>
                 <div className="relative">
                   <div className={`absolute inset-y-0 ${isRTL ? 'left-3' : 'right-3'} flex items-center pointer-events-none text-gold/30`}>
@@ -1105,10 +1095,7 @@ export default function LoginModal({
                   <>
                     <ShieldCheck className="h-4 w-4" />
                     <span>
-                      {isRegistering
-                        ? (isRTL ? 'إنشاء حساب سيادي جديد' : 'Create Sovereign VIP Account')
-                        : (isRTL ? 'اعتماد الدخول وبدء الجلسة' : 'Authorize Secure Session')
-                      }
+                      {isRTL ? 'تسجيل الدخول / إنشاء حساب' : 'Login / Sign Up'}
                     </span>
                   </>
                 )}
@@ -1136,22 +1123,6 @@ export default function LoginModal({
                 </svg>
                 <span>{isRTL ? 'تسجيل الدخول بواسطة Google' : 'Sign In with Google'}</span>
               </button>
-
-              <div className="text-center mt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsRegistering(!isRegistering);
-                    setError('');
-                  }}
-                  className="text-gold/80 hover:text-white text-[10px] font-serif uppercase tracking-widest cursor-pointer underline transition-colors"
-                >
-                  {isRegistering
-                    ? (isRTL ? 'لديك حساب بالفعل؟ تسجيل الدخول' : 'Already have an account? Sign In')
-                    : (isRTL ? 'مقتني جديد؟ إنشاء حساب كبار الشخصيات' : 'New patron? Create Sovereign VIP Account')
-                  }
-                </button>
-              </div>
             </form>
           </div>
         )}
@@ -1166,12 +1137,12 @@ export default function LoginModal({
             </div>
             <div className="space-y-2">
               <h3 className="font-serif text-base font-bold tracking-widest text-red-500 uppercase">
-                {isRTL ? 'إلغاء الاستحواذ السيادي' : 'Revoke Sovereign Deed'}
+                {isRTL ? 'إلغاء الاستحواذ السيادي' : 'Cancel Order'}
               </h3>
               <p className="text-xs text-luxury-cream/70 leading-relaxed font-serif">
                 {isRTL 
                   ? 'هل أنت متأكد من رغبتك في إلغاء هذا الاستحواذ السيادي؟ لا يمكن التراجع عن هذا الإجراء.' 
-                  : 'Are you sure you want to revoke this sovereign acquisition? This action cannot be undone.'
+                  : 'Are you sure you want to cancel this order? This action cannot be undone.'
                 }
               </p>
             </div>
@@ -1183,11 +1154,11 @@ export default function LoginModal({
                 <span className="text-[#e5c158] font-mono font-bold">{orderToCancel.id}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-luxury-cream/40">{isRTL ? 'التحفة:' : 'Masterpiece:'}</span>
+                <span className="text-luxury-cream/40">{isRTL ? 'التحفة:' : 'Product:'}</span>
                 <span className="text-white truncate max-w-[200px] font-medium">{orderToCancel.productName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-luxury-cream/40">{isRTL ? 'قيمة الاستثمار:' : 'Investment Value:'}</span>
+                <span className="text-luxury-cream/40">{isRTL ? 'قيمة الاستثمار:' : 'Total Price:'}</span>
                 <span className="text-white font-mono font-bold">{orderToCancel.priceAED.toLocaleString()} AED</span>
               </div>
             </div>
@@ -1222,12 +1193,12 @@ export default function LoginModal({
             </button>
             <div className="space-y-2">
               <h3 className="font-serif text-base font-bold tracking-widest text-[#e5c158] uppercase">
-                {isRTL ? 'تقييم التحفة الاستثنائية' : 'Curatorial Feedback'}
+                {isRTL ? 'تقييم التحفة الاستثنائية' : 'Product Feedback'}
               </h3>
               <p className="text-xs text-luxury-cream/70 leading-relaxed font-serif">
                 {isRTL 
                   ? 'رأيكم الكريم يساهم في الحفاظ على أعلى معايير الفخامة والخدمة السيادية لدينا.' 
-                  : 'Your esteemed perspective shapes the pinnacle of our sovereign luxury standards.'
+                  : 'Your feedback helps us maintain our high quality and service standards.'
                 }
               </p>
             </div>
@@ -1235,7 +1206,7 @@ export default function LoginModal({
             {/* Selected Masterpiece Detail Mini Card */}
             <div className="bg-[#121212] border border-[#262626] rounded-lg p-3 text-start text-[11px] space-y-1">
               <div className="flex justify-between">
-                <span className="text-luxury-cream/40">{isRTL ? 'التحفة المقتناة:' : 'Masterpiece:'}</span>
+                <span className="text-luxury-cream/40">{isRTL ? 'التحفة المقتناة:' : 'Product:'}</span>
                 <span className="text-white truncate max-w-[220px] font-medium font-serif">{feedbackOrder.productName}</span>
               </div>
               <div className="flex justify-between">
@@ -1247,7 +1218,7 @@ export default function LoginModal({
             {/* Interactive 5-Star Rating */}
             <div className="space-y-1.5">
               <span className="block text-[10px] uppercase tracking-widest text-gold/60 font-serif">
-                {isRTL ? 'درجة الرضا الملكية' : 'Sovereign Rating'}
+                {isRTL ? 'درجة الرضا الملكية' : 'Product Rating'}
               </span>
               <div className="flex items-center justify-center gap-2.5 py-1">
                 {[1, 2, 3, 4, 5].map((star) => {

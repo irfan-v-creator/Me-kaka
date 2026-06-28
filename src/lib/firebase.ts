@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -14,5 +14,10 @@ const firebaseConfig = {
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
-export const db = getFirestore(app, import.meta.env['VITE_FIREBASE_DATABASE_ID'] || "ai-studio-luxoradubai-0f824072-2fe7-4c75-a950-651ada91cc36");
+
+const dbId = import.meta.env['VITE_FIREBASE_DATABASE_ID'] || "ai-studio-luxoradubai-0f824072-2fe7-4c75-a950-651ada91cc36";
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true
+}, dbId);
+
 export const storage = getStorage(app);

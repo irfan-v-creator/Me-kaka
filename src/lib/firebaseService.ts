@@ -59,34 +59,127 @@ export async function registerUser(email: string, pass: string, role: 'user' | '
 }
 
 /**
+ * Unified authentication handler:
+ * 1. Attempt to register (createUserWithEmailAndPassword)
+ * 2. If registration succeeds: Set role inside Firestore 'users' collection, return user + profile
+ * 3. If registration fails with 'auth/email-already-in-use': fallback to login (signInWithEmailAndPassword)
+ * 4. Ensure admin logic elevation is handled properly.
+ */
+export async function unifiedAuth(email: string, pass: string): Promise<{ user: User; profile: UserProfile; isNewUser: boolean }> {
+  const normalizedEmail = email.toLowerCase().trim();
+  const isAdminEmail = normalizedEmail === 'konami5miv@gmail.com' || normalizedEmail === 'miv3game@gmail.com';
+
+  try {
+    // 1. Attempt to create user
+    const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, pass);
+    const user = userCredential.user;
+    
+    // Assign admin role if they sign up with the admin email
+    const role = isAdminEmail ? 'admin' : 'user';
+    const profile: UserProfile = {
+      email: normalizedEmail,
+      role: role
+    };
+
+    // Create user document mapping uid to { email, role }
+    try {
+      await setDoc(doc(db, 'users', user.uid), {
+        email: normalizedEmail,
+        role: role,
+        createdAt: serverTimestamp()
+      });
+    } catch (fErr) {
+      console.warn('Firestore setDoc failed during unifiedAuth sign up (offline fallback):', fErr);
+    }
+
+    return { user, profile, isNewUser: true };
+  } catch (err: any) {
+    // 2. Fallback to Login if email already in use
+    if (err.code === 'auth/email-already-in-use') {
+      const userCredential = await signInWithEmailAndPassword(auth, normalizedEmail, pass);
+      const user = userCredential.user;
+
+      let profile: UserProfile = { email: user.email || normalizedEmail, role: isAdminEmail ? 'admin' : 'user' };
+
+      try {
+        // Fetch user profile from Firestore
+        const profileDoc = await getDoc(doc(db, 'users', user.uid));
+
+        if (profileDoc.exists()) {
+          profile = profileDoc.data() as UserProfile;
+          if (isAdminEmail && profile.role !== 'admin') {
+            profile.role = 'admin';
+            try {
+              await updateDoc(doc(db, 'users', user.uid), { role: 'admin' });
+            } catch (uErr) {
+              console.warn('Firestore updateDoc failed (offline fallback):', uErr);
+            }
+          }
+        } else {
+          // Fallback: Create profile if it doesn't exist
+          profile.role = isAdminEmail ? 'admin' : 'user';
+          try {
+            await setDoc(doc(db, 'users', user.uid), {
+              email: normalizedEmail,
+              role: profile.role,
+              createdAt: serverTimestamp()
+            });
+          } catch (sErr) {
+            console.warn('Firestore setDoc failed (offline fallback):', sErr);
+          }
+        }
+      } catch (fErr) {
+        console.warn('Firestore getDoc failed during unifiedAuth login (offline fallback):', fErr);
+      }
+
+      return { user, profile, isNewUser: false };
+    }
+
+    // Propagate any other errors (e.g. invalid credentials, weak-password, etc.)
+    throw err;
+  }
+}
+
+/**
  * Sign in an existing user with Email/Password and fetch their user profile.
  */
 export async function loginUser(email: string, pass: string): Promise<{ user: User; profile: UserProfile }> {
   const userCredential = await signInWithEmailAndPassword(auth, email, pass);
   const user = userCredential.user;
   
-  // Fetch user profile from Firestore
-  const profileDoc = await getDoc(doc(db, 'users', user.uid));
-  let profile: UserProfile = { email: user.email || email, role: 'user' };
-  
   const normalizedEmail = email.toLowerCase().trim();
   const isAdminEmail = normalizedEmail === 'konami5miv@gmail.com' || normalizedEmail === 'miv3game@gmail.com';
+  let profile: UserProfile = { email: user.email || email, role: isAdminEmail ? 'admin' : 'user' };
+  
+  try {
+    // Fetch user profile from Firestore
+    const profileDoc = await getDoc(doc(db, 'users', user.uid));
 
-  if (profileDoc.exists()) {
-    profile = profileDoc.data() as UserProfile;
-    if (isAdminEmail && profile.role !== 'admin') {
-      profile.role = 'admin';
-      await updateDoc(doc(db, 'users', user.uid), { role: 'admin' });
+    if (profileDoc.exists()) {
+      profile = profileDoc.data() as UserProfile;
+      if (isAdminEmail && profile.role !== 'admin') {
+        profile.role = 'admin';
+        try {
+          await updateDoc(doc(db, 'users', user.uid), { role: 'admin' });
+        } catch (uErr) {
+          console.warn('Firestore updateDoc failed in loginUser (offline fallback):', uErr);
+        }
+      }
+    } else {
+      // Fallback: Create profile if it somehow doesn't exist yet
+      profile.role = isAdminEmail ? 'admin' : 'user';
+      try {
+        await setDoc(doc(db, 'users', user.uid), {
+          email: normalizedEmail,
+          role: profile.role,
+          createdAt: serverTimestamp()
+        });
+      } catch (sErr) {
+        console.warn('Firestore setDoc failed in loginUser (offline fallback):', sErr);
+      }
     }
-  } else {
-    // Fallback: Create profile if it somehow doesn't exist yet
-    profile.role = isAdminEmail ? 'admin' : 'user';
-    
-    await setDoc(doc(db, 'users', user.uid), {
-      email: normalizedEmail,
-      role: profile.role,
-      createdAt: serverTimestamp()
-    });
+  } catch (fErr) {
+    console.warn('Firestore getDoc failed in loginUser (offline fallback):', fErr);
   }
 
   return { user, profile };
@@ -100,27 +193,38 @@ export async function signInWithGoogle(): Promise<{ user: User; profile: UserPro
   const userCredential = await signInWithPopup(auth, provider);
   const user = userCredential.user;
   
-  const profileDoc = await getDoc(doc(db, 'users', user.uid));
   const email = user.email || '';
-  let profile: UserProfile = { email: email, role: 'user' };
-  
   const normalizedEmail = email.toLowerCase().trim();
   const isAdminEmail = normalizedEmail === 'konami5miv@gmail.com' || normalizedEmail === 'miv3game@gmail.com';
+  let profile: UserProfile = { email: email, role: isAdminEmail ? 'admin' : 'user' };
   
-  if (profileDoc.exists()) {
-    profile = profileDoc.data() as UserProfile;
-    // Auto-elevate to admin if they are the admin email but profile was created as 'user'
-    if (isAdminEmail && profile.role !== 'admin') {
-      profile.role = 'admin';
-      await updateDoc(doc(db, 'users', user.uid), { role: 'admin' });
+  try {
+    const profileDoc = await getDoc(doc(db, 'users', user.uid));
+    if (profileDoc.exists()) {
+      profile = profileDoc.data() as UserProfile;
+      // Auto-elevate to admin if they are the admin email but profile was created as 'user'
+      if (isAdminEmail && profile.role !== 'admin') {
+        profile.role = 'admin';
+        try {
+          await updateDoc(doc(db, 'users', user.uid), { role: 'admin' });
+        } catch (uErr) {
+          console.warn('Firestore updateDoc failed in signInWithGoogle (offline fallback):', uErr);
+        }
+      }
+    } else {
+      profile.role = isAdminEmail ? 'admin' : 'user';
+      try {
+        await setDoc(doc(db, 'users', user.uid), {
+          email: normalizedEmail,
+          role: profile.role,
+          createdAt: serverTimestamp()
+        });
+      } catch (sErr) {
+        console.warn('Firestore setDoc failed in signInWithGoogle (offline fallback):', sErr);
+      }
     }
-  } else {
-    profile.role = isAdminEmail ? 'admin' : 'user';
-    await setDoc(doc(db, 'users', user.uid), {
-      email: normalizedEmail,
-      role: profile.role,
-      createdAt: serverTimestamp()
-    });
+  } catch (fErr) {
+    console.warn('Firestore getDoc failed in signInWithGoogle (offline fallback):', fErr);
   }
   
   return { user, profile };
@@ -137,9 +241,13 @@ export async function logoutUser(): Promise<void> {
  * Fetch a user profile by UID.
  */
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
-  const profileDoc = await getDoc(doc(db, 'users', uid));
-  if (profileDoc.exists()) {
-    return profileDoc.data() as UserProfile;
+  try {
+    const profileDoc = await getDoc(doc(db, 'users', uid));
+    if (profileDoc.exists()) {
+      return profileDoc.data() as UserProfile;
+    }
+  } catch (fErr) {
+    console.warn('Firestore getUserProfile failed (offline fallback):', fErr);
   }
   return null;
 }

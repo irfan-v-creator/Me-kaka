@@ -435,13 +435,13 @@ export default function HomepageGrids({
 
                   <div className="space-y-2 border-t border-b border-gold/10 py-4">
                     <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="text-luxury-cream/40">{isRTL ? 'قيمة التحفة الفنية:' : 'Sovereign Value:'}</span>
+                      <span className="text-luxury-cream/40">{isRTL ? 'قيمة التحفة الفنية:' : 'Price:'}</span>
                       <span className="text-xl font-bold text-[#e5c158]">
                         AED {formatPrice(selectedProduct.priceAED)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs font-sans text-luxury-cream/50">
-                      <span>{isRTL ? 'شامل ضريبة القيمة المضافة ومصاريف التوصيل المصفّح:' : 'Incl. VAT & armored premium transport:'}</span>
+                      <span>{isRTL ? 'شامل ضريبة القيمة المضافة ومصاريف التوصيل المصفّح:' : 'Incl. VAT & delivery:'}</span>
                       <span>AED {formatPrice(Math.round(selectedProduct.priceAED * (1 + vatPercentage / 100)))}</span>
                     </div>
                   </div>
@@ -574,13 +574,13 @@ export default function HomepageGrids({
 
                   <div className="bg-gold/5 border border-gold/20 p-3 rounded text-center">
                     <span className="block text-[10px] text-luxury-cream/60">
-                      {isRTL ? 'القيمة الإجمالية المعتمدة:' : 'Sovereign Authorized Total:'}
+                      {isRTL ? 'القيمة الإجمالية المعتمدة:' : 'Total Price:'}
                     </span>
                     <span className="text-lg font-bold text-[#e5c158] font-mono">
                       AED {formatPrice(Math.round(selectedProduct.priceAED * (1 + vatPercentage / 100)))}
                     </span>
                     <span className="block text-[8px] text-luxury-cream/40 uppercase font-mono mt-0.5">
-                      {isRTL ? 'الدفع نقداً أو بالبطاقة عند الاستلام الآمن' : 'PAYMENT ON ARMORED SECURE DELIVERY'}
+                      {isRTL ? 'الدفع نقداً أو بالبطاقة عند الاستلام الآمن' : 'PAYMENT ON DELIVERY'}
                     </span>
                   </div>
 

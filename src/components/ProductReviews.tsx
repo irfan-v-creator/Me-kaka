@@ -148,7 +148,7 @@ export default function ProductReviews({ productId, lang }: ProductReviewsProps)
         {/* Rating breakdown bars */}
         <div className="col-span-1 md:col-span-2 space-y-2">
           <h4 className="text-xs font-serif font-bold tracking-wider text-gold/80 mb-3">
-            {isRTL ? 'توزيع درجات الرضا الملكية' : 'Sovereign Rating Distribution'}
+            {isRTL ? 'توزيع درجات الرضا الملكية' : 'Rating Distribution'}
           </h4>
           {[5, 4, 3, 2, 1].map((stars) => {
             const pct = getRatingPercentage(stars);
@@ -256,7 +256,7 @@ export default function ProductReviews({ productId, lang }: ProductReviewsProps)
               {/* Star Rating Select */}
               <div className="space-y-1.5">
                 <span className="block text-[10px] uppercase tracking-widest text-gold/60 font-serif">
-                  {isRTL ? 'درجة الرضا الملكية' : 'Sovereign Rating'}
+                  {isRTL ? 'درجة الرضا الملكية' : 'Product Rating'}
                 </span>
                 <div className="flex items-center gap-2 py-1">
                   {[1, 2, 3, 4, 5].map((star) => {
