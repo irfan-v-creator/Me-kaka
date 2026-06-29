@@ -200,14 +200,14 @@ export default function HomepageGrids({
                   className="px-6 py-3 rounded bg-gradient-to-r from-[#e5c158] to-[#cba33f] text-luxury-black font-serif font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 hover:scale-105 hover:shadow-[0_0_15px_rgba(229,193,88,0.3)] flex items-center gap-2 cursor-pointer"
                 >
                   <ShoppingBag className="h-4 w-4" />
-                  <span>{isRTL ? 'أضف لحقيبة الاقتناء' : 'ACQUIRE NOW'}</span>
+                  <span>{isRTL ? 'شراء' : 'BUY'}</span>
                 </button>
                 <button
                   onClick={() => setSelectedProduct(dealProduct)}
                   className="px-6 py-3 rounded border border-gold/30 bg-luxury-black/40 hover:border-gold hover:bg-gold/5 text-gold font-serif font-bold text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 flex items-center gap-2 cursor-pointer"
                 >
                   <Eye className="h-4 w-4" />
-                  <span>{isRTL ? 'معاينة تفصيلية' : 'INSPECT DETAIL'}</span>
+                  <span>{isRTL ? 'معاينة التفاصيل' : 'View Details'}</span>
                 </button>
               </div>
             </div>
@@ -284,14 +284,15 @@ export default function HomepageGrids({
                     onClick={() => onAddToCart(product)}
                     className="flex-1 py-2 rounded bg-gold/10 border border-gold/30 text-gold hover:bg-gold hover:text-luxury-black font-serif font-bold text-xs tracking-widest uppercase transition-all duration-300 cursor-pointer text-center"
                   >
-                    {isRTL ? 'أضف للحقيبة' : 'ADD TO BAG'}
+                    {isRTL ? 'شراء' : 'BUY'}
                   </button>
                   <button
                     onClick={() => setSelectedProduct(product)}
-                    className="py-2 px-3.5 rounded border border-gold/15 hover:border-gold/40 text-luxury-cream/70 hover:text-gold transition-all duration-300 cursor-pointer text-xs"
-                    title="Quick Inspect"
+                    className="py-2 px-3.5 rounded border border-gold/15 hover:border-gold text-luxury-cream hover:text-gold transition-all duration-300 cursor-pointer text-xs flex items-center gap-1.5"
+                    title={isRTL ? 'معاينة التفاصيل' : 'View Details'}
                   >
                     <Eye className="h-4 w-4" />
+                    <span className="text-[11px] font-serif uppercase tracking-wider">{isRTL ? 'التفاصيل' : 'View Details'}</span>
                   </button>
                 </div>
               </div>
@@ -364,16 +365,29 @@ export default function HomepageGrids({
                     </p>
                   </div>
 
-                  <div className="pt-4 border-t border-gold/10 mt-4 flex items-center justify-between">
-                    <span className="text-base font-bold font-mono text-[#e5c158]">
-                      AED {formatPrice(product.priceAED)}
-                    </span>
-                    <button
-                      onClick={() => onAddToCart(product)}
-                      className="py-1.5 px-4 rounded bg-[#e5c158] hover:bg-gold text-luxury-black font-serif font-black text-[10px] tracking-widest uppercase transition-colors cursor-pointer"
-                    >
-                      {isRTL ? 'اقتناء سريع' : 'ACQUIRE'}
-                    </button>
+                  <div className="pt-4 border-t border-gold/10 mt-4 flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-luxury-cream/40 uppercase tracking-wider font-mono">{isRTL ? 'قيمة الاستثمار' : 'Price'}</span>
+                      <span className="text-base font-bold font-mono text-[#e5c158]">
+                        AED {formatPrice(product.priceAED)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onAddToCart(product)}
+                        className="flex-1 py-2 rounded bg-[#e5c158] hover:bg-gold text-luxury-black font-serif font-black text-xs tracking-widest uppercase transition-colors cursor-pointer text-center font-bold"
+                      >
+                        {isRTL ? 'شراء' : 'BUY'}
+                      </button>
+                      <button
+                        onClick={() => setSelectedProduct(product)}
+                        className="py-2 px-3.5 rounded border border-gold/20 hover:border-gold text-luxury-cream hover:text-gold transition-colors duration-300 cursor-pointer text-xs flex items-center gap-1.5"
+                        title={isRTL ? 'تفاصيل' : 'View Details'}
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        <span className="text-[10px] uppercase font-serif tracking-wider">{isRTL ? 'التفاصيل' : 'View Details'}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -454,13 +468,13 @@ export default function HomepageGrids({
                       }}
                       className="flex-1 py-3 rounded bg-gradient-to-r from-[#e5c158] to-[#cba33f] text-luxury-black font-serif font-black text-xs sm:text-sm tracking-widest uppercase transition-all hover:scale-105 hover:shadow-[0_0_15px_rgba(229,193,88,0.25)] cursor-pointer text-center"
                     >
-                      {isRTL ? 'إضافة لحقيبة التسوق' : 'ADD TO SHOPPING VAULT'}
+                      {isRTL ? 'شراء' : 'BUY'}
                     </button>
                     <button
                       onClick={() => setShowCheckoutModal(true)}
                       className="flex-1 py-3 rounded border border-gold/30 bg-luxury-black text-gold hover:bg-gold/5 font-serif font-bold text-xs sm:text-sm tracking-widest uppercase transition-colors cursor-pointer text-center"
                     >
-                      {isRTL ? 'امتلاك فوري آمن' : 'IMMEDIATE ACQUISITION'}
+                      {isRTL ? 'شراء فوري آمن' : 'EXPRESS CHECKOUT'}
                     </button>
                   </div>
                 </div>
@@ -495,12 +509,12 @@ export default function HomepageGrids({
                 <div className="text-center py-8 space-y-4">
                   <CheckCircle2 className="h-16 w-16 text-[#e5c158] mx-auto animate-bounce" />
                   <h3 className="font-serif text-lg sm:text-xl font-bold text-white uppercase tracking-wider">
-                    {isRTL ? 'تم تسجيل حيازتكم بنجاح' : 'Acquisition Registered'}
+                    {isRTL ? 'تم تسجيل حيازتكم بنجاح' : 'Order Placed Successfully'}
                   </h3>
                   <p className="text-xs text-luxury-cream/70 leading-relaxed max-w-xs mx-auto">
                     {isRTL 
                       ? 'نشكر ذوقكم الرفيع. سيقوم مستشارو ستايلز آند جريس بالتواصل معكم هاتفياً لترتيب الشحن والمصفح.' 
-                      : 'Our concierge suite has registered your sovereign purchase. We will contact you shortly to coordinate armored delivery.'
+                      : 'We have successfully received your order. We will contact you shortly to coordinate the delivery.'
                     }
                   </p>
                 </div>
@@ -560,7 +574,7 @@ export default function HomepageGrids({
 
                     <div>
                       <label className="block text-[9px] uppercase tracking-widest text-gold/40 font-mono mb-1">
-                        {isRTL ? 'تعليمات خاصة للخدمة الدبلوماسية' : 'Bespoke Concierge Instructions (Optional)'}
+                        {isRTL ? 'تعليمات خاصة للخدمة الدبلوماسية' : 'Special Delivery Instructions (Optional)'}
                       </label>
                       <input 
                         type="text" 

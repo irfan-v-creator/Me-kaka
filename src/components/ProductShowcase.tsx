@@ -132,11 +132,11 @@ export default function ProductShowcase({
 
   // Filter translation keys
   const categoriesTranslation: Record<string, { en: string; ar: string }> = {
-    'All': { en: 'All Masterworks', ar: 'كل النفائس' },
-    'Watches': { en: 'Sovereign Watches', ar: 'ساعات السيادة' },
-    'Jewelry': { en: 'High Jewelry', ar: 'مجوهرات فاخرة' },
-    'Fragrance': { en: 'Royal Fragrances', ar: 'عطور ملكية' },
-    'Accessories': { en: 'Silk & Gold Accessories', ar: 'إكسسوارات النخبة' }
+    'All': { en: 'All Products', ar: 'كل النفائس' },
+    'Watches': { en: 'Watches', ar: 'ساعات السيادة' },
+    'Jewelry': { en: 'Jewelry', ar: 'مجوهرات فاخرة' },
+    'Fragrance': { en: 'Fragrances', ar: 'عطور ملكية' },
+    'Accessories': { en: 'Accessories', ar: 'إكسسوارات النخبة' }
   };
 
   const categories = ['All', 'Watches', 'Jewelry', 'Fragrance', 'Accessories'];
@@ -195,12 +195,12 @@ export default function ProductShowcase({
           <div className="inline-flex items-center space-x-2 space-x-reverse text-gold">
             <Sparkles className="h-4 w-4 animate-pulse" />
             <span className="font-serif text-xs tracking-[0.25em] uppercase font-semibold">
-              {isRTL ? 'معرض المقتنيات الحصرية' : 'Curated Masterpiece Catalog'}
+              {isRTL ? 'معرض المقتنيات الحصرية' : 'Our Exclusive Collection'}
             </span>
           </div>
           
           <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-wide">
-            {isRTL ? 'تحف فنية للذواقة' : 'Sovereign Creations'}
+            {isRTL ? 'تحف فنية للذواقة' : 'Featured Products'}
           </h2>
           
           <div className="w-20 h-[1.5px] bg-gradient-to-r from-transparent via-gold to-transparent mx-auto" />
@@ -333,7 +333,7 @@ export default function ProductShowcase({
                               ? 'text-neutral-700 cursor-not-allowed opacity-50'
                               : 'text-luxury-cream/40 hover:text-gold'
                           }`}
-                          title={product.stockStatus === 'Out of Stock' ? (isRTL ? 'نفذت الكمية' : 'Out of Stock') : (isRTL ? 'إضافة إلى حقيبة الاقتناء' : 'Add to Shopping Vault Bag')}
+                          title={product.stockStatus === 'Out of Stock' ? (isRTL ? 'نفذت الكمية' : 'Out of Stock') : (isRTL ? 'إضافة إلى حقيبة الاقتناء' : 'Add to Cart')}
                         >
                           <ShoppingBag className="h-4.5 w-4.5" />
                         </button>
@@ -428,18 +428,39 @@ export default function ProductShowcase({
                       </div>
                     </div>
 
-                    {/* Action button */}
-                    <button 
-                      id={`view-details-${product.id}`}
-                      name="view-details"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedProduct(product);
-                      }}
-                      className="mt-4 w-full text-center py-2 text-xs border border-gold/20 hover:border-gold hover:bg-gold/5 text-luxury-cream tracking-widest font-serif uppercase rounded cursor-pointer transition-all duration-300"
-                    >
-                      {isRTL ? 'معاينة التحفة الفنية' : 'Inspect Creation'}
-                    </button>
+                    {/* Action buttons */}
+                    <div className="mt-4 flex items-center gap-2">
+                      <button 
+                        id={`buy-button-${product.id}`}
+                        disabled={product.stockStatus === 'Out of Stock'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (product.stockStatus === 'Out of Stock') return;
+                          if (onAddToCart) onAddToCart(product);
+                        }}
+                        className={`flex-1 py-2 text-xs font-serif font-black uppercase tracking-widest rounded transition-all duration-300 text-center cursor-pointer ${
+                          product.stockStatus === 'Out of Stock'
+                            ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700/50'
+                            : 'bg-gold hover:bg-white text-luxury-black font-bold shadow-md hover:shadow-lg'
+                        }`}
+                      >
+                        {isRTL ? 'شراء' : 'BUY'}
+                      </button>
+                      
+                      <button 
+                        id={`view-details-${product.id}`}
+                        name="view-details"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedProduct(product);
+                        }}
+                        className="py-2 px-3 border border-gold/20 hover:border-gold hover:bg-gold/5 text-luxury-cream hover:text-gold tracking-widest font-serif uppercase rounded cursor-pointer transition-all duration-300 flex items-center gap-1.5 text-xs"
+                        title={isRTL ? 'معاينة التفاصيل' : 'View Details'}
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        <span className="text-[10px] uppercase font-serif tracking-wider">{isRTL ? 'التفاصيل' : 'View Details'}</span>
+                      </button>
+                    </div>
 
                   </motion.div>
                 );
@@ -530,7 +551,7 @@ export default function ProductShowcase({
                         </div>
 
                         <div className="border-t border-gold/10 pt-2 flex justify-between items-center text-xs">
-                          <span className="text-gold font-serif uppercase tracking-widest">{isRTL ? 'مجموع المبلغ الشامل' : 'Total Investment'}</span>
+                          <span className="text-gold font-serif uppercase tracking-widest">{isRTL ? 'مجموع المبلغ الشامل' : 'Total Price'}</span>
                           <span className="font-mono font-bold text-white text-base">
                             {(selectedProduct.priceAED * (1 + vatPercentage / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED
                           </span>
@@ -543,12 +564,12 @@ export default function ProductShowcase({
                       {inquirySubmitted ? (
                         <div className="bg-gold/10 border border-gold/30 rounded p-4 text-center space-y-2 animate-fade-in text-xs text-gold">
                           <p className="font-serif font-bold tracking-widest uppercase">
-                            {isRTL ? 'تهانينا! تم تسجيل الطلب الملكي' : 'CONCIERGE CONTACTED'}
+                            {isRTL ? 'تهانينا! تم تسجيل الطلب الملكي' : 'ORDER RECEIVED'}
                           </p>
                           <p className="text-[11px] text-luxury-cream/80">
                             {isRTL
                               ? 'سيتواصل معك خبير الفخامة بمكالمة مشفرة آمنة خلال ساعة لإتمام التفاصيل.'
-                              : 'Our Luxury Concierge will contact you within the hour via secure encrypted link.'}
+                              : 'We will contact you shortly to confirm your order details.'}
                           </p>
                         </div>
                       ) : (
@@ -563,7 +584,7 @@ export default function ProductShowcase({
                                 setClientPhone(e.target.value);
                                 setValidationError(false);
                               }}
-                              placeholder={selectedProduct.stockStatus === 'Out of Stock' ? (isRTL ? 'المنتج غير متوفر حالياً' : 'Product Out of Stock') : (isRTL ? 'رقم الهاتف (7510447887)' : 'Direct Mobile Number (7510447887)')}
+                              placeholder={selectedProduct.stockStatus === 'Out of Stock' ? (isRTL ? 'المنتج غير متوفر حالياً' : 'Product Out of Stock') : (isRTL ? 'رقم الهاتف (7510447887)' : 'Phone Number (e.g., 0501234567)')}
                               className={`bg-luxury-black border text-xs text-luxury-cream rounded-md p-3 flex-grow focus:outline-none focus:border-gold font-mono ${
                                 selectedProduct.stockStatus === 'Out of Stock' ? 'opacity-50 cursor-not-allowed border-neutral-800' : validationError ? 'border-red-500 bg-red-950/10' : 'border-gold/20'
                               }`}
@@ -585,7 +606,7 @@ export default function ProductShowcase({
                                   setValidationError(false);
 
                                   // WhatsApp Fast Alert
-                                  const formattedMsg = `✨ *Styles & Grace - New Order Alert* ✨\n\nProduct: ${selectedProduct.nameEn}\nValue: ${selectedProduct.priceAED.toLocaleString()} AED\nCustomer Contact: ${clientPhone.trim()}`;
+                                  const formattedMsg = `✨ *New Order Alert* ✨\n\nProduct: ${selectedProduct.nameEn}\nPrice: ${selectedProduct.priceAED.toLocaleString()} AED\nPhone: ${clientPhone.trim()}`;
                                   const whatsappUrl = `https://wa.me/971588257372?text=${encodeURIComponent(formattedMsg)}`;
                                   window.open(whatsappUrl, '_blank');
                                 }
@@ -596,7 +617,7 @@ export default function ProductShowcase({
                                   : 'bg-gradient-to-r from-gold to-gold-dark text-luxury-black hover:shadow-gold/20 active:scale-95'
                               }`}
                             >
-                              {selectedProduct.stockStatus === 'Out of Stock' ? (isRTL ? 'نفذت' : 'Sold Out') : (isRTL ? 'طلب الآن' : 'Acquire')}
+                              {selectedProduct.stockStatus === 'Out of Stock' ? (isRTL ? 'نفذت' : 'Sold Out') : (isRTL ? 'طلب الآن' : 'Order Now')}
                             </button>
                           </div>
                           {validationError && (
@@ -630,7 +651,7 @@ export default function ProductShowcase({
                                   ? (isRTL ? 'نفذت الكمية ⚜' : 'Out of Stock ⚜')
                                   : addedToBag 
                                   ? (isRTL ? 'تمت الإضافة بنجاح! ⚜' : 'Added to Bag! ⚜')
-                                  : (isRTL ? 'إضافة إلى حقيبة الاقتناء' : 'Add to Shopping Bag')
+                                  : (isRTL ? 'شراء' : 'BUY')
                                 }
                               </span>
                             </button>

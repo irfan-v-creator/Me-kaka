@@ -353,11 +353,11 @@ export const InvoicePDFDocument: React.FC<InvoicePDFDocumentProps> = ({
 
             {/* Client Info */}
             <View style={[styles.gridColumn, styles.gridColumnRight]}>
-              <Text style={styles.sectionTitle}>VIP Patron Details</Text>
+              <Text style={styles.sectionTitle}>Customer Details</Text>
 
               <View style={styles.gridRow}>
-                <Text style={styles.gridLabel}>VIP Patron:</Text>
-                <Text style={styles.gridValue}>{order.clientName || 'VIP Patron'}</Text>
+                <Text style={styles.gridLabel}>Customer Name:</Text>
+                <Text style={styles.gridValue}>{order.clientName || 'Customer'}</Text>
               </View>
 
               <View style={styles.gridRow}>
@@ -366,13 +366,13 @@ export const InvoicePDFDocument: React.FC<InvoicePDFDocumentProps> = ({
               </View>
 
               <View style={styles.gridRow}>
-                <Text style={styles.gridLabel}>Coordinates:</Text>
-                <Text style={styles.gridValue}>{order.deliveryCoordinates || 'Downtown Dubai Flagship Lounge'}</Text>
+                <Text style={styles.gridLabel}>Delivery Address:</Text>
+                <Text style={styles.gridValue}>{order.deliveryCoordinates || 'Dubai'}</Text>
               </View>
 
               {order.bespokeNotes && (
                 <View style={styles.gridRow}>
-                  <Text style={styles.gridLabel}>Bespoke Escort:</Text>
+                  <Text style={styles.gridLabel}>Delivery Notes:</Text>
                   <Text style={styles.gridValue}>{order.bespokeNotes}</Text>
                 </View>
               )}
@@ -380,13 +380,13 @@ export const InvoicePDFDocument: React.FC<InvoicePDFDocumentProps> = ({
           </View>
 
           {/* Curated Ledger */}
-          <Text style={[styles.sectionTitle, { marginBottom: 4 }]}>Curated Masterpieces Ledger</Text>
+          <Text style={[styles.sectionTitle, { marginBottom: 4 }]}>Order Items</Text>
           <View style={styles.table}>
             <View style={styles.tableHeader}>
-              <View style={styles.colDesc}><Text style={styles.thText}>Masterpiece Description</Text></View>
+              <View style={styles.colDesc}><Text style={styles.thText}>Product Description</Text></View>
               <View style={styles.colQty}><Text style={styles.thTextCenter}>Qty</Text></View>
               <View style={styles.colPrice}><Text style={styles.thTextRight}>Unit Price</Text></View>
-              <View style={styles.colTotal}><Text style={styles.thTextRight}>Total Value</Text></View>
+              <View style={styles.colTotal}><Text style={styles.thTextRight}>Total Price</Text></View>
             </View>
 
             {items.map((item, idx) => (
@@ -411,7 +411,7 @@ export const InvoicePDFDocument: React.FC<InvoicePDFDocumentProps> = ({
           <View style={styles.totalsContainer}>
             <View style={styles.totalsWrapper}>
               <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Bespoke Subtotal:</Text>
+                <Text style={styles.totalLabel}>Subtotal:</Text>
                 <Text style={styles.totalValue}>{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED</Text>
               </View>
               

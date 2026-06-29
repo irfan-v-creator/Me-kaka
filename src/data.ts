@@ -19,7 +19,7 @@ export const LUXURY_PRODUCTS: Product[] = [
   },
   {
     id: 'prod_2',
-    nameEn: 'Sovereign Italian Silver Neck-Chain',
+    nameEn: 'Premium Italian Silver Neck-Chain',
     nameAr: 'قلادة فضة إيطالية ٩٢٥ سيادية',
     priceAED: 2400,
     originalPriceAED: 2800,
@@ -42,7 +42,7 @@ export const LUXURY_PRODUCTS: Product[] = [
     image: 'https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&q=80&w=600',
     categoryEn: 'Luxury Perfumes & Watches',
     categoryAr: 'عطور وساعات فاخرة',
-    descriptionEn: 'Bespoke combination of intense raw Cambodian agarwood, Damascene rose nectar, and deep leather notes. Encased in a beautiful custom crystal bottle.',
+    descriptionEn: 'Exclusive combination of intense raw Cambodian agarwood, Damascene rose nectar, and deep leather notes. Encased in a beautiful custom crystal bottle.',
     descriptionAr: 'تركيبة عطرية مخصصة تجمع بين دهن العود الكمبودي الفاخر، بتلات الورد الدمشقي، والجلود الدافئة، معبأة في زجاجة كريستالية رائعة.',
     stockStatus: 'In Stock',
     stockStatusAr: 'متوفر',
@@ -51,7 +51,7 @@ export const LUXURY_PRODUCTS: Product[] = [
   },
   {
     id: 'prod_4',
-    nameEn: 'Grace Elite Chronograph Steel Watch',
+    nameEn: 'Grace Chronograph Steel Watch',
     nameAr: 'ساعة جريس كرونوغراف فولاذية النخبة',
     priceAED: 4900,
     originalPriceAED: 5600,

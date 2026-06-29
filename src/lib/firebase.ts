@@ -12,10 +12,10 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:42896465814:web:9ad9930963f7c5db0587b7"
 };
 
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
 
-const dbId = import.meta.env['VITE_FIREBASE_DATABASE_ID'] || "ai-studio-luxoradubai-0f824072-2fe7-4c75-a950-651ada91cc36";
+const dbId = "ai-studio-luxoradubai-0f824072-2fe7-4c75-a950-651ada91cc36";
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true
 }, dbId);

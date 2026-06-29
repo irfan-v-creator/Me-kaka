@@ -144,14 +144,14 @@ export default function SovereignWishlist({
                         <Trash2 className="h-4 w-4" />
                       </button>
 
-                      <button
+                       <button
                         onClick={() => onMoveToCart(product)}
                         className="bg-gold/10 hover:bg-gold hover:text-luxury-black text-gold text-[10px] font-serif uppercase tracking-widest px-2.5 py-1.5 rounded border border-gold/20 hover:border-gold/0 transition-all flex items-center gap-1.5 cursor-pointer"
-                        title={isRTL ? 'نقل إلى حقيبة الاقتناء' : 'Move to Bag'}
+                        title={isRTL ? 'نقل إلى حقيبة الاقتناء' : 'Move to Cart'}
                       >
                         <ShoppingBag className="h-3 w-3" />
                         <span className="hidden sm:inline">
-                          {isRTL ? 'اقتناء' : 'Bag'}
+                          {isRTL ? 'اقتناء' : 'Cart'}
                         </span>
                       </button>
                     </div>

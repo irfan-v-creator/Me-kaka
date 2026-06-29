@@ -3,6 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, User, ShieldAlert, CheckCircle, Plus, Sparkles, TrendingUp, DollarSign, Coins, Eye, Image, Trash2, X, FileText, Shield, Phone, MapPin, Check, Bell } from 'lucide-react';
 import { Product, Language, Order } from '../types';
 import { loginUser, signInWithGoogle, logoutUser } from '../lib/firebaseService';
+import { app } from '../lib/firebase';
+import { getFirestore } from 'firebase/firestore';
+
+// Explicitly initialize Firestore database regionally as requested
+const db = getFirestore(app, "ai-studio-luxoradubai-0f824072-2fe7-4c75-a950-651ada91cc36");
 
 
 interface AdminPortalProps {
@@ -220,7 +225,7 @@ export default function AdminPortal({
       if (err.code === 'auth/configuration-not-found') {
         setLoginError(isRTL
           ? 'المشرف السيادي: لم يتم تمكين تسجيل الدخول بالبريد الإلكتروني وكلمة المرور في لوحة تحكم Firebase بعد. يرجى تمكين "Email/Password" في لوحة تحكم Firebase (Authentication > Sign-in method)، أو استخدام خيار تسجيل الدخول الآمن من Google أدناه.'
-          : 'Sovereign Admin: The Email/Password sign-in method is not enabled in your Firebase console. Please go to Firebase Console > Authentication > Sign-in method and enable "Email/Password", or use the secure Google Sign-In option below.');
+          : 'Admin Notice: The Email/Password sign-in method is not enabled in your Firebase console. Please go to Firebase Console > Authentication > Sign-in method and enable "Email/Password", or use the secure Google Sign-In option below.');
       } else {
         setLoginError(isRTL ? 'بيانات الاعتماد غير صالحة. يرجى المحاولة مرة أخرى.' : 'Invalid credentials or passcode.');
       }
@@ -822,7 +827,7 @@ export default function AdminPortal({
                   id={`retire-btn-${p.id}`}
                   onClick={() => onDeleteProduct(p.id)}
                   className="text-luxury-cream/35 hover:text-red-500 p-2 transition-colors transition-transform active:scale-90"
-                  title={isRTL ? 'حذف المنتج' : 'Retire Asset'}
+                  title={isRTL ? 'حذف المنتج' : 'Delete Product'}
                 >
                   <Trash2 className="h-4.5 w-4.5" />
                 </button>
@@ -954,12 +959,12 @@ export default function AdminPortal({
                           {isRTL ? 'الاسم الكامل:' : 'Full Name:'}
                         </span>
                         <span className="text-xs font-serif font-bold text-white">
-                          {selectedOrder.clientName || (isRTL ? 'عميل ستايلز آند جريس الموقر' : 'Styles & Grace Patron')}
+                          {selectedOrder.clientName || (isRTL ? 'عميل ستايلز آند جريس الموقر' : 'Styles & Grace Customer')}
                         </span>
                       </div>
                       <div className="space-y-0.5">
                         <span className="text-[9px] uppercase tracking-wider text-luxury-cream/40 block">
-                          {isRTL ? 'رقم الاتصال المباشر:' : 'Direct Phone Contact:'}
+                          {isRTL ? 'رقم الاتصال المباشر:' : 'Phone Number:'}
                         </span>
                         <div className="flex items-center gap-1 text-xs font-mono font-bold text-gold">
                           <Phone className="h-3 w-3" />
@@ -978,20 +983,20 @@ export default function AdminPortal({
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-wider text-luxury-cream/40">
                           <MapPin className="h-3 w-3 text-gold" />
-                          <span>{isRTL ? 'إحداثيات وموقع التوصيل الآمن:' : 'Armored Delivery Coordinates:'}</span>
+                          <span>{isRTL ? 'إحداثيات وموقع التوصيل الآمن:' : 'Delivery Address / Location:'}</span>
                         </div>
                         <p className="text-xs text-luxury-cream/80 leading-relaxed pl-4 font-serif">
-                          {selectedOrder.deliveryCoordinates || (isRTL ? 'تسليم يدوي مباشر في دبي كبار الشخصيات' : 'Direct Hand-Delivery Handover, Dubai VIP')}
+                          {selectedOrder.deliveryCoordinates || (isRTL ? 'تسليم يدوي مباشر في دبي كبار الشخصيات' : 'Standard Dubai Delivery')}
                         </p>
                       </div>
 
                       <div className="space-y-1 pt-2 border-t border-gold/5">
                         <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-wider text-luxury-cream/40">
                           <Shield className="h-3 w-3 text-gold" />
-                          <span>{isRTL ? 'شروط الحراسة والطلبات الخاصة:' : 'Bespoke Guard Requirements & Notes:'}</span>
+                          <span>{isRTL ? 'شروط الحراسة والطلبات الخاصة:' : 'Special Notes & Instructions:'}</span>
                         </div>
                         <p className="text-xs text-luxury-cream/80 leading-relaxed pl-4 italic font-sans font-light">
-                          {selectedOrder.bespokeNotes || (isRTL ? 'لم يتم إدراج متطلبات حراسة مخصصة' : 'Standard secure elite courier transit scheduled.')}
+                          {selectedOrder.bespokeNotes || (isRTL ? 'لم يتم إدراج متطلبات حراسة مخصصة' : 'No special instructions provided.')}
                         </p>
                       </div>
                     </div>
@@ -1326,7 +1331,7 @@ function AdminToastCard({ toast, isRTL, onDismiss, onSelectOrder }: AdminToastCa
       <div className="space-y-1">
         <div className="flex justify-between items-baseline gap-2">
           <p className="font-serif text-xs font-bold text-white">
-            {order.clientName || (isRTL ? 'عميل كبار الشخصيات' : 'VIP Patron')}
+            {order.clientName || (isRTL ? 'عميل كبار الشخصيات' : 'Customer')}
           </p>
           <span className="font-mono text-[10px] text-gold/80 font-semibold bg-gold/10 px-1.5 py-0.5 rounded border border-gold/20">
             {order.id}
@@ -1337,7 +1342,7 @@ function AdminToastCard({ toast, isRTL, onDismiss, onSelectOrder }: AdminToastCa
         </p>
         <div className="flex justify-between items-center pt-1 border-t border-gold/10 mt-1">
           <span className="text-[9px] text-luxury-cream/40 uppercase tracking-widest font-mono">
-            {isRTL ? 'إجمالي الاستثمار' : 'Total Investment'}
+            {isRTL ? 'إجمالي الاستثمار' : 'Total Price'}
           </span>
           <span className="font-mono text-xs font-bold text-gold">
             {order.priceAED.toLocaleString()} AED

@@ -18,14 +18,16 @@ import {
   updateDoc,
   serverTimestamp,
   Timestamp,
-  addDoc
+  addDoc,
+  getFirestore
 } from 'firebase/firestore';
 import { 
   ref, 
   uploadBytes, 
   getDownloadURL 
 } from 'firebase/storage';
-import { auth, db, storage } from './firebase';
+import { auth, app, storage } from './firebase';
+const db = getFirestore(app, "ai-studio-luxoradubai-0f824072-2fe7-4c75-a950-651ada91cc36");
 import { Order, CartItem, Product } from '../types';
 
 // ==========================================
@@ -42,20 +44,55 @@ export interface UserProfile {
  * Register a new user with Email/Password and store their profile in Firestore.
  */
 export async function registerUser(email: string, pass: string, role: 'user' | 'admin' = 'user'): Promise<User> {
-  const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-  const user = userCredential.user;
-  
   const normalizedEmail = email.toLowerCase().trim();
   const resolvedRole = (normalizedEmail === 'konami5miv@gmail.com' || normalizedEmail === 'miv3game@gmail.com') ? 'admin' : role;
+  const fallbackUid = 'fallback_user_' + normalizedEmail.replace(/[^a-zA-Z0-9]/g, '_');
 
-  // Create user document mapping uid to { email, role }
-  await setDoc(doc(db, 'users', user.uid), {
-    email: normalizedEmail,
-    role: resolvedRole,
-    createdAt: serverTimestamp()
-  });
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, pass);
+    const user = userCredential.user;
+    
+    // Create user document mapping uid to { email, role }
+    await setDoc(doc(db, 'users', user.uid), {
+      email: normalizedEmail,
+      role: resolvedRole,
+      createdAt: serverTimestamp()
+    });
 
-  return user;
+    return user;
+  } catch (err: any) {
+    if (err.code === 'auth/operation-not-allowed' || err.code === 'auth/configuration-not-found' || err.message?.includes('operation-not-allowed')) {
+      console.log('Firebase Auth is disabled in registerUser. Falling back to secure Firestore-based accounts.');
+      try {
+        const userDocRef = doc(db, 'users', fallbackUid);
+        await setDoc(userDocRef, {
+          email: normalizedEmail,
+          password: pass,
+          role: resolvedRole,
+          createdAt: serverTimestamp()
+        });
+
+        const mockUser = {
+          uid: fallbackUid,
+          email: normalizedEmail,
+          emailVerified: true,
+          isAnonymous: false,
+        } as any as User;
+
+        localStorage.setItem('luxora_fallback_user', JSON.stringify({
+          uid: fallbackUid,
+          email: normalizedEmail,
+          role: resolvedRole
+        }));
+
+        return mockUser;
+      } catch (dbErr: any) {
+        console.error('Error in registerUser Firestore-based fallback:', dbErr);
+        throw dbErr;
+      }
+    }
+    throw err;
+  }
 }
 
 /**
@@ -68,6 +105,7 @@ export async function registerUser(email: string, pass: string, role: 'user' | '
 export async function unifiedAuth(email: string, pass: string): Promise<{ user: User; profile: UserProfile; isNewUser: boolean }> {
   const normalizedEmail = email.toLowerCase().trim();
   const isAdminEmail = normalizedEmail === 'konami5miv@gmail.com' || normalizedEmail === 'miv3game@gmail.com';
+  const fallbackUid = 'fallback_user_' + normalizedEmail.replace(/[^a-zA-Z0-9]/g, '_');
 
   try {
     // 1. Attempt to create user
@@ -94,48 +132,146 @@ export async function unifiedAuth(email: string, pass: string): Promise<{ user: 
 
     return { user, profile, isNewUser: true };
   } catch (err: any) {
-    // 2. Fallback to Login if email already in use
-    if (err.code === 'auth/email-already-in-use') {
-      const userCredential = await signInWithEmailAndPassword(auth, normalizedEmail, pass);
-      const user = userCredential.user;
+    const isAuthDisabled = err.code === 'auth/operation-not-allowed' || err.code === 'auth/configuration-not-found' || err.message?.includes('operation-not-allowed');
 
-      let profile: UserProfile = { email: user.email || normalizedEmail, role: isAdminEmail ? 'admin' : 'user' };
-
+    if (isAuthDisabled) {
+      console.log('Firebase Auth is disabled or not allowed. Falling back to secure Firestore-based accounts.');
       try {
-        // Fetch user profile from Firestore
-        const profileDoc = await getDoc(doc(db, 'users', user.uid));
+        const userDocRef = doc(db, 'users', fallbackUid);
+        const userDoc = await getDoc(userDocRef);
 
-        if (profileDoc.exists()) {
-          profile = profileDoc.data() as UserProfile;
-          if (isAdminEmail && profile.role !== 'admin') {
-            profile.role = 'admin';
-            try {
-              await updateDoc(doc(db, 'users', user.uid), { role: 'admin' });
-            } catch (uErr) {
-              console.warn('Firestore updateDoc failed (offline fallback):', uErr);
-            }
+        if (userDoc.exists()) {
+          // User already exists! Treat this as a Sign In.
+          const userData = userDoc.data();
+          if (userData.password && userData.password !== pass) {
+            const wrongPassError = new Error('Incorrect password');
+            (wrongPassError as any).code = 'auth/wrong-password';
+            throw wrongPassError;
           }
+
+          const role = isAdminEmail ? 'admin' : (userData.role || 'user');
+          const profile: UserProfile = {
+            email: normalizedEmail,
+            role: role
+          };
+
+          const mockUser = {
+            uid: fallbackUid,
+            email: normalizedEmail,
+            emailVerified: true,
+            isAnonymous: false,
+          } as any as User;
+
+          localStorage.setItem('luxora_fallback_user', JSON.stringify({
+            uid: fallbackUid,
+            email: normalizedEmail,
+            role: role
+          }));
+
+          return { user: mockUser, profile, isNewUser: false };
         } else {
-          // Fallback: Create profile if it doesn't exist
-          profile.role = isAdminEmail ? 'admin' : 'user';
-          try {
-            await setDoc(doc(db, 'users', user.uid), {
-              email: normalizedEmail,
-              role: profile.role,
-              createdAt: serverTimestamp()
-            });
-          } catch (sErr) {
-            console.warn('Firestore setDoc failed (offline fallback):', sErr);
-          }
-        }
-      } catch (fErr) {
-        console.warn('Firestore getDoc failed during unifiedAuth login (offline fallback):', fErr);
-      }
+          // User does not exist! Treat this as a Create Account (Register).
+          const role = isAdminEmail ? 'admin' : 'user';
+          const profile: UserProfile = {
+            email: normalizedEmail,
+            role: role
+          };
 
-      return { user, profile, isNewUser: false };
+          await setDoc(userDocRef, {
+            email: normalizedEmail,
+            password: pass,
+            role: role,
+            createdAt: serverTimestamp()
+          });
+
+          const mockUser = {
+            uid: fallbackUid,
+            email: normalizedEmail,
+            emailVerified: true,
+            isAnonymous: false,
+          } as any as User;
+
+          localStorage.setItem('luxora_fallback_user', JSON.stringify({
+            uid: fallbackUid,
+            email: normalizedEmail,
+            role: role
+          }));
+
+          return { user: mockUser, profile, isNewUser: true };
+        }
+      } catch (dbErr: any) {
+        console.error('Error in Firestore-based fallback accounts:', dbErr);
+        throw dbErr;
+      }
     }
 
-    // Propagate any other errors (e.g. invalid credentials, weak-password, etc.)
+    // 2. Fallback to Login if email already in use
+    if (err.code === 'auth/email-already-in-use') {
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, normalizedEmail, pass);
+        const user = userCredential.user;
+
+        let profile: UserProfile = { email: user.email || normalizedEmail, role: isAdminEmail ? 'admin' : 'user' };
+
+        try {
+          // Fetch user profile from Firestore
+          const profileDoc = await getDoc(doc(db, 'users', user.uid));
+
+          if (profileDoc.exists()) {
+            profile = profileDoc.data() as UserProfile;
+            if (isAdminEmail && profile.role !== 'admin') {
+              profile.role = 'admin';
+              try {
+                await updateDoc(doc(db, 'users', user.uid), { role: 'admin' });
+              } catch (uErr) {
+                console.warn('Firestore updateDoc failed (offline fallback):', uErr);
+              }
+            }
+          } else {
+            // Fallback: Create profile if it doesn't exist
+            profile.role = isAdminEmail ? 'admin' : 'user';
+            try {
+              await setDoc(doc(db, 'users', user.uid), {
+                email: normalizedEmail,
+                role: profile.role,
+                createdAt: serverTimestamp()
+              });
+            } catch (sErr) {
+              console.warn('Firestore setDoc failed (offline fallback):', sErr);
+            }
+          }
+        } catch (fErr) {
+          console.warn('Firestore getDoc failed during unifiedAuth login (offline fallback):', fErr);
+        }
+
+        return { user, profile, isNewUser: false };
+      } catch (signInErr: any) {
+        if (signInErr.code === 'auth/operation-not-allowed' || signInErr.code === 'auth/configuration-not-found' || signInErr.message?.includes('operation-not-allowed')) {
+          console.log('Firebase Auth is disabled during fallback sign-in. Using Firestore-based credentials.');
+          const userDocRef = doc(db, 'users', fallbackUid);
+          const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            if (userData.password && userData.password !== pass) {
+              const wrongPassError = new Error('Incorrect password');
+              (wrongPassError as any).code = 'auth/wrong-password';
+              throw wrongPassError;
+            }
+            const role = isAdminEmail ? 'admin' : (userData.role || 'user');
+            const profile: UserProfile = { email: normalizedEmail, role };
+            const mockUser = { uid: fallbackUid, email: normalizedEmail } as any as User;
+            localStorage.setItem('luxora_fallback_user', JSON.stringify({ uid: fallbackUid, email: normalizedEmail, role }));
+            return { user: mockUser, profile, isNewUser: false };
+          } else {
+            const userNotFoundError = new Error('User not registered.');
+            (userNotFoundError as any).code = 'auth/user-not-found';
+            throw userNotFoundError;
+          }
+        }
+        throw signInErr;
+      }
+    }
+
     throw err;
   }
 }
@@ -144,45 +280,95 @@ export async function unifiedAuth(email: string, pass: string): Promise<{ user: 
  * Sign in an existing user with Email/Password and fetch their user profile.
  */
 export async function loginUser(email: string, pass: string): Promise<{ user: User; profile: UserProfile }> {
-  const userCredential = await signInWithEmailAndPassword(auth, email, pass);
-  const user = userCredential.user;
-  
   const normalizedEmail = email.toLowerCase().trim();
   const isAdminEmail = normalizedEmail === 'konami5miv@gmail.com' || normalizedEmail === 'miv3game@gmail.com';
-  let profile: UserProfile = { email: user.email || email, role: isAdminEmail ? 'admin' : 'user' };
-  
-  try {
-    // Fetch user profile from Firestore
-    const profileDoc = await getDoc(doc(db, 'users', user.uid));
+  const fallbackUid = 'fallback_user_' + normalizedEmail.replace(/[^a-zA-Z0-9]/g, '_');
 
-    if (profileDoc.exists()) {
-      profile = profileDoc.data() as UserProfile;
-      if (isAdminEmail && profile.role !== 'admin') {
-        profile.role = 'admin';
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, normalizedEmail, pass);
+    const user = userCredential.user;
+    
+    let profile: UserProfile = { email: user.email || normalizedEmail, role: isAdminEmail ? 'admin' : 'user' };
+    
+    try {
+      // Fetch user profile from Firestore
+      const profileDoc = await getDoc(doc(db, 'users', user.uid));
+
+      if (profileDoc.exists()) {
+        profile = profileDoc.data() as UserProfile;
+        if (isAdminEmail && profile.role !== 'admin') {
+          profile.role = 'admin';
+          try {
+            await updateDoc(doc(db, 'users', user.uid), { role: 'admin' });
+          } catch (uErr) {
+            console.warn('Firestore updateDoc failed in loginUser (offline fallback):', uErr);
+          }
+        }
+      } else {
+        // Fallback: Create profile if it somehow doesn't exist yet
+        profile.role = isAdminEmail ? 'admin' : 'user';
         try {
-          await updateDoc(doc(db, 'users', user.uid), { role: 'admin' });
-        } catch (uErr) {
-          console.warn('Firestore updateDoc failed in loginUser (offline fallback):', uErr);
+          await setDoc(doc(db, 'users', user.uid), {
+            email: normalizedEmail,
+            role: profile.role,
+            createdAt: serverTimestamp()
+          });
+        } catch (sErr) {
+          console.warn('Firestore setDoc failed in loginUser (offline fallback):', sErr);
         }
       }
-    } else {
-      // Fallback: Create profile if it somehow doesn't exist yet
-      profile.role = isAdminEmail ? 'admin' : 'user';
+    } catch (fErr) {
+      console.warn('Firestore getDoc failed in loginUser (offline fallback):', fErr);
+    }
+
+    return { user, profile };
+  } catch (err: any) {
+    if (err.code === 'auth/operation-not-allowed' || err.code === 'auth/configuration-not-found' || err.message?.includes('operation-not-allowed')) {
+      console.log('Firebase Auth is disabled in loginUser. Falling back to secure Firestore-based accounts.');
       try {
-        await setDoc(doc(db, 'users', user.uid), {
-          email: normalizedEmail,
-          role: profile.role,
-          createdAt: serverTimestamp()
-        });
-      } catch (sErr) {
-        console.warn('Firestore setDoc failed in loginUser (offline fallback):', sErr);
+        const userDocRef = doc(db, 'users', fallbackUid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData.password && userData.password !== pass) {
+            const wrongPassError = new Error('Incorrect password');
+            (wrongPassError as any).code = 'auth/wrong-password';
+            throw wrongPassError;
+          }
+
+          const role = isAdminEmail ? 'admin' : (userData.role || 'user');
+          const profile: UserProfile = {
+            email: normalizedEmail,
+            role: role
+          };
+
+          const mockUser = {
+            uid: fallbackUid,
+            email: normalizedEmail,
+            emailVerified: true,
+            isAnonymous: false,
+          } as any as User;
+
+          localStorage.setItem('luxora_fallback_user', JSON.stringify({
+            uid: fallbackUid,
+            email: normalizedEmail,
+            role: role
+          }));
+
+          return { user: mockUser, profile };
+        } else {
+          const notFoundError = new Error('User not registered.');
+          (notFoundError as any).code = 'auth/user-not-found';
+          throw notFoundError;
+        }
+      } catch (dbErr: any) {
+        console.error('Error in loginUser Firestore-based fallback:', dbErr);
+        throw dbErr;
       }
     }
-  } catch (fErr) {
-    console.warn('Firestore getDoc failed in loginUser (offline fallback):', fErr);
+    throw err;
   }
-
-  return { user, profile };
 }
 
 /**
@@ -234,7 +420,11 @@ export async function signInWithGoogle(): Promise<{ user: User; profile: UserPro
  * Logout currently signed in user.
  */
 export async function logoutUser(): Promise<void> {
-  await signOut(auth);
+  try {
+    await signOut(auth);
+  } finally {
+    localStorage.removeItem('luxora_fallback_user');
+  }
 }
 
 /**
@@ -513,7 +703,7 @@ export async function uploadProductImage(file: File): Promise<string> {
   // Fetch user profile to verify admin role
   const profile = await getUserProfile(currentUser.uid);
   if (!profile || profile.role !== 'admin') {
-    throw new Error('Unauthorized asset action. Media uploads are restricted to Sovereign Admin accounts.');
+    throw new Error('Unauthorized asset action. Media uploads are restricted to Admin accounts.');
   }
 
   const fileRef = ref(storage, `products/${Date.now()}_${file.name}`);

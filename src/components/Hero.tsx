@@ -92,9 +92,9 @@ export default function Hero({ lang, onExplore, onBookViewing }: HeroProps) {
                   </>
                 ) : (
                   <>
-                    Define the Pinnacle of <br />
+                    Discover the Finest of <br />
                     <span className="bg-gradient-to-r from-gold via-gold-light to-gold-dark bg-clip-text text-transparent filter drop-shadow-[0_2px_15px_rgba(212,175,55,0.3)]">
-                      Dubai Prestigious Style
+                      Dubai Luxury Style
                     </span>
                   </>
                 )}
@@ -103,7 +103,7 @@ export default function Hero({ lang, onExplore, onBookViewing }: HeroProps) {
               <p className="max-w-xl text-base sm:text-lg text-luxury-cream/80 leading-relaxed font-sans">
                 {isRTL 
                   ? 'وصول حصري لأرقى تشكيلة من الفضة الإيطالية عيار ٩٢٥ والمجوهرات المقاومة لتغير اللون، العطور الفاخرة، الساعات، والمحافظ والنظارات والأحزمة الراقية.'
-                  : 'Exclusive access to premium 925 Italian Silver & non-tarnish jewelry, bespoke luxury perfumes, exquisite watches, leather wallets, sunglasses, and belts curated for you.'
+                  : 'Exclusive access to premium 925 Italian Silver & non-tarnish jewelry, luxury perfumes, exquisite watches, leather wallets, sunglasses, and belts curated for you.'
                 }
               </p>
             </motion.div>

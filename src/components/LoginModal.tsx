@@ -261,7 +261,7 @@ export default function LoginModal({
       if (err.code === 'auth/configuration-not-found') {
         errorMsg = isRTL
           ? 'المشرف السيادي: لم يتم تمكين تسجيل الدخول بالبريد الإلكتروني وكلمة المرور في لوحة تحكم Firebase بعد. يرجى تمكين "Email/Password" في لوحة تحكم Firebase (Authentication > Sign-in method)، أو استخدام خيار تسجيل الدخول الآمن من Google أدناه.'
-          : 'Sovereign Admin: The Email/Password sign-in method is not enabled in your Firebase console. Please go to Firebase Console > Authentication > Sign-in method and enable "Email/Password", or use the secure Google Sign-In option below.';
+          : 'Admin Notice: The Email/Password sign-in method is not enabled in your Firebase console. Please go to Firebase Console > Authentication > Sign-in method and enable "Email/Password", or use the secure Google Sign-In option below.';
       } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         errorMsg = isRTL 
           ? 'كلمة المرور غير صحيحة.' 
@@ -507,7 +507,7 @@ export default function LoginModal({
                                   {order.status === 'Cancelled' ? (
                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/15 border border-red-500/30 text-red-500 text-[9px] font-mono font-bold uppercase tracking-wider">
                                       <span className="h-1 w-1 rounded-full bg-red-500 animate-pulse" />
-                                      {isRTL ? 'ملغي ومسترد' : 'Cancelled & Revoked'}
+                                      {isRTL ? 'ملغي ومسترد' : 'Cancelled'}
                                     </span>
                                   ) : (
                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#10b981]/15 border border-[#10b981]/30 text-[#10b981] text-[9px] font-mono font-bold uppercase tracking-wider">
@@ -709,10 +709,10 @@ export default function LoginModal({
                                         </div>
                                         <div>
                                           <p className="text-[11px] font-serif font-bold text-[#e5c158]">
-                                            {isRTL ? 'معالجة وتحضير التحفة' : 'Curatorial Preparation'}
+                                            {isRTL ? 'معالجة وتحضير التحفة' : 'Order Processing'}
                                           </p>
                                           <p className="text-[9px] text-luxury-cream/50 leading-relaxed">
-                                            {isRTL ? 'تدقيق وفحص جودة التحفة الفنية قبل النقل' : 'White-glove inspection and luxury validation complete'}
+                                            {isRTL ? 'تدقيق وفحص جودة التحفة الفنية قبل النقل' : 'Quality inspection and packaging complete'}
                                           </p>
                                         </div>
                                       </div>
@@ -732,10 +732,10 @@ export default function LoginModal({
                                         </div>
                                         <div>
                                           <p className={`text-[11px] font-serif font-bold ${getOrderTrackingStage(order.id) === 'Delivered' ? 'text-[#e5c158]' : 'text-white'}`}>
-                                            {isRTL ? 'نقل مدرع ودبلوماسي' : 'Armored Transit Secured'}
+                                            {isRTL ? 'نقل مدرع ودبلوماسي' : 'Shipped & In Transit'}
                                           </p>
                                           <p className="text-[9px] text-luxury-cream/50 leading-relaxed">
-                                            {isRTL ? 'التحفة في طريقها بمرافقة دبلوماسية خاصة' : 'En route via secure diplomatic courier service'}
+                                            {isRTL ? 'التحفة في طريقها بمرافقة دبلوماسية خاصة' : 'En route to your delivery address'}
                                           </p>
                                         </div>
                                       </div>
@@ -755,7 +755,7 @@ export default function LoginModal({
                                         </div>
                                         <div>
                                           <p className={`text-[11px] font-serif font-bold ${getOrderTrackingStage(order.id) === 'Delivered' ? 'text-gold' : 'text-luxury-cream/30'}`}>
-                                            {isRTL ? 'تم التسليم باليد' : 'Delivered & Handover'}
+                                            {isRTL ? 'تم التسليم باليد' : 'Delivered'}
                                           </p>
                                           <p className="text-[9px] text-luxury-cream/50 leading-relaxed">
                                             {getOrderTrackingStage(order.id) === 'Delivered' 
@@ -785,18 +785,18 @@ export default function LoginModal({
                                   Styles & Grace
                                 </h4>
                                 <span className="text-[9px] uppercase tracking-wider text-luxury-cream/50 font-mono">
-                                  {isRTL ? 'معاينة المستند المالي' : 'Deed Preview'}
+                                  {isRTL ? 'معاينة المستند المالي' : 'Invoice Preview'}
                                 </span>
                               </div>
                               {selectedOrder.status === 'Cancelled' ? (
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/15 border border-red-500/30 text-red-500 text-[9px] font-mono font-bold uppercase tracking-wider">
                                   <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                                  {isRTL ? 'ملغي ومسترد' : 'Cancelled & Revoked'}
+                                  {isRTL ? 'ملغي ومسترد' : 'Cancelled'}
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#10b981]/15 border border-[#10b981]/30 text-[#10b981] text-[9px] font-mono font-bold uppercase tracking-wider">
                                   <span className="h-1.5 w-1.5 rounded-full bg-[#10b981] animate-ping" />
-                                  {isRTL ? 'معتمد ومؤمن' : 'Secured & Sealed'}
+                                  {isRTL ? 'معتمد ومؤمن' : 'Confirmed'}
                                 </span>
                               )}
                             </div>
@@ -805,19 +805,19 @@ export default function LoginModal({
                             <div className="grid grid-cols-2 gap-4 text-[11px] bg-[#0d0d0d] p-3 rounded-lg border border-[#262626]">
                               <div>
                                 <span className="block text-[8px] uppercase tracking-wider text-luxury-cream/40 mb-0.5">
-                                  {isRTL ? 'رقم المعاملة' : 'Deed Reference'}
+                                  {isRTL ? 'رقم المعاملة' : 'Order Reference'}
                                 </span>
                                 <span className="font-mono text-white font-bold tracking-wider">{selectedOrder.id}</span>
                               </div>
                               <div>
                                 <span className="block text-[8px] uppercase tracking-wider text-luxury-cream/40 mb-0.5">
-                                  {isRTL ? 'تاريخ الاستحواذ' : 'Acquisition Date'}
+                                  {isRTL ? 'تاريخ الاستحواذ' : 'Order Date'}
                                 </span>
                                 <span className="font-mono text-luxury-cream/80">{selectedOrder.orderTime}</span>
                               </div>
                               <div>
                                 <span className="block text-[8px] uppercase tracking-wider text-luxury-cream/40 mb-0.5">
-                                  {isRTL ? 'قناة التسوية' : 'Settlement Channel'}
+                                  {isRTL ? 'قناة التسوية' : 'Payment Method'}
                                 </span>
                                 <span className="text-gold font-serif uppercase tracking-widest text-[9px]">{selectedOrder.checkoutMethod || 'QuickBuy'}</span>
                               </div>
@@ -826,7 +826,7 @@ export default function LoginModal({
                                   {isRTL ? 'إحداثيات الشحن' : 'Coordinates'}
                                 </span>
                                 <span className="text-white truncate block max-w-[180px]" title={selectedOrder.deliveryCoordinates}>
-                                  {selectedOrder.deliveryCoordinates || (isRTL ? 'الشحن الجوي السري' : 'Discrete Air Transit')}
+                                  {selectedOrder.deliveryCoordinates || (isRTL ? 'الشحن الجوي السري' : 'Standard Shipping')}
                                 </span>
                               </div>
                             </div>
@@ -835,11 +835,11 @@ export default function LoginModal({
                             {(selectedOrder.clientName || selectedOrder.customerPhone || selectedOrder.bespokeNotes) && (
                               <div className="text-[11px] bg-[#0c0c0c] border border-[#262626] p-3 rounded-lg space-y-1.5">
                                 <span className="block text-[8px] uppercase tracking-widest text-gold/60 font-serif mb-1">
-                                  {isRTL ? 'بيانات العميل الكريم والتسليم' : 'VIP Patron & Delivery'}
+                                  {isRTL ? 'بيانات العميل الكريم والتسليم' : 'Customer & Delivery'}
                                 </span>
                                 {selectedOrder.clientName && (
                                   <div className="flex justify-between">
-                                    <span className="text-luxury-cream/40">{isRTL ? 'العميل الكريم:' : 'VIP Client:'}</span>
+                                    <span className="text-luxury-cream/40">{isRTL ? 'العميل الكريم:' : 'Customer Name:'}</span>
                                     <span className="text-white font-medium">{selectedOrder.clientName}</span>
                                   </div>
                                 )}
@@ -851,7 +851,7 @@ export default function LoginModal({
                                 )}
                                 {selectedOrder.bespokeNotes && (
                                   <div className="flex justify-between border-t border-[#262626] pt-1.5 mt-1.5">
-                                    <span className="text-luxury-cream/40">{isRTL ? 'مرافقة خاصة:' : 'Bespoke Escort:'}</span>
+                                    <span className="text-luxury-cream/40">{isRTL ? 'مرافقة خاصة:' : 'Delivery Notes:'}</span>
                                     <span className="text-gold italic font-serif">{selectedOrder.bespokeNotes}</span>
                                   </div>
                                 )}
@@ -861,7 +861,7 @@ export default function LoginModal({
                             {/* Ledger Table */}
                             <div className="space-y-2">
                               <span className="block text-[9px] uppercase tracking-widest text-gold/60 font-serif">
-                                {isRTL ? 'تحف الفواتير وجدول المقتنيات' : 'Curated Masterpiece Ledger'}
+                                {isRTL ? 'تحف الفواتير وجدول المقتنيات' : 'Order Items'}
                               </span>
                               <div className="border border-[#262626] rounded-lg overflow-hidden bg-[#0d0d0d]">
                                 <table className="w-full text-left border-collapse text-[11px]">
@@ -907,12 +907,12 @@ export default function LoginModal({
                             {/* Financial breakdown */}
                             <div className="bg-[#0c0c0c] border border-[#262626] p-4 rounded-lg space-y-2 text-[11px]">
                               <div className="flex justify-between text-luxury-cream/60">
-                                <span className="uppercase tracking-wider">{isRTL ? 'المجموع قبل الضريبة' : 'Acquisition Price'}</span>
+                                <span className="uppercase tracking-wider">{isRTL ? 'المجموع قبل الضريبة' : 'Subtotal'}</span>
                                 <span className="font-mono text-white">{(selectedOrder.subtotal || selectedOrder.priceAED).toLocaleString()} AED</span>
                               </div>
                               {selectedOrder.discount && selectedOrder.discount > 0 ? (
                                 <div className="flex justify-between text-gold">
-                                  <span className="uppercase tracking-wider">{isRTL ? 'خصم عضوية النخبة' : 'VIP Elite Rebate'}</span>
+                                  <span className="uppercase tracking-wider">{isRTL ? 'خصم عضوية النخبة' : 'VIP Discount'}</span>
                                   <span className="font-mono font-bold">-{selectedOrder.discount.toLocaleString()} AED</span>
                                 </div>
                               ) : null}
@@ -948,7 +948,7 @@ export default function LoginModal({
                                         setFeedbackReview('');
                                       }}
                                       className="bg-[#e5c158]/15 hover:bg-[#e5c158]/25 border border-[#e5c158]/60 hover:border-[#e5c158] text-[#e5c158] text-[10px] font-serif uppercase tracking-widest font-bold px-4 py-2.5 rounded-lg transition-all active:scale-[0.97] flex items-center gap-1.5 cursor-pointer animate-pulse"
-                                      title={isRTL ? 'تقديم تقييم للتحفة' : 'Provide Masterpiece Feedback'}
+                                      title={isRTL ? 'تقديم تقييم للتحفة' : 'Review Order'}
                                     >
                                       <Star className="h-4 w-4 fill-[#e5c158]" />
                                       <span>{isRTL ? 'تقييم التحفة' : 'Provide Feedback'}</span>
@@ -960,7 +960,7 @@ export default function LoginModal({
                                 <button
                                   onClick={() => setOrderToCancel(selectedOrder)}
                                   className="bg-transparent hover:bg-red-950/30 border border-red-900 text-red-500 text-[10px] font-serif uppercase tracking-widest font-bold px-4 py-2.5 rounded-lg transition-all active:scale-[0.97] flex items-center gap-1.5 cursor-pointer"
-                                  title={isRTL ? 'إلغاء هذا المعاملة السيادية' : 'Cancel This Sovereign Transaction'}
+                                  title={isRTL ? 'إلغاء هذا المعاملة السيادية' : 'Cancel This Order'}
                                 >
                                   <span>✕</span>
                                   <span>{isRTL ? 'إلغاء الطلب' : 'Cancel Order'}</span>
@@ -1174,7 +1174,7 @@ export default function LoginModal({
                 onClick={handleCancelConfirm}
                 className="flex-1 bg-red-950/40 hover:bg-red-900 border border-red-500/30 text-red-400 hover:text-white text-xs font-serif uppercase tracking-widest font-bold py-2.5 rounded-lg transition-all active:scale-95 cursor-pointer"
               >
-                {isRTL ? 'إلغاء الاستحواذ' : 'Revoke Deed'}
+                {isRTL ? 'إلغاء الاستحواذ' : 'Cancel Order'}
               </button>
             </div>
           </div>
@@ -1246,12 +1246,12 @@ export default function LoginModal({
             {/* Textarea review */}
             <div className="space-y-1.5 text-start">
               <span className="block text-[10px] uppercase tracking-widest text-gold/60 font-serif">
-                {isRTL ? 'ملاحظاتكم الاستثنائية' : 'Bespoke Experience Notes'}
+                {isRTL ? 'ملاحظاتكم الاستثنائية' : 'Review / Comments'}
               </span>
               <textarea
                 value={feedbackReview}
                 onChange={(e) => setFeedbackReview(e.target.value)}
-                placeholder={isRTL ? 'شاركنا تفاصيل تجربتك الاستثنائية مع هذه التحفة الملكية...' : 'Share your experience with this curated masterpiece...'}
+                placeholder={isRTL ? 'شاركنا تفاصيل تجربتك الاستثنائية مع هذه التحفة الملكية...' : 'Share your experience with this product...'}
                 className="w-full min-h-[90px] bg-[#121212] border border-[#262626] focus:border-[#e5c158]/50 text-white rounded-lg p-3 text-xs outline-none focus:ring-1 focus:ring-[#e5c158]/30 transition-all font-sans resize-none"
               />
             </div>

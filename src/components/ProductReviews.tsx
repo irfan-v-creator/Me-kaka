@@ -116,7 +116,7 @@ export default function ProductReviews({ productId, lang }: ProductReviewsProps)
       <div className="flex items-center gap-3">
         <Sparkles className="h-5 w-5 text-gold" />
         <h3 className="font-serif text-lg font-bold tracking-widest text-gold uppercase">
-          {isRTL ? 'سجل آراء النخبة والمقتنين' : 'Patronage & Curated Reviews'}
+          {isRTL ? 'سجل آراء النخبة والمقتنين' : 'Customer Reviews'}
         </h3>
       </div>
 
@@ -284,12 +284,12 @@ export default function ProductReviews({ productId, lang }: ProductReviewsProps)
               {/* Review Text Area */}
               <div className="space-y-1.5">
                 <span className="block text-[10px] uppercase tracking-widest text-gold/60 font-serif">
-                  {isRTL ? 'ملاحظاتكم الاستثنائية' : 'Bespoke Experience Notes'}
+                  {isRTL ? 'ملاحظاتكم الاستثنائية' : 'Review / Comments'}
                 </span>
                 <textarea
                   value={reviewText}
                   onChange={(e) => setReviewText(e.target.value)}
-                  placeholder={isRTL ? 'شاركنا تفاصيل تجربتك الاستثنائية مع هذه التحفة الملكية...' : 'Share your experience with this curated masterpiece...'}
+                  placeholder={isRTL ? 'شاركنا تفاصيل تجربتك الاستثنائية مع هذه التحفة الملكية...' : 'Share your experience with this product...'}
                   className="w-full min-h-[90px] bg-[#121212] border border-[#262626] focus:border-[#e5c158]/50 text-white rounded-lg p-3 text-xs outline-none focus:ring-1 focus:ring-[#e5c158]/30 transition-all font-sans resize-none"
                   required
                 />

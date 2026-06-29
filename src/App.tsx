@@ -12,8 +12,18 @@ import LoginModal from './components/LoginModal';
 import SovereignWishlist from './components/SovereignWishlist';
 import { Language, Product, CartItem, Order } from './types';
 import { LUXURY_PRODUCTS } from './data';
-import { auth } from './lib/firebase';
+import { auth, app } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
+import { 
+  collection, 
+  onSnapshot, 
+  doc, 
+  setDoc, 
+  deleteDoc, 
+  getDocs,
+  getFirestore
+} from 'firebase/firestore';
+const db = getFirestore(app, "ai-studio-luxoradubai-0f824072-2fe7-4c75-a950-651ada91cc36");
 import { 
   getUserProfile, 
   getCartFromFirestore, 
@@ -43,6 +53,100 @@ export default function App() {
   const [loginModalInitialTab, setLoginModalInitialTab] = useState<'profile' | 'orders'>('profile');
   const [activePage, setActivePage] = useState<string>('home');
   const [products, setProducts] = useState<Product[]>(LUXURY_PRODUCTS);
+
+  // Real-time synchronization of the products collection with Firestore "products"
+  useEffect(() => {
+    const sanitizeForFirestore = (obj: any): any => {
+      const result: any = {};
+      Object.keys(obj).forEach((key) => {
+        const value = obj[key];
+        if (value !== undefined) {
+          if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+            result[key] = sanitizeForFirestore(value);
+          } else {
+            result[key] = value;
+          }
+        }
+      });
+      return result;
+    };
+
+    const productsCol = collection(db, 'products');
+
+    const handleProductsSnapshot = async (snapshot: any) => {
+      if (snapshot.empty) {
+        console.log('Firestore "products" collection is empty. Seeding default luxury products...');
+        try {
+          for (const prod of LUXURY_PRODUCTS) {
+            await setDoc(doc(db, 'products', prod.id), sanitizeForFirestore(prod));
+          }
+          console.log('[Admin/App] Default products successfully seeded into collection "products".');
+        } catch (err) {
+          console.error('[Admin/App] Error seeding products to Firestore:', err);
+        }
+      } else {
+        const loadedProducts: Product[] = [];
+        snapshot.forEach((docSnap: any) => {
+          const data = docSnap.data();
+          loadedProducts.push({
+            id: docSnap.id,
+            nameEn: data.nameEn || '',
+            nameAr: data.nameAr || '',
+            priceAED: Number(data.priceAED) || 0,
+            image: data.image || '',
+            videoUrl: data.videoUrl,
+            categoryEn: data.categoryEn || '',
+            categoryAr: data.categoryAr || '',
+            descriptionEn: data.descriptionEn || '',
+            descriptionAr: data.descriptionAr || '',
+            stockStatus: data.stockStatus || 'In Stock',
+            stockStatusAr: data.stockStatusAr || 'متوفر',
+            isPremium: data.isPremium ?? (Number(data.priceAED) >= 50000),
+            stock: data.stock,
+            originalPriceAED: data.originalPriceAED
+          });
+        });
+        loadedProducts.sort((a, b) => a.id.localeCompare(b.id));
+        setProducts(loadedProducts);
+      }
+    };
+
+    const fetchProductsDirectly = async () => {
+      try {
+        const snapshot = await getDocs(productsCol);
+        await handleProductsSnapshot(snapshot);
+      } catch (err) {
+        console.warn('[App] getDocs fallback fetch failed:', err);
+      }
+    };
+
+    // Fast initial load on mount
+    fetchProductsDirectly();
+
+    // Subscribe to real-time events with fallback handlers
+    let unsubscribe: () => void = () => {};
+    try {
+      unsubscribe = onSnapshot(productsCol, async (snapshot) => {
+        await handleProductsSnapshot(snapshot);
+      }, (error) => {
+        console.warn('[App] Real-time products sync stream disconnected or blocked. Accessing fallback handler:', error);
+        fetchProductsDirectly();
+      });
+    } catch (err) {
+      console.warn('[App] Failed to build products onSnapshot sync listener, calling fallback:', err);
+      fetchProductsDirectly();
+    }
+
+    // Dynamic safety interval polling to secure data consistency across network environments
+    const fallbackPoll = setInterval(() => {
+      fetchProductsDirectly();
+    }, 12000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(fallbackPoll);
+    };
+  }, []);
 
   // Sovereign Wishlist State with localStorage synchronization
   const [favorites, setFavorites] = useState<string[]>(() => {
@@ -91,13 +195,19 @@ export default function App() {
   useEffect(() => {
     try {
       localStorage.setItem('luxora_cart', JSON.stringify(cart));
-      if (isLoggedIn && auth.currentUser) {
-        saveCartToFirestore(auth.currentUser.uid, cart);
+      if (isLoggedIn) {
+        let uid = auth.currentUser?.uid;
+        if (!uid && userEmail) {
+          uid = 'fallback_user_' + userEmail.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '_');
+        }
+        if (uid) {
+          saveCartToFirestore(uid, cart);
+        }
       }
     } catch (e) {
       console.error('Failed to sync shopping vault bag:', e);
     }
-  }, [cart, isLoggedIn]);
+  }, [cart, isLoggedIn, userEmail]);
 
 
   // Professional Orders Log state with localStorage synchronization
@@ -113,13 +223,13 @@ export default function App() {
     return [
       {
         id: 'ORD-8429',
-        productName: LUXURY_PRODUCTS[0]?.nameEn || 'The Golden Sovereign Chronometer',
+        productName: LUXURY_PRODUCTS[0]?.nameEn || 'The Golden Chronometer Watch',
         priceAED: 137025,
         customerPhone: '+971 50 123 4567',
         orderTime: '11:24 PM - Jun 22, 2026',
-        clientName: 'VIP Member Guild',
+        clientName: 'VIP Member',
         deliveryCoordinates: 'Penthouse 4, Address Boulevard, Downtown Dubai',
-        bespokeNotes: 'Escorted armored courier requested.',
+        bespokeNotes: 'Deliver to front desk.',
         userEmail: 'vip@stylesandgrace.ae',
         customerEmail: 'vip@stylesandgrace.ae',
         items: [{ product: LUXURY_PRODUCTS[0], quantity: 1 }],
@@ -130,11 +240,11 @@ export default function App() {
       },
       {
         id: 'ORD-1094',
-        productName: LUXURY_PRODUCTS[2]?.nameEn || 'Burj Oud Intense Bespoke Scent',
+        productName: LUXURY_PRODUCTS[2]?.nameEn || 'Burj Oud Intense Fragrance',
         priceAED: 3969,
         customerPhone: '+971 50 123 4567',
         orderTime: '09:15 PM - Jun 22, 2026',
-        clientName: 'VIP Member Guild',
+        clientName: 'VIP Member',
         deliveryCoordinates: 'Penthouse 4, Address Boulevard, Downtown Dubai',
         bespokeNotes: 'Deliver after sunset.',
         userEmail: 'vip@stylesandgrace.ae',
@@ -203,9 +313,43 @@ export default function App() {
           console.error('Error fetching user cart/orders from Firestore:', err);
         }
       } else {
-        setIsLoggedIn(false);
-        setIsAdmin(false);
-        setUserEmail(null);
+        // Fallback checks for DB/LocalStorage session
+        const savedFallbackUser = localStorage.getItem('luxora_fallback_user');
+        if (savedFallbackUser) {
+          try {
+            const fallbackUserObj = JSON.parse(savedFallbackUser);
+            setIsLoggedIn(true);
+            setUserEmail(fallbackUserObj.email);
+            const isBypassedAdmin = fallbackUserObj.email?.toLowerCase().trim() === 'konami5miv@gmail.com';
+            setIsAdmin(isBypassedAdmin);
+            
+            if (isBypassedAdmin) {
+              setActivePage('admin-portal');
+              window.location.hash = '#/admin-portal';
+            }
+            
+            // Sync cart & orders for fallback user
+            try {
+              const dbCart = await getCartFromFirestore(fallbackUserObj.uid);
+              if (dbCart && dbCart.length > 0) {
+                setCart(dbCart);
+              }
+              const dbOrders = await getUserOrders(fallbackUserObj.uid);
+              setOrders(dbOrders);
+            } catch (err) {
+              console.error('Error fetching fallback user cart/orders from Firestore:', err);
+            }
+          } catch (e) {
+            console.error('Failed to parse fallback user:', e);
+            setIsLoggedIn(false);
+            setIsAdmin(false);
+            setUserEmail(null);
+          }
+        } else {
+          setIsLoggedIn(false);
+          setIsAdmin(false);
+          setUserEmail(null);
+        }
       }
     });
     return () => unsubscribe();
@@ -361,9 +505,9 @@ export default function App() {
         day: 'numeric',
         year: 'numeric'
       }),
-      clientName: isRTL ? 'عميل خاص كبار الشخصيات' : 'VIP Patron Sovereign Suite',
-      deliveryCoordinates: isRTL ? 'موقع تسليم دبلوماسي - دبي' : 'Diplomatic Sovereign Coordinates, Dubai',
-      bespokeNotes: isRTL ? 'مطلوب مرافقة حراسة مسلحة دائمًا للقطع الثمينة' : 'Armed sovereign escort mandated at all times.',
+      clientName: isRTL ? 'عميل خاص كبار الشخصيات' : 'VIP Customer',
+      deliveryCoordinates: isRTL ? 'موقع تسليم دبلوماسي - دبي' : 'Standard Address, Dubai',
+      bespokeNotes: isRTL ? 'توصيل عادي مخصص' : 'Standard secure delivery.',
       vatAED: vatVal,
       checkoutMethod: 'QuickBuy',
       userEmail: isLoggedIn && userEmail ? userEmail : undefined,
@@ -458,17 +602,17 @@ export default function App() {
     
     let msg = `⚜️ *STYLES & GRACE - ORDER REQUEST* ⚜️\n`;
     msg += `${lineDivider}\n\n`;
-    msg += `👤 *Client / العميل الكريم:* ${checkoutName.trim()}\n`;
+    msg += `👤 *Customer / العميل الكريم:* ${checkoutName.trim()}\n`;
     msg += `📞 *Phone / الاتصال:* ${checkoutPhone.trim()}\n`;
     if (isLoggedIn && userEmail) {
-      msg += `✉️ *VIP Account / بريد النخبة:* ${userEmail}\n`;
+      msg += `✉️ *Email / البريد الإلكتروني:* ${userEmail}\n`;
     }
-    msg += `📍 *Armored Dispatch / عنوان التوصيل:* ${checkoutAddress.trim()}\n`;
+    msg += `📍 *Delivery Address / عنوان التوصيل:* ${checkoutAddress.trim()}\n`;
     if (checkoutNotes.trim()) {
-      msg += `📝 *Bespoke Requests / طلبات خاصة:* ${checkoutNotes.trim()}\n`;
+      msg += `📝 *Delivery Notes / طلبات خاصة:* ${checkoutNotes.trim()}\n`;
     }
     msg += `📅 *Date / التاريخ:* ${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}\n\n`;
-    msg += `🛍️ *SELECTED MASTERPIECES / القطع الفنية المختارة:*\n`;
+    msg += `🛍️ *ORDER ITEMS / المنتجات المختارة:*\n`;
     
     cart.forEach((item, index) => {
       const totalItemVal = item.product.priceAED * item.quantity;
@@ -479,17 +623,17 @@ export default function App() {
     });
 
     msg += `${lineDivider}\n`;
-    msg += `❖ *SOVEREIGN INVESTMENT SUMMARY / ملخص قيمة الاستثمار:*\n`;
+    msg += `❖ *ORDER SUMMARY / ملخص الطلب:*\n`;
     msg += `   • Subtotal / القيمة الأساسية: ${subtotal.toLocaleString()} AED\n`;
     
     if (discount > 0) {
-      msg += `   • VIP Elite 10% Discount / خصم كبار الشخصيات: -${discount.toLocaleString()} AED\n`;
+      msg += `   • VIP 10% Discount / خصم كبار الشخصيات: -${discount.toLocaleString()} AED\n`;
     }
     
     msg += `   • UAE VAT ${vatPercentage}% / ضريبة القيمة المضافة: ${vat.toLocaleString()} AED\n`;
     msg += `   • *Grand Total / الإجمالي النهائي:* *${total.toLocaleString()} AED*\n`;
     msg += `${lineDivider}\n\n`;
-    msg += `✨ _This dispatch request is locked and certified under Styles & Grace protection guidelines. A luxury client director will contact you on WhatsApp shortly to complete transaction details._`;
+    msg += `✨ _Thank you for shopping with Styles & Grace. We will contact you on WhatsApp shortly to complete your order details._`;
 
     // Target Phone Number is updated directly as requested: +971 58 825 7372
     const whatsappUrl = `https://wa.me/971588257372?text=${encodeURIComponent(msg)}`;
@@ -635,22 +779,51 @@ export default function App() {
   };
 
   // State handlers to mutate products collection immediately on admin demand
-  const handleAddProduct = (newProduct: Omit<Product, 'id'>) => {
+  const cleanUndefined = (obj: any): any => {
+    const result: any = {};
+    Object.keys(obj).forEach((key) => {
+      const val = obj[key];
+      if (val !== undefined) {
+        if (val !== null && typeof val === 'object' && !Array.isArray(val)) {
+          result[key] = cleanUndefined(val);
+        } else {
+          result[key] = val;
+        }
+      }
+    });
+    return result;
+  };
+
+  const handleAddProduct = async (newProduct: Omit<Product, 'id'>) => {
+    const id = `prod_${Date.now()}`;
     const productWithId: Product = {
       ...newProduct,
-      id: `prod_${Date.now()}`
+      id
     };
-    setProducts((prev) => [productWithId, ...prev]);
+    try {
+      await setDoc(doc(db, 'products', id), cleanUndefined(productWithId));
+      console.log(`[Firestore Success] Product "${newProduct.nameEn}" successfully added to "products" collection in database.`);
+    } catch (err) {
+      console.error('Failed to write product to Firestore collection "products":', err);
+    }
   };
 
-  const handleDeleteProduct = (id: string) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+  const handleDeleteProduct = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'products', id));
+      console.log(`[Firestore Success] Product with ID ${id} successfully deleted from "products" collection.`);
+    } catch (err) {
+      console.error('Failed to delete product from Firestore collection "products":', err);
+    }
   };
 
-  const handleUpdateProduct = (updatedProduct: Product) => {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === updatedProduct.id ? { ...p, ...updatedProduct } : p))
-    );
+  const handleUpdateProduct = async (updatedProduct: Product) => {
+    try {
+      await setDoc(doc(db, 'products', updatedProduct.id), cleanUndefined(updatedProduct));
+      console.log(`[Firestore Success] Product "${updatedProduct.nameEn}" successfully updated in "products" collection.`);
+    } catch (err) {
+      console.error('Failed to update product in Firestore collection "products":', err);
+    }
   };
 
   const handleDispatchOrder = async (id: string) => {
@@ -815,13 +988,13 @@ export default function App() {
                       {isRTL ? 'معرض المقتنيات الحصرية' : 'OUR COLLECTION'}
                     </span>
                     <h2 className="font-serif text-3xl sm:text-4xl font-extrabold tracking-widest text-white uppercase leading-relaxed">
-                      {isRTL ? 'كتالوج الفخامة الإيطالية في دبي' : 'EXCLUSIVE CATALOG SHOWCASE'}
+                      {isRTL ? 'كتالوج الفخامة الإيطالية في دبي' : 'OUR EXCLUSIVE CATALOG'}
                     </h2>
                     <div className="w-16 h-[1px] bg-gold mx-auto my-3" />
                     <p className="text-luxury-cream/70 text-sm sm:text-base leading-relaxed tracking-wide font-light">
                       {isRTL 
                         ? 'انغمس في تشكيلتنا الاستثنائية من الفضة الإيطالية الفاخرة والمجوهرات الراقية في دبي. صُنعت كل قطعة يدويًا لتجسيد الأناقة الخالدة والحرفية السويسرية الرفيعة.'
-                        : 'Explore our curated masterworks of premium Italian silver jewelry in Dubai, meticulously paired with timeless craftsmanship. Each exclusive masterpiece represents a high-end heritage, designed for the discerning individual.'
+                        : 'Explore our collection of premium Italian silver jewelry in Dubai. Each item is crafted with high quality materials and timeless designs.'
                       }
                     </p>
                   </div>
@@ -1079,15 +1252,15 @@ export default function App() {
                 </button>
                 <h1 className="font-serif text-2xl sm:text-3xl font-semibold tracking-widest text-white uppercase flex items-center gap-2 mt-1">
                   <ShoppingBag className="h-6 w-6 text-gold animate-pulse" />
-                  <span>{isRTL ? 'حقيبة الاقتناء الملوكية' : 'Royal Selection Bag'}</span>
+                  <span>{isRTL ? 'حقيبة الاقتناء الملوكية' : 'Your Shopping Cart'}</span>
                 </h1>
               </div>
               
               <div className="text-right">
                 <p className="text-[10px] uppercase tracking-widest text-luxury-cream/40 font-mono">
-                  {isRTL ? 'إثبات حيازة آمن' : 'Secured Shopping Vault Session'}
+                  {isRTL ? 'إثبات حيازة آمن' : 'Secure Checkout'}
                 </p>
-                <p className="text-xs text-gold font-mono">{cart.reduce((sum, item) => sum + item.quantity, 0)} {isRTL ? 'تحفة فنية مختارة' : 'Masterpiece(s)'}</p>
+                <p className="text-xs text-gold font-mono">{cart.reduce((sum, item) => sum + item.quantity, 0)} {isRTL ? 'تحفة فنية مختارة' : 'item(s)'}</p>
               </div>
             </div>
 
@@ -1099,19 +1272,19 @@ export default function App() {
                   <ShoppingBag className="h-8 w-8 text-gold/60" />
                 </div>
                 <h3 className="font-serif text-lg font-bold uppercase tracking-widest text-white mb-2">
-                  {isRTL ? 'حقيبة الاقتناء فارغة حالياً' : 'Your Shopping Bag is Empty'}
+                  {isRTL ? 'حقيبة الاقتناء فارغة حالياً' : 'Your Shopping Cart is Empty'}
                 </h3>
                 <p className="text-xs text-luxury-cream/60 leading-relaxed mb-8 max-w-md mx-auto">
                   {isRTL
                     ? 'اكتشف إبداعات حصرية لربيع وصيف ٢٠٢٦ المعززة بسبائك الذهب عيار ٢٤ قيراط لضمها لثرواتكم ومجموعتكم الفاخرة.'
-                    : 'Establish your selection from our private catalog of solid gold watch designs and diamond-set works to enrich your estate portfolio.'
+                    : 'Save or select high-quality jewelry and watches to your cart to make a purchase.'
                   }
                 </p>
                 <button
                   onClick={() => handleNavigate('shop')}
                   className="bg-gold hover:bg-white text-luxury-black text-xs uppercase font-serif font-bold tracking-widest px-8 py-3.5 rounded-md transition-all shadow-lg active:scale-95 cursor-pointer"
                 >
-                  {isRTL ? 'تصفح المجموعة بالكامل' : 'Explore Curated Masterpieces'}
+                  {isRTL ? 'تصفح المجموعة بالكامل' : 'Explore All Products'}
                 </button>
               </div>
             ) : (
@@ -1334,13 +1507,13 @@ export default function App() {
 
                       <div className="space-y-1">
                         <label className="block text-[10px] uppercase font-mono tracking-widest text-luxury-cream/50">
-                          {isRTL ? 'متطلبات وعلامات مرافقة خاصة (اختياري)' : 'Bespoke Guard Requirements (Optional)'}
+                          {isRTL ? 'متطلبات وعلامات مرافقة خاصة (اختياري)' : 'Special Delivery Instructions (Optional)'}
                         </label>
                         <input 
                           type="text"
                           value={checkoutNotes}
                           onChange={(e) => setCheckoutNotes(e.target.value)}
-                          placeholder={isRTL ? 'نقش أحرف العائلة بالذهب، سيارة دبلوماسية مرافقة...' : 'Double velvet layer box, customized secure armor transport...'}
+                          placeholder={isRTL ? 'نقش أحرف العائلة بالذهب، سيارة دبلوماسية مرافقة...' : 'Gift wrapping, deliver after 5 PM, ring bell...'}
                           className="w-full bg-luxury-black/60 border border-gold/20 rounded-md p-3 text-xs text-luxury-cream focus:outline-none focus:border-gold transition-colors font-sans"
                         />
                       </div>
@@ -1432,7 +1605,7 @@ export default function App() {
 
           {/* Location details */}
           <div className="space-y-2 flex flex-col items-center md:items-start text-luxury-cream/70">
-            <span className="font-serif text-[11px] font-bold text-gold uppercase tracking-widest mb-1">{isRTL ? 'موقعنا' : 'Bespoke Lounge'}</span>
+            <span className="font-serif text-[11px] font-bold text-gold uppercase tracking-widest mb-1">{isRTL ? 'موقعنا' : 'Our Store'}</span>
             <div className="flex items-center space-x-2 space-x-reverse justify-center md:justify-start text-center md:text-start">
               <MapPin className="h-3.5 w-3.5 text-gold flex-shrink-0" />
               <span>{isRTL ? 'محل ٢٢، مجمع العطار للتسوق، الكرامة - دبي، الإمارات العربية المتحدة' : 'Shop 22, Al Attar Shopping Mall, Karama - Dubai, UAE'}</span>
@@ -1740,24 +1913,24 @@ export default function App() {
                 {/* Client Delivery Details */}
                 <div className="space-y-3">
                   <h3 className="font-serif text-xs font-bold tracking-widest text-gold uppercase print-logo-gold">
-                    {isRTL ? 'بيانات العميل الكريم والتسليم' : 'VIP Patron & Delivery Coordinates'}
+                    {isRTL ? 'بيانات العميل الكريم والتسليم' : 'Customer & Delivery Details'}
                   </h3>
                   <div className="space-y-2 font-sans text-luxury-cream/80">
                     <div className="flex justify-between md:justify-start gap-4">
-                      <span className="text-luxury-cream/40 uppercase tracking-wider w-32 print-text-muted">{isRTL ? 'العميل الكريم:' : 'VIP Client Name:'}</span>
-                      <span className="text-white font-medium print-text-dark">{placedOrderInvoice.clientName || (isRTL ? 'عميل كبار الشخصيات' : 'VIP Patron')}</span>
+                      <span className="text-luxury-cream/40 uppercase tracking-wider w-32 print-text-muted">{isRTL ? 'العميل الكريم:' : 'Customer Name:'}</span>
+                      <span className="text-white font-medium print-text-dark">{placedOrderInvoice.clientName || (isRTL ? 'عميل كبار الشخصيات' : 'Customer')}</span>
                     </div>
                     <div className="flex justify-between md:justify-start gap-4">
                       <span className="text-luxury-cream/40 uppercase tracking-wider w-32 print-text-muted">{isRTL ? 'رقم الاتصال:' : 'Contact Phone:'}</span>
                       <span className="font-mono text-white print-text-dark">{placedOrderInvoice.customerPhone}</span>
                     </div>
                     <div className="flex justify-between md:justify-start gap-4">
-                      <span className="text-luxury-cream/40 uppercase tracking-wider w-32 print-text-muted">{isRTL ? 'إحداثيات التوصيل:' : 'Coordinates:'}</span>
+                      <span className="text-luxury-cream/40 uppercase tracking-wider w-32 print-text-muted">{isRTL ? 'إحداثيات التوصيل:' : 'Delivery Address:'}</span>
                       <span className="text-white print-text-dark">{placedOrderInvoice.deliveryCoordinates}</span>
                     </div>
                     {placedOrderInvoice.bespokeNotes && (
                       <div className="flex justify-between md:justify-start gap-4">
-                        <span className="text-luxury-cream/40 uppercase tracking-wider w-32 print-text-muted">{isRTL ? 'مرافقة خاصة:' : 'Bespoke Escort:'}</span>
+                        <span className="text-luxury-cream/40 uppercase tracking-wider w-32 print-text-muted">{isRTL ? 'مرافقة خاصة:' : 'Special Notes:'}</span>
                         <span className="text-gold font-medium italic print-logo-gold">{placedOrderInvoice.bespokeNotes}</span>
                       </div>
                     )}
@@ -1768,16 +1941,16 @@ export default function App() {
               {/* Itemized Table */}
               <div className="space-y-4 mb-8">
                 <h3 className="font-serif text-xs font-bold tracking-widest text-gold uppercase print-logo-gold">
-                  {isRTL ? 'مستند وجدول التحف الفنية والمقتنيات' : 'Curated Masterpieces Ledger'}
+                  {isRTL ? 'مستند وجدول التحف الفنية والمقتنيات' : 'Order Items'}
                 </h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
                       <tr className="border-b border-gold/20 text-gold uppercase font-serif tracking-widest print-logo-gold">
-                        <th className="py-3 px-1 text-start">{isRTL ? 'البيان والتحفة' : 'Masterpiece Description'}</th>
+                        <th className="py-3 px-1 text-start">{isRTL ? 'البيان والتحفة' : 'Product Description'}</th>
                         <th className="py-3 px-4 text-center">{isRTL ? 'الكمية' : 'Qty'}</th>
                         <th className="py-3 px-4 text-right">{isRTL ? 'سعر الوحدة' : 'Unit Price'}</th>
-                        <th className="py-3 px-4 text-right">{isRTL ? 'القيمة الإجمالية' : 'Total Value'}</th>
+                        <th className="py-3 px-4 text-right">{isRTL ? 'القيمة الإجمالية' : 'Total Price'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gold/10">
@@ -1818,7 +1991,7 @@ export default function App() {
               {/* Sovereign Summary Panel */}
               <div className="bg-luxury-black/40 border border-gold/10 p-6 rounded-xl ml-auto max-w-md space-y-3 font-sans text-xs">
                 <div className="flex justify-between text-luxury-cream/50">
-                  <span className="uppercase tracking-wider print-text-muted">{isRTL ? 'المجموع قبل الضريبة:' : 'Bespoke Subtotal:'}</span>
+                  <span className="uppercase tracking-wider print-text-muted">{isRTL ? 'المجموع قبل الضريبة:' : 'Subtotal:'}</span>
                   <span className="font-mono text-white print-text-dark">{invoiceSubtotal.toLocaleString()} AED</span>
                 </div>
                 

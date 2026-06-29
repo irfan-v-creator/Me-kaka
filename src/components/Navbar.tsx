@@ -257,7 +257,7 @@ export default function Navbar({
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gold/20 bg-gold/5 hover:border-gold hover:bg-gold/15 text-gold text-[10px] uppercase tracking-widest font-serif font-bold transition-all cursor-pointer shadow-[0_0_10px_rgba(229,193,88,0.05)]"
               >
                 <Award className="h-3.5 w-3.5" />
-                <span>{isRTL ? 'مقتنياتي' : 'ACQUISITIONS'}</span>
+                <span>{isRTL ? 'مقتنياتي' : 'MY ORDERS'}</span>
               </button>
             )}
 
@@ -349,17 +349,17 @@ export default function Navbar({
                         }}
                         className="w-full text-start text-xs font-serif text-luxury-cream hover:text-gold transition-colors block py-1 cursor-pointer"
                       >
-                        {isRTL ? '⚙️ فتح لوحة التحكم الرئيسية' : '⚙️ Launch Control Suite'}
+                        {isRTL ? '⚙️ فتح لوحة التحكم الرئيسية' : '⚙️ Admin Dashboard'}
                       </button>
                     )}
                     
                     {!isAdmin && (
                       <div className="rounded bg-gold/5 p-2 text-[10px] text-gold/80 leading-relaxed font-sans border border-gold/10">
-                        <strong className="block mb-1">{isRTL ? 'امتيازات العضو VIP:' : 'VIP Privileges Secured:'}</strong>
+                        <strong className="block mb-1">{isRTL ? 'امتيازات العضو VIP:' : 'VIP Benefits:'}</strong>
                         <ul className="list-disc pl-3 space-y-0.5 text-luxury-cream/80 text-[9px]" dir={isRTL ? 'rtl' : 'ltr'}>
-                          <li>{isRTL ? 'تصفح مخزون الخزنة الملكية الخاص' : 'Access Royal Vault items'}</li>
-                          <li>{isRTL ? 'دخول صالات كبار الشخصيات بنادي دبي مول' : 'Dubai Mall VIP Lounge access'}</li>
-                          <li>{isRTL ? 'توصيل مصفح ومؤمّن مجانيّ بالكامل' : 'Armored delivery'}</li>
+                          <li>{isRTL ? 'تصفح مخزون الخزنة الملكية الخاص' : 'Exclusive product items'}</li>
+                          <li>{isRTL ? 'دخول صالات كبار الشخصيات بنادي دبي مول' : 'Priority customer support'}</li>
+                          <li>{isRTL ? 'توصيل مصفح ومؤمّن مجانيّ بالكامل' : 'Free courier delivery'}</li>
                         </ul>
                       </div>
                     )}
@@ -371,7 +371,7 @@ export default function Navbar({
                     className="w-full bg-red-950/20 hover:bg-red-950/60 border border-red-500/20 hover:border-red-500/50 rounded p-2 text-[10px] font-serif uppercase tracking-widest text-red-400 hover:text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <LogOut className="h-3 w-3" />
-                    <span>{isRTL ? 'إنهاء الجلسة الآمنة' : 'Terminate Secure Session'}</span>
+                    <span>{isRTL ? 'إنهاء الجلسة الآمنة' : 'Logout'}</span>
                   </button>
                 </div>
               )}
@@ -523,7 +523,7 @@ export default function Navbar({
                 }}
                 className="py-3 text-start font-serif text-base tracking-widest uppercase border-b border-gold/5 text-luxury-cream/80 hover:text-gold transition-all duration-300"
               >
-                {isRTL ? 'مقتنياتي الملكية' : 'MY ACQUISITIONS'}
+                {isRTL ? 'مقتنياتي الملكية' : 'MY ORDERS'}
               </button>
             )}
 

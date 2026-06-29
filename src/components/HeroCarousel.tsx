@@ -15,35 +15,35 @@ export default function HeroCarousel({ lang, onExplore }: HeroCarouselProps) {
   const slides = [
     {
       image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=1200',
-      badgeEn: 'EXCLUSIVE STERLING SELECTION',
+      badgeEn: 'PREMIUM SILVER COLLECTION',
       badgeAr: 'فضة إيطالية فاخرة عيار ٩٢٥',
       titleEn: 'TIMELESS CRAFTSMANSHIP IN DUBAI',
       titleAr: 'حرفية خالدة وفضة ملكية في دبي',
-      descEn: 'Discover our exclusive curated sovereign selection of premium Italian silver jewelry in Dubai. Authentically hand-assembled, completely non-tarnish, with a lifetime guarantee of brilliance.',
+      descEn: 'Discover our exclusive selection of premium Italian silver jewelry in Dubai. Beautifully designed, completely non-tarnish, with a lifetime guarantee of brilliance.',
       descAr: 'اكتشف مجموعتنا السيادية المنسقة من الفضة الإيطالية الفاخرة عيار ٩٢٥ والمجوهرات الراقية في دبي، والمحمية يدوياً بالكامل ضد تغير اللون مدى الحياة.',
-      ctaEn: 'EXPLORE SOVEREIGN CRAFT',
+      ctaEn: 'EXPLORE COLLECTION',
       ctaAr: 'تصفح الصياغة الملوكية'
     },
     {
       image: 'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?auto=format&fit=crop&q=80&w=1200',
-      badgeEn: 'EXCLUSIVE HOROLOGICAL PIECES',
+      badgeEn: 'PREMIUM TIMEPIECES',
       badgeAr: 'ساعات الكرونوجراف السيادية الحصرية',
-      titleEn: 'CURATED SOVEREIGN TIMEPIECES',
+      titleEn: 'EXCLUSIVE LUXURY WATCHES',
       titleAr: 'ساعات يد استثنائية للنخبة',
-      descEn: 'Elite mechanical watches of unrivaled prestige. Engineered with timeless craftsmanship, Swiss chronometer accuracy, and hand-delivered with armored protection.',
+      descEn: 'Premium mechanical watches of unrivaled quality. Engineered with timeless craftsmanship, Swiss accuracy, and free courier delivery.',
       descAr: 'ساعات يد ميكانيكية فاخرة لا تضاهى. صُممت بحرفية متناهية ودقة خالدة لتعكس هيبتك، مع خدمة توصيل مصفّح خاص في دبي.',
-      ctaEn: 'ACQUIRE TIMEPIECES',
+      ctaEn: 'SHOP WATCHES',
       ctaAr: 'اقتنِ الساعات الفخمة'
     },
     {
       image: 'https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&q=80&w=1200',
-      badgeEn: 'PREMIUM BOUTIQUE OUD',
+      badgeEn: 'PREMIUM FRAGRANCES',
       badgeAr: 'دهن العود والعبير الفاخر',
       titleEn: 'EXCLUSIVE DUBAI OUD & PERFUMES',
       titleAr: 'خلاصات العود والنفحات الحصرية',
-      descEn: 'Experience pure Cambodian agarwood and exquisite French parfums. Intense custom sillage engineered for noble presence and lifelong admiration.',
+      descEn: 'Experience pure Cambodian agarwood and exquisite French perfumes. Intense, long-lasting fragrances designed for any occasion.',
       descAr: 'خلاصات العود الكمبودي النقي والعطور الباريسية الفاخرة المصنوعة يدوياً. ثبات وقوة فوحان استثنائية تعبر عن مهابة حضورك ونبالته.',
-      ctaEn: 'DISCOVER ROYAL SCENTS',
+      ctaEn: 'SHOP FRAGRANCES',
       ctaAr: 'اكتشف عبير النخبة'
     }
   ];
