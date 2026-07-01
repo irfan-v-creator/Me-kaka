@@ -10,7 +10,7 @@ interface ProductShowcaseProps {
   lang: Language;
   products: Product[];
   searchQuery?: string;
-  onAddToCart?: (product: Product) => void;
+  onDirectPurchase?: (product: Product) => void;
   onPlaceOrder?: (product: Product, customerPhone: string) => void;
   favorites?: string[];
   onToggleFavorite?: (id: string) => void;
@@ -23,7 +23,7 @@ export default function ProductShowcase({
   lang, 
   products, 
   searchQuery = '', 
-  onAddToCart, 
+  onDirectPurchase, 
   onPlaceOrder,
   favorites: propFavorites,
   onToggleFavorite,
@@ -321,24 +321,6 @@ export default function ProductShowcase({
 
                       <div className="flex items-center gap-2">
                         <button
-                          id={`add-bag-quick-${product.id}`}
-                          disabled={product.stockStatus === 'Out of Stock'}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (product.stockStatus === 'Out of Stock') return;
-                            if (onAddToCart) onAddToCart(product);
-                          }}
-                          className={`transition-colors duration-300 p-1.5 rounded-full hover:bg-gold/5 cursor-pointer ${
-                            product.stockStatus === 'Out of Stock'
-                              ? 'text-neutral-700 cursor-not-allowed opacity-50'
-                              : 'text-luxury-cream/40 hover:text-gold'
-                          }`}
-                          title={product.stockStatus === 'Out of Stock' ? (isRTL ? 'نفذت الكمية' : 'Out of Stock') : (isRTL ? 'إضافة إلى حقيبة الاقتناء' : 'Add to Cart')}
-                        >
-                          <ShoppingBag className="h-4.5 w-4.5" />
-                        </button>
-
-                        <button
                           id={`fav-btn-${product.id}`}
                           onClick={(e) => toggleFavorite(product.id, e)}
                           className="text-luxury-cream/40 hover:text-gold transition-colors duration-300 cursor-pointer"
@@ -429,36 +411,22 @@ export default function ProductShowcase({
                     </div>
 
                     {/* Action buttons */}
-                    <div className="mt-4 flex items-center gap-2">
+                    <div className="mt-4 flex items-center">
                       <button 
                         id={`buy-button-${product.id}`}
                         disabled={product.stockStatus === 'Out of Stock'}
                         onClick={(e) => {
                           e.stopPropagation();
                           if (product.stockStatus === 'Out of Stock') return;
-                          if (onAddToCart) onAddToCart(product);
+                          if (onDirectPurchase) onDirectPurchase(product);
                         }}
-                        className={`flex-1 py-2 text-xs font-serif font-black uppercase tracking-widest rounded transition-all duration-300 text-center cursor-pointer ${
+                        className={`w-full py-2.5 text-xs font-serif font-black uppercase tracking-widest rounded transition-all duration-300 text-center cursor-pointer ${
                           product.stockStatus === 'Out of Stock'
                             ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700/50'
                             : 'bg-gold hover:bg-white text-luxury-black font-bold shadow-md hover:shadow-lg'
                         }`}
                       >
-                        {isRTL ? 'شراء' : 'BUY'}
-                      </button>
-                      
-                      <button 
-                        id={`view-details-${product.id}`}
-                        name="view-details"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedProduct(product);
-                        }}
-                        className="py-2 px-3 border border-gold/20 hover:border-gold hover:bg-gold/5 text-luxury-cream hover:text-gold tracking-widest font-serif uppercase rounded cursor-pointer transition-all duration-300 flex items-center gap-1.5 text-xs"
-                        title={isRTL ? 'معاينة التفاصيل' : 'View Details'}
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        <span className="text-[10px] uppercase font-serif tracking-wider">{isRTL ? 'التفاصيل' : 'View Details'}</span>
+                        {isRTL ? 'شراء مباشر' : 'BUY NOW'}
                       </button>
                     </div>
 
@@ -631,17 +599,14 @@ export default function ProductShowcase({
                               id="add-to-bag-modal-btn"
                               disabled={selectedProduct.stockStatus === 'Out of Stock'}
                               onClick={() => {
-                                if (onAddToCart) {
-                                  onAddToCart(selectedProduct);
-                                  setAddedToBag(true);
-                                  setTimeout(() => setAddedToBag(false), 2000);
+                                if (selectedProduct && onDirectPurchase) {
+                                  onDirectPurchase(selectedProduct);
+                                  setSelectedProduct(null); // close inspection modal
                                 }
                               }}
                               className={`w-full py-3 rounded-md text-xs font-serif font-bold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${
                                 selectedProduct.stockStatus === 'Out of Stock'
                                   ? 'bg-neutral-800/50 text-neutral-500 border border-neutral-800 cursor-not-allowed'
-                                  : addedToBag 
-                                  ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/50' 
                                   : 'bg-gold text-luxury-black hover:bg-white hover:text-luxury-black'
                               }`}
                             >
@@ -649,9 +614,7 @@ export default function ProductShowcase({
                               <span>
                                 {selectedProduct.stockStatus === 'Out of Stock'
                                   ? (isRTL ? 'نفذت الكمية ⚜' : 'Out of Stock ⚜')
-                                  : addedToBag 
-                                  ? (isRTL ? 'تمت الإضافة بنجاح! ⚜' : 'Added to Bag! ⚜')
-                                  : (isRTL ? 'شراء' : 'BUY')
+                                  : (isRTL ? 'اقتناء مباشر الآن' : 'BUY NOW DIRECTLY')
                                 }
                               </span>
                             </button>

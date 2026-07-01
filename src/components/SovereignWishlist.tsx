@@ -10,7 +10,7 @@ interface SovereignWishlistProps {
   favorites: string[];
   products: Product[];
   onToggleFavorite: (id: string) => void;
-  onMoveToCart: (product: Product) => void;
+  onDirectPurchase: (product: Product) => void;
 }
 
 export default function SovereignWishlist({
@@ -20,7 +20,7 @@ export default function SovereignWishlist({
   favorites,
   products,
   onToggleFavorite,
-  onMoveToCart
+  onDirectPurchase
 }: SovereignWishlistProps) {
   const isRTL = lang === 'ar';
   
@@ -144,14 +144,17 @@ export default function SovereignWishlist({
                         <Trash2 className="h-4 w-4" />
                       </button>
 
-                       <button
-                        onClick={() => onMoveToCart(product)}
-                        className="bg-gold/10 hover:bg-gold hover:text-luxury-black text-gold text-[10px] font-serif uppercase tracking-widest px-2.5 py-1.5 rounded border border-gold/20 hover:border-gold/0 transition-all flex items-center gap-1.5 cursor-pointer"
-                        title={isRTL ? 'نقل إلى حقيبة الاقتناء' : 'Move to Cart'}
+                      <button
+                        onClick={() => {
+                          onDirectPurchase(product);
+                          onClose();
+                        }}
+                        className="bg-gold/10 hover:bg-gold hover:text-luxury-black text-gold text-[10px] font-serif uppercase tracking-widest px-2.5 py-1.5 rounded border border-gold/20 hover:border-gold/0 transition-all flex items-center gap-1.5 cursor-pointer font-bold"
+                        title={isRTL ? 'اقتناء مباشر الآن' : 'BUY NOW'}
                       >
                         <ShoppingBag className="h-3 w-3" />
                         <span className="hidden sm:inline">
-                          {isRTL ? 'اقتناء' : 'Cart'}
+                          {isRTL ? 'شراء' : 'BUY'}
                         </span>
                       </button>
                     </div>

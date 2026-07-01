@@ -10,6 +10,7 @@ import AdminPortal from './components/AdminPortal';
 import SEOManager from './components/SEOManager';
 import LoginModal from './components/LoginModal';
 import SovereignWishlist from './components/SovereignWishlist';
+import CheckoutModal from './components/CheckoutModal';
 import { Language, Product, CartItem, Order } from './types';
 import { LUXURY_PRODUCTS } from './data';
 import { auth, app } from './lib/firebase';
@@ -167,6 +168,7 @@ export default function App() {
   }, [favorites]);
 
   const [isWishlistOpen, setIsWishlistOpen] = useState<boolean>(false);
+  const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
 
   const handleToggleFavorite = (id: string) => {
     if (favorites.includes(id)) {
@@ -384,6 +386,7 @@ export default function App() {
   const [invoiceSubtotal, setInvoiceSubtotal] = useState<number>(0);
   const [isPdfExporting, setIsPdfExporting] = useState<boolean>(false);
   const [isSharing, setIsSharing] = useState<boolean>(false);
+  const [selectedDirectPurchaseProduct, setSelectedDirectPurchaseProduct] = useState<Product | null>(null);
 
   const handleUpdateVatPercentage = (value: number) => {
     setVatPercentage(value);
@@ -535,6 +538,34 @@ export default function App() {
     setInvoiceCartItems([{ product, quantity: 1 }]);
     setInvoiceDiscount(discountVal);
     setInvoiceSubtotal(subtotalVal);
+  };
+
+  const handleDirectPurchasePlaceOrder = async (newOrder: Order) => {
+    try {
+      if (isLoggedIn && auth.currentUser) {
+        await createOrderInFirestore(newOrder, auth.currentUser.uid);
+      } else {
+        await createOrderInFirestore(newOrder);
+      }
+    } catch (err) {
+      console.error('Failed to save direct purchase order to Firestore:', err);
+    }
+
+    setOrders((prev) => [newOrder, ...prev]);
+
+    // Save states for post-purchase invoice display
+    setPlacedOrderInvoice(newOrder);
+    if (newOrder.items) {
+      setInvoiceCartItems(newOrder.items);
+    } else {
+      // Find matching product object from database or luxury list
+      const matched = LUXURY_PRODUCTS.find(p => p.nameEn === newOrder.productName || p.nameAr === newOrder.productName);
+      if (matched) {
+        setInvoiceCartItems([{ product: matched, quantity: 1 }]);
+      }
+    }
+    setInvoiceDiscount(newOrder.discount || 0);
+    setInvoiceSubtotal(newOrder.subtotal || newOrder.priceAED);
   };
 
   const handleWhatsAppCheckout = async () => {
@@ -911,7 +942,6 @@ export default function App() {
         onOpenLogin={() => handleOpenLogin('profile')}
         onOpenAcquisitions={() => handleOpenLogin('orders')}
         onLogout={handleLogout}
-        cartCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
         favoritesCount={favorites.length}
         onOpenWishlist={() => setIsWishlistOpen(true)}
       />
@@ -945,7 +975,7 @@ export default function App() {
                 lang={lang} 
                 products={products} 
                 searchQuery={searchQuery} 
-                onAddToCart={handleAddToCart} 
+                onDirectPurchase={(product) => setSelectedDirectPurchaseProduct(product)} 
                 onPlaceOrder={handlePlaceOrder} 
                 favorites={favorites}
                 onToggleFavorite={handleToggleFavorite}
@@ -1003,7 +1033,7 @@ export default function App() {
                 {/* Categorized Luxury Grids */}
                 <HomepageGrids 
                   lang={lang}
-                  onAddToCart={handleAddToCart}
+                  onDirectPurchase={(product) => setSelectedDirectPurchaseProduct(product)}
                   onPlaceOrder={handlePlaceOrder}
                   favorites={favorites}
                   onToggleFavorite={handleToggleFavorite}
@@ -1212,7 +1242,7 @@ export default function App() {
               lang={lang} 
               products={products} 
               searchQuery={searchQuery} 
-              onAddToCart={handleAddToCart} 
+              onDirectPurchase={(product) => setSelectedDirectPurchaseProduct(product)} 
               onPlaceOrder={handlePlaceOrder} 
               favorites={favorites}
               onToggleFavorite={handleToggleFavorite}
@@ -1655,7 +1685,21 @@ export default function App() {
         favorites={favorites}
         products={products}
         onToggleFavorite={handleToggleFavorite}
-        onMoveToCart={handleMoveToCart}
+        onDirectPurchase={(product) => setSelectedDirectPurchaseProduct(product)}
+      />
+
+      {/* Direct Purchase Checkout Modal */}
+      <CheckoutModal
+        isOpen={selectedDirectPurchaseProduct !== null}
+        onClose={() => setSelectedDirectPurchaseProduct(null)}
+        lang={lang}
+        product={selectedDirectPurchaseProduct}
+        isLoggedIn={isLoggedIn}
+        isAdmin={isAdmin}
+        userEmail={userEmail}
+        onOpenLogin={() => handleOpenLogin('profile')}
+        vatPercentage={vatPercentage}
+        onPlaceOrder={handleDirectPurchasePlaceOrder}
       />
 
       {/* Post-Purchase Success & Print Invoice Overlay */}

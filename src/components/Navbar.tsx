@@ -15,7 +15,6 @@ interface NavbarProps {
   userEmail: string | null;
   onOpenLogin: () => void;
   onLogout: () => void;
-  cartCount?: number;
   favoritesCount?: number;
   onOpenWishlist?: () => void;
   onOpenAcquisitions?: () => void;
@@ -40,7 +39,6 @@ export default function Navbar({
   userEmail,
   onOpenLogin,
   onLogout,
-  cartCount = 0,
   favoritesCount = 0,
   onOpenWishlist,
   onOpenAcquisitions
@@ -391,21 +389,6 @@ export default function Navbar({
                 </span>
               )}
             </button>
-
-            {/* Cart Button with premium badge */}
-            <button
-              id="cart-btn"
-              onClick={() => onNavigate('cart')}
-              className="relative text-luxury-cream/80 hover:text-gold transition-colors duration-300 pointer-events-auto cursor-pointer"
-              title={isRTL ? 'حقيبة التسوق' : 'Shopping Bag'}
-            >
-              <ShoppingBag className="h-5 w-5" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#e5c158] text-[9px] font-black text-luxury-black animate-bounce shadow-[0_0_10px_#e5c158] border border-[#0d0d0d]">
-                  {cartCount}
-                </span>
-              )}
-            </button>
           </div>
 
           {/* Mobile Menu Action Button */}
@@ -430,19 +413,6 @@ export default function Navbar({
               {favoritesCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-gold text-[8px] font-bold text-luxury-black">
                   {favoritesCount}
-                </span>
-              )}
-            </button>
-
-            <button
-              id="cart-btn-mobile"
-              onClick={() => onNavigate('cart')}
-              className="relative text-luxury-cream/80 hover:text-gold transition-colors duration-300 cursor-pointer"
-            >
-              <ShoppingBag className="h-5 w-5" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-gold text-[8px] font-bold text-luxury-black">
-                  {cartCount}
                 </span>
               )}
             </button>

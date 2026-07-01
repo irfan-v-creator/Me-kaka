@@ -8,7 +8,7 @@ import ProductReviews from './ProductReviews';
 
 interface HomepageGridsProps {
   lang: Language;
-  onAddToCart: (product: Product) => void;
+  onDirectPurchase: (product: Product) => void;
   onPlaceOrder: (product: Product, customerPhone: string) => void;
   favorites: string[];
   onToggleFavorite: (productId: string) => void;
@@ -17,7 +17,7 @@ interface HomepageGridsProps {
 
 export default function HomepageGrids({
   lang,
-  onAddToCart,
+  onDirectPurchase,
   onPlaceOrder,
   favorites,
   onToggleFavorite,
@@ -26,14 +26,6 @@ export default function HomepageGrids({
   const isRTL = lang === 'ar';
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   
-  // States for Quick Checkout/Reservation Modal inside homepage
-  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
-  const [checkoutName, setCheckoutName] = useState('');
-  const [checkoutPhone, setCheckoutPhone] = useState('');
-  const [checkoutAddress, setCheckoutAddress] = useState('');
-  const [checkoutNotes, setCheckoutNotes] = useState('');
-  const [checkoutSuccess, setCheckoutSuccess] = useState(false);
-
   // Countdown timer for Deal of the Day (counts down to end of day)
   const [timeLeft, setTimeLeft] = useState({ hours: 4, minutes: 34, seconds: 12 });
 
@@ -63,31 +55,6 @@ export default function HomepageGrids({
   const dealProduct = LUXURY_PRODUCTS.find(p => p.id === 'prod_4') || LUXURY_PRODUCTS[0]; // Grace Elite Chronograph Steel Watch
   const trendingProducts = LUXURY_PRODUCTS.filter(p => p.id === 'prod_1' || p.id === 'prod_2'); // Royal Band & Neck-Chain
   const newArrivals = LUXURY_PRODUCTS.filter(p => p.id === 'prod_3' || p.id === 'prod_5' || p.id === 'prod_6'); // Oud, Wallet, Sunglasses
-
-  // Quick order handler
-  const handleQuickCheckoutSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedProduct || !checkoutName || !checkoutPhone || !checkoutAddress) return;
-
-    const orderData = {
-      ...selectedProduct,
-      quantity: 1,
-      selectedSize: 'One Size'
-    };
-
-    onPlaceOrder(orderData, checkoutPhone);
-    setCheckoutSuccess(true);
-    setTimeout(() => {
-      setCheckoutSuccess(false);
-      setShowCheckoutModal(false);
-      setSelectedProduct(null);
-      // Reset fields
-      setCheckoutName('');
-      setCheckoutPhone('');
-      setCheckoutAddress('');
-      setCheckoutNotes('');
-    }, 2500);
-  };
 
   const formatPrice = (price: number) => {
     return price.toLocaleString();
@@ -196,11 +163,11 @@ export default function HomepageGrids({
               {/* Action buttons */}
               <div className="flex flex-wrap gap-4 pt-2">
                 <button
-                  onClick={() => onAddToCart(dealProduct)}
+                  onClick={() => onDirectPurchase(dealProduct)}
                   className="px-6 py-3 rounded bg-gradient-to-r from-[#e5c158] to-[#cba33f] text-luxury-black font-serif font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 hover:scale-105 hover:shadow-[0_0_15px_rgba(229,193,88,0.3)] flex items-center gap-2 cursor-pointer"
                 >
                   <ShoppingBag className="h-4 w-4" />
-                  <span>{isRTL ? 'شراء' : 'BUY'}</span>
+                  <span>{isRTL ? 'شراء مباشر' : 'BUY NOW'}</span>
                 </button>
                 <button
                   onClick={() => setSelectedProduct(dealProduct)}
@@ -279,20 +246,12 @@ export default function HomepageGrids({
                   </div>
                 </div>
 
-                <div className="mt-5 pt-4 border-t border-gold/10 flex items-center justify-between gap-3">
+                <div className="mt-5 pt-4 border-t border-gold/10 flex items-center">
                   <button
-                    onClick={() => onAddToCart(product)}
-                    className="flex-1 py-2 rounded bg-gold/10 border border-gold/30 text-gold hover:bg-gold hover:text-luxury-black font-serif font-bold text-xs tracking-widest uppercase transition-all duration-300 cursor-pointer text-center"
+                    onClick={() => onDirectPurchase(product)}
+                    className="w-full py-2.5 rounded bg-gold hover:bg-white text-luxury-black font-serif font-bold text-xs tracking-widest uppercase transition-all duration-300 cursor-pointer text-center font-black"
                   >
-                    {isRTL ? 'شراء' : 'BUY'}
-                  </button>
-                  <button
-                    onClick={() => setSelectedProduct(product)}
-                    className="py-2 px-3.5 rounded border border-gold/15 hover:border-gold text-luxury-cream hover:text-gold transition-all duration-300 cursor-pointer text-xs flex items-center gap-1.5"
-                    title={isRTL ? 'معاينة التفاصيل' : 'View Details'}
-                  >
-                    <Eye className="h-4 w-4" />
-                    <span className="text-[11px] font-serif uppercase tracking-wider">{isRTL ? 'التفاصيل' : 'View Details'}</span>
+                    {isRTL ? 'شراء مباشر' : 'BUY NOW'}
                   </button>
                 </div>
               </div>
@@ -372,20 +331,12 @@ export default function HomepageGrids({
                         AED {formatPrice(product.priceAED)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center">
                       <button
-                        onClick={() => onAddToCart(product)}
-                        className="flex-1 py-2 rounded bg-[#e5c158] hover:bg-gold text-luxury-black font-serif font-black text-xs tracking-widest uppercase transition-colors cursor-pointer text-center font-bold"
+                        onClick={() => onDirectPurchase(product)}
+                        className="w-full py-2.5 rounded bg-gold hover:bg-white text-luxury-black font-serif font-black text-xs tracking-widest uppercase transition-colors cursor-pointer text-center font-bold"
                       >
-                        {isRTL ? 'شراء' : 'BUY'}
-                      </button>
-                      <button
-                        onClick={() => setSelectedProduct(product)}
-                        className="py-2 px-3.5 rounded border border-gold/20 hover:border-gold text-luxury-cream hover:text-gold transition-colors duration-300 cursor-pointer text-xs flex items-center gap-1.5"
-                        title={isRTL ? 'تفاصيل' : 'View Details'}
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        <span className="text-[10px] uppercase font-serif tracking-wider">{isRTL ? 'التفاصيل' : 'View Details'}</span>
+                        {isRTL ? 'شراء مباشر' : 'BUY NOW'}
                       </button>
                     </div>
                   </div>
@@ -398,7 +349,7 @@ export default function HomepageGrids({
 
       {/* DYNAMIC DETAILED INSPECTION MODAL */}
       <AnimatePresence>
-        {selectedProduct && !showCheckoutModal && (
+        {selectedProduct && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
             <div className="absolute inset-0 cursor-pointer" onClick={() => setSelectedProduct(null)} />
             
@@ -460,21 +411,15 @@ export default function HomepageGrids({
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex flex-col gap-4">
                     <button
                       onClick={() => {
-                        onAddToCart(selectedProduct);
+                        onDirectPurchase(selectedProduct);
                         setSelectedProduct(null);
                       }}
-                      className="flex-1 py-3 rounded bg-gradient-to-r from-[#e5c158] to-[#cba33f] text-luxury-black font-serif font-black text-xs sm:text-sm tracking-widest uppercase transition-all hover:scale-105 hover:shadow-[0_0_15px_rgba(229,193,88,0.25)] cursor-pointer text-center"
+                      className="w-full py-3.5 rounded bg-gradient-to-r from-[#e5c158] to-[#cba33f] text-luxury-black font-serif font-black text-xs sm:text-sm tracking-widest uppercase transition-all hover:scale-102 hover:shadow-[0_0_15px_rgba(229,193,88,0.25)] cursor-pointer text-center"
                     >
-                      {isRTL ? 'شراء' : 'BUY'}
-                    </button>
-                    <button
-                      onClick={() => setShowCheckoutModal(true)}
-                      className="flex-1 py-3 rounded border border-gold/30 bg-luxury-black text-gold hover:bg-gold/5 font-serif font-bold text-xs sm:text-sm tracking-widest uppercase transition-colors cursor-pointer text-center"
-                    >
-                      {isRTL ? 'شراء فوري آمن' : 'EXPRESS CHECKOUT'}
+                      {isRTL ? 'شراء مباشر الآن' : 'BUY NOW DIRECTLY'}
                     </button>
                   </div>
                 </div>
@@ -486,139 +431,7 @@ export default function HomepageGrids({
         )}
       </AnimatePresence>
 
-      {/* IMMEDIATE CHECKOUT / QUICK PURCHASE MODAL */}
-      <AnimatePresence>
-        {showCheckoutModal && selectedProduct && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-fade-in" dir={isRTL ? 'rtl' : 'ltr'}>
-            <div className="absolute inset-0 cursor-pointer" onClick={() => setShowCheckoutModal(false)} />
-            
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-lg bg-[#0d0d0d] border border-gold/40 rounded-xl p-6 sm:p-8 text-start z-10"
-            >
-              <button 
-                onClick={() => setShowCheckoutModal(false)}
-                className="absolute top-4 right-4 p-2 rounded-full border border-gold/15 text-gold hover:bg-gold/10 cursor-pointer"
-              >
-                <X className="h-4 w-4" />
-              </button>
 
-              {checkoutSuccess ? (
-                <div className="text-center py-8 space-y-4">
-                  <CheckCircle2 className="h-16 w-16 text-[#e5c158] mx-auto animate-bounce" />
-                  <h3 className="font-serif text-lg sm:text-xl font-bold text-white uppercase tracking-wider">
-                    {isRTL ? 'تم تسجيل حيازتكم بنجاح' : 'Order Placed Successfully'}
-                  </h3>
-                  <p className="text-xs text-luxury-cream/70 leading-relaxed max-w-xs mx-auto">
-                    {isRTL 
-                      ? 'نشكر ذوقكم الرفيع. سيقوم مستشارو ستايلز آند جريس بالتواصل معكم هاتفياً لترتيب الشحن والمصفح.' 
-                      : 'We have successfully received your order. We will contact you shortly to coordinate the delivery.'
-                    }
-                  </p>
-                </div>
-              ) : (
-                <form onSubmit={handleQuickCheckoutSubmit} className="space-y-5">
-                  <div className="border-b border-gold/10 pb-3">
-                    <span className="block text-[8px] text-gold uppercase tracking-[0.2em] font-mono">
-                      {isRTL ? 'بوابة الاقتناء الآمن والمباشر' : 'DIRECT SOVEREIGN ACQUISITION GATEWAY'}
-                    </span>
-                    <h3 className="font-serif text-base sm:text-lg font-bold text-white uppercase mt-1 truncate">
-                      {isRTL ? selectedProduct.nameAr : selectedProduct.nameEn}
-                    </h3>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-[9px] uppercase tracking-widest text-gold/80 font-mono mb-1">
-                        {isRTL ? 'الاسم الكامل للمقتني الكريم' : 'Collector\'s Full Name *'}
-                      </label>
-                      <input 
-                        type="text" 
-                        required
-                        value={checkoutName}
-                        onChange={(e) => setCheckoutName(e.target.value)}
-                        placeholder={isRTL ? 'مثال: سمو الشيخ أحمد آل مكتوم' : 'e.g. Robert Vance'}
-                        className="w-full bg-luxury-black border border-gold/20 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-gold"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[9px] uppercase tracking-widest text-gold/80 font-mono mb-1">
-                        {isRTL ? 'رقم الهاتف (الواتساب للمتابعة)' : 'Contact Number (WhatsApp Enabled) *'}
-                      </label>
-                      <input 
-                        type="tel" 
-                        required
-                        value={checkoutPhone}
-                        onChange={(e) => setCheckoutPhone(e.target.value)}
-                        placeholder="e.g. +971 58 825 7372"
-                        className="w-full bg-luxury-black border border-gold/20 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-gold"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[9px] uppercase tracking-widest text-gold/80 font-mono mb-1">
-                        {isRTL ? 'العنوان وتفاصيل القصر أو المنزل' : 'Armored Delivery Residence Address *'}
-                      </label>
-                      <textarea 
-                        required
-                        value={checkoutAddress}
-                        onChange={(e) => setCheckoutAddress(e.target.value)}
-                        rows={2}
-                        placeholder={isRTL ? 'مثال: دبي، تلال الإمارات، فيلا ٤٢' : 'e.g. Villa 42, Emirates Hills, Dubai'}
-                        className="w-full bg-luxury-black border border-gold/20 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-gold resize-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[9px] uppercase tracking-widest text-gold/40 font-mono mb-1">
-                        {isRTL ? 'تعليمات خاصة للخدمة الدبلوماسية' : 'Special Delivery Instructions (Optional)'}
-                      </label>
-                      <input 
-                        type="text" 
-                        value={checkoutNotes}
-                        onChange={(e) => setCheckoutNotes(e.target.value)}
-                        placeholder={isRTL ? 'مثال: يرجى التوصيل بعد الساعة ٥ مساءً' : 'e.g. Deliver after 5:00 PM'}
-                        className="w-full bg-luxury-black border border-gold/15 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-gold"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="bg-gold/5 border border-gold/20 p-3 rounded text-center">
-                    <span className="block text-[10px] text-luxury-cream/60">
-                      {isRTL ? 'القيمة الإجمالية المعتمدة:' : 'Total Price:'}
-                    </span>
-                    <span className="text-lg font-bold text-[#e5c158] font-mono">
-                      AED {formatPrice(Math.round(selectedProduct.priceAED * (1 + vatPercentage / 100)))}
-                    </span>
-                    <span className="block text-[8px] text-luxury-cream/40 uppercase font-mono mt-0.5">
-                      {isRTL ? 'الدفع نقداً أو بالبطاقة عند الاستلام الآمن' : 'PAYMENT ON DELIVERY'}
-                    </span>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setShowCheckoutModal(false)}
-                      className="flex-1 py-2.5 rounded border border-gold/20 hover:border-gold/50 text-luxury-cream/70 text-xs tracking-widest font-serif uppercase cursor-pointer text-center"
-                    >
-                      {isRTL ? 'إلغاء' : 'Cancel'}
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 py-2.5 rounded bg-gradient-to-r from-[#e5c158] to-[#cba33f] text-luxury-black text-xs font-serif font-black tracking-widest uppercase transition-transform hover:scale-103 cursor-pointer text-center"
-                    >
-                      {isRTL ? 'تأكيد الحيازة الملكية' : 'CONFIRM ACQUISITION'}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
     </div>
   );
