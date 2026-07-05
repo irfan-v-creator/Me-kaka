@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Trash2, ShoppingBag, Sparkles, Minus, Plus, Send, Lock } from 'lucide-react';
-import { Product, Language, CartItem } from '../types';
+import { X, ShoppingBag, Trash2, Minus, Plus, Lock } from 'lucide-react';
+import { CartItem, Language } from '../types';
 
 interface SovereignCartProps {
   isOpen: boolean;
@@ -12,19 +12,8 @@ interface SovereignCartProps {
   onUpdateCartQuantity: (productId: string, quantity: number) => void;
   isLoggedIn: boolean;
   isAdmin: boolean;
-  userEmail: string | null;
-  onOpenLogin: () => void;
   vatPercentage: number;
-  checkoutName: string;
-  setCheckoutName: (val: string) => void;
-  checkoutPhone: string;
-  setCheckoutPhone: (val: string) => void;
-  checkoutAddress: string;
-  setCheckoutAddress: (val: string) => void;
-  checkoutNotes: string;
-  setCheckoutNotes: (val: string) => void;
-  formErrors: { name?: boolean; phone?: boolean; address?: boolean };
-  onWhatsAppCheckout: () => void;
+  onProceedToCheckout: (selectedItems: CartItem[]) => void;
 }
 
 export default function SovereignCart({
@@ -36,29 +25,43 @@ export default function SovereignCart({
   onUpdateCartQuantity,
   isLoggedIn,
   isAdmin,
-  userEmail,
-  onOpenLogin,
   vatPercentage,
-  checkoutName,
-  setCheckoutName,
-  checkoutPhone,
-  setCheckoutPhone,
-  checkoutAddress,
-  setCheckoutAddress,
-  checkoutNotes,
-  setCheckoutNotes,
-  formErrors,
-  onWhatsAppCheckout
+  onProceedToCheckout
 }: SovereignCartProps) {
   const isRTL = lang === 'ar';
-  const [showCheckoutForm, setShowCheckoutForm] = useState<boolean>(false);
 
-  // Math totals
-  const subtotal = cart.reduce((sum, item) => sum + (item.product.priceAED * item.quantity), 0);
+  // Keep track of which item IDs are selected (checked)
+  const [checkedIds, setCheckedIds] = useState<Record<string, boolean>>({});
+
+  // Initialize and default all items as checked when cart contents change
+  useEffect(() => {
+    if (cart.length > 0) {
+      setCheckedIds(prev => {
+        const next = { ...prev };
+        cart.forEach(item => {
+          if (next[item.product.id] === undefined) {
+            next[item.product.id] = true;
+          }
+        });
+        return next;
+      });
+    }
+  }, [cart]);
+
+  // Selected items are those that are checked (not explicitly set to false)
+  const selectedItems = cart.filter(item => checkedIds[item.product.id] !== false);
+
+  // Pricing calculations based only on selected items
+  const subtotal = selectedItems.reduce((sum, item) => sum + (item.product.priceAED * item.quantity), 0);
   const discount = (isLoggedIn && !isAdmin) ? (subtotal * 0.10) : 0;
   const taxable = subtotal - discount;
   const vat = taxable * (vatPercentage / 100);
   const total = taxable + vat;
+
+  const handleProceed = () => {
+    if (selectedItems.length === 0) return;
+    onProceedToCheckout(selectedItems);
+  };
 
   return (
     <AnimatePresence>
@@ -104,7 +107,7 @@ export default function SovereignCart({
               
               <button
                 onClick={onClose}
-                className="text-luxury-cream/60 hover:text-gold p-1.5 rounded-full border border-gold/10 hover:border-gold/30 transition-all duration-300"
+                className="text-luxury-cream/60 hover:text-gold p-1.5 rounded-full border border-gold/10 hover:border-gold/30 transition-all duration-300 animate-none cursor-pointer"
               >
                 <X className="h-4.5 w-4.5" />
               </button>
@@ -129,23 +132,43 @@ export default function SovereignCart({
                   </div>
                   <button
                     onClick={onClose}
-                    className="px-5 py-2 border border-gold/20 text-gold text-[10px] font-serif uppercase tracking-widest hover:bg-gold hover:text-luxury-black transition-all duration-300"
+                    className="px-5 py-2 border border-gold/20 text-gold text-[10px] font-serif uppercase tracking-widest hover:bg-gold hover:text-luxury-black transition-all duration-300 cursor-pointer"
                   >
                     {isRTL ? 'العودة للمجموعة' : 'Continue Shopping'}
                   </button>
                 </div>
-              ) : !showCheckoutForm ? (
+              ) : (
                 /* Item list view */
                 <div className="space-y-4">
                   {cart.map((item) => {
                     const itemTotal = item.product.priceAED * item.quantity;
+                    const isChecked = checkedIds[item.product.id] !== false;
                     return (
                       <div 
                         key={item.product.id}
-                        className="group relative rounded-lg border border-gold/10 bg-luxury-dark/30 p-3.5 flex gap-3.5 transition-all hover:border-gold/30 overflow-hidden"
+                        className={`group relative rounded-lg border p-3.5 flex items-center gap-3.5 transition-all overflow-hidden ${
+                          isChecked 
+                            ? 'border-gold/25 bg-luxury-dark/40 shadow-inner' 
+                            : 'border-neutral-800/40 bg-luxury-dark/10 opacity-60'
+                        }`}
                       >
+                        {/* Checkbox */}
+                        <div className="flex-shrink-0 flex items-center justify-center z-10">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              setCheckedIds(prev => ({
+                                ...prev,
+                                [item.product.id]: e.target.checked
+                              }));
+                            }}
+                            className="w-4 h-4 rounded border-gold/30 text-gold bg-luxury-black/60 focus:ring-gold focus:ring-offset-luxury-dark accent-[#e5c158] cursor-pointer"
+                          />
+                        </div>
+
                         {/* Image */}
-                        <div className="w-16 h-16 rounded border border-gold/10 bg-luxury-black/80 flex-shrink-0 overflow-hidden relative">
+                        <div className="w-14 h-14 rounded border border-gold/10 bg-luxury-black/80 flex-shrink-0 overflow-hidden relative">
                           <img 
                             src={item.product.image} 
                             alt={item.product.nameEn}
@@ -167,26 +190,26 @@ export default function SovereignCart({
                             </div>
                             <button
                               onClick={() => onRemoveFromCart(item.product.id)}
-                              className="text-luxury-cream/40 hover:text-red-400 p-0.5"
+                              className="text-luxury-cream/40 hover:text-red-400 p-0.5 cursor-pointer"
                               title={isRTL ? 'إزالة' : 'Remove item'}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
 
-                          <div className="flex justify-between items-center mt-2.5 pt-2 border-t border-gold/5">
+                          <div className="flex justify-between items-center mt-2 pt-1.5 border-t border-gold/5">
                             {/* Quantity */}
                             <div className="flex items-center border border-gold/25 rounded bg-luxury-black/40 overflow-hidden scale-90 origin-left">
                               <button 
                                 onClick={() => onUpdateCartQuantity(item.product.id, item.quantity - 1)}
-                                className="px-2 py-0.5 text-gold hover:bg-gold/10 font-bold"
+                                className="px-2 py-0.5 text-gold hover:bg-gold/10 font-bold cursor-pointer"
                               >
                                 <Minus className="h-2.5 w-2.5" />
                               </button>
                               <span className="px-3 text-xs font-mono text-white">{item.quantity}</span>
                               <button 
                                 onClick={() => onUpdateCartQuantity(item.product.id, item.quantity + 1)}
-                                className="px-2 py-0.5 text-gold hover:bg-gold/10 font-bold"
+                                className="px-2 py-0.5 text-gold hover:bg-gold/10 font-bold cursor-pointer"
                               >
                                 <Plus className="h-2.5 w-2.5" />
                               </button>
@@ -201,97 +224,6 @@ export default function SovereignCart({
                       </div>
                     );
                   })}
-                </div>
-              ) : (
-                /* Checkout Form View */
-                <div className="space-y-4 animate-fade-in">
-                  <button
-                    onClick={() => setShowCheckoutForm(false)}
-                    className="text-xs text-gold hover:text-white underline uppercase tracking-wider font-serif"
-                  >
-                    {isRTL ? '← العودة للمنتجات' : '← Back to Products'}
-                  </button>
-
-                  <h3 className="font-serif text-sm font-bold uppercase tracking-widest text-white flex items-center gap-2 pb-2 border-b border-gold/10">
-                    <Sparkles className="h-4 w-4 text-gold animate-pulse" />
-                    <span>{isRTL ? 'بوابة الحجز والمرافقة الملكيّة' : 'Royal Booking Concierge'}</span>
-                  </h3>
-
-                  {isLoggedIn && !isAdmin ? (
-                    <div className="bg-gold/5 border border-gold/30 rounded p-2.5 text-[9px] text-gold tracking-wider flex items-center gap-2 font-serif uppercase">
-                      <Sparkles className="h-3 w-3 animate-pulse text-gold flex-shrink-0" />
-                      <span>{isRTL ? 'خصم كبار الشخصيات نشط (١٠٪)' : 'VIP Member: 10% Discount Active'}</span>
-                    </div>
-                  ) : (
-                    <div className="bg-luxury-black/35 border border-gold/10 rounded p-2.5 text-[9px] text-luxury-cream/60 flex items-center justify-between gap-1 font-serif">
-                      <span>{isRTL ? 'سجل كعضو كبار الشخصيات لتطبيق خصم ١٠٪' : 'Sign in to get 10% off your order'}</span>
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          onClose();
-                          onOpenLogin();
-                        }}
-                        className="text-[9px] uppercase tracking-wider text-gold font-bold underline bg-transparent"
-                      >
-                        {isRTL ? 'تسجيل' : 'Sign In'}
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Fields */}
-                  <div className="space-y-3 pt-1">
-                    <div className="space-y-1">
-                      <label className="block text-[9px] uppercase font-mono tracking-widest text-luxury-cream/50">
-                        {isRTL ? 'اسم العميل الموقّر *' : 'Client Full Name *'}
-                      </label>
-                      <input 
-                        type="text"
-                        value={checkoutName}
-                        onChange={(e) => setCheckoutName(e.target.value)}
-                        placeholder={isRTL ? 'مثال: سمو الشيخ أحمد بن راشد' : 'Example: His Highness, Ambassador Philip'}
-                        className={`w-full bg-luxury-black/60 border rounded p-2.5 text-xs text-luxury-cream focus:outline-none focus:border-gold transition-colors font-sans ${formErrors.name ? 'border-red-500/80 bg-red-950/5' : 'border-gold/20'}`}
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="block text-[9px] uppercase font-mono tracking-widest text-luxury-cream/50">
-                        {isRTL ? 'رقم الهاتف للاتصال الجارٍ *' : 'Direct Mobile Number *'}
-                      </label>
-                      <input 
-                        type="tel"
-                        value={checkoutPhone}
-                        onChange={(e) => setCheckoutPhone(e.target.value)}
-                        placeholder="7510447887"
-                        className={`w-full bg-luxury-black/60 border rounded p-2.5 text-xs text-luxury-cream focus:outline-none focus:border-gold transition-colors font-sans ${formErrors.phone ? 'border-red-500/80 bg-red-950/5' : 'border-gold/20'}`}
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="block text-[9px] uppercase font-mono tracking-widest text-luxury-cream/50">
-                        {isRTL ? 'عنوان التوصيل (المنزل/المكتب) *' : 'Delivery Address *'}
-                      </label>
-                      <textarea 
-                        rows={2}
-                        value={checkoutAddress}
-                        onChange={(e) => setCheckoutAddress(e.target.value)}
-                        placeholder={isRTL ? 'العنوان في دبي' : 'Address in Dubai'}
-                        className={`w-full bg-luxury-black/60 border rounded p-2.5 text-xs text-luxury-cream focus:outline-none focus:border-gold transition-colors font-sans ${formErrors.address ? 'border-red-500/80 bg-red-950/5' : 'border-gold/20'}`}
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="block text-[9px] uppercase font-mono tracking-widest text-luxury-cream/50">
-                        {isRTL ? 'طلبات الصياغة والمرافقة الخاصة' : 'Bespoke Custom Requests (Notes)'}
-                      </label>
-                      <textarea 
-                        rows={2}
-                        value={checkoutNotes}
-                        onChange={(e) => setCheckoutNotes(e.target.value)}
-                        placeholder={isRTL ? 'أوراق التغليف الفاخرة المذهبة' : 'Premium gilded custom engraving notes...'}
-                        className="w-full bg-luxury-black/60 border border-gold/20 rounded p-2.5 text-xs text-luxury-cream focus:outline-none focus:border-gold transition-colors font-sans"
-                      />
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
@@ -331,22 +263,17 @@ export default function SovereignCart({
                 </div>
 
                 {/* CTAs */}
-                {!showCheckoutForm ? (
-                  <button
-                    onClick={() => setShowCheckoutForm(true)}
-                    className="w-full bg-gold hover:bg-white text-luxury-black font-serif text-xs font-bold tracking-widest uppercase py-3.5 rounded shadow-lg transition-all active:scale-97 cursor-pointer text-center"
-                  >
-                    {isRTL ? 'متابعة تفاصيل الحجز' : 'Proceed to Checkout'}
-                  </button>
-                ) : (
-                  <button
-                    onClick={onWhatsAppCheckout}
-                    className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-luxury-black font-serif text-xs font-bold tracking-widest uppercase py-3.5 rounded shadow-xl hover:shadow-emerald-500/10 transition-all active:scale-97 flex items-center justify-center gap-2 cursor-pointer border border-emerald-500/20"
-                  >
-                    <Send className="h-4 w-4" />
-                    <span>{isRTL ? 'تأكيد وحجز الوتساب المباشر' : 'Secure Checkout on WhatsApp'}</span>
-                  </button>
-                )}
+                <button
+                  disabled={selectedItems.length === 0}
+                  onClick={handleProceed}
+                  className={`w-full py-3.5 rounded shadow-lg transition-all active:scale-97 cursor-pointer text-center font-serif text-xs font-bold tracking-widest uppercase ${
+                    selectedItems.length === 0
+                      ? 'bg-neutral-800 text-neutral-500 border border-neutral-700/50 cursor-not-allowed'
+                      : 'bg-gold hover:bg-white text-luxury-black font-black'
+                  }`}
+                >
+                  {isRTL ? 'متابعة تفاصيل الحجز' : 'PROCEED TO ORDER'}
+                </button>
               </div>
             )}
 

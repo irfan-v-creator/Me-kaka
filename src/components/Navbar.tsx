@@ -18,6 +18,8 @@ interface NavbarProps {
   favoritesCount?: number;
   onOpenWishlist?: () => void;
   onOpenAcquisitions?: () => void;
+  cartCount?: number;
+  onOpenCart?: () => void;
 }
 
 export const navItems: NavItem[] = [
@@ -41,7 +43,9 @@ export default function Navbar({
   onLogout,
   favoritesCount = 0,
   onOpenWishlist,
-  onOpenAcquisitions
+  onOpenAcquisitions,
+  cartCount = 0,
+  onOpenCart
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -229,6 +233,21 @@ export default function Navbar({
 
           {/* Luxury Utility Tools: Language, Cart, Profile */}
           <div className={`hidden md:flex items-center ${isRTL ? 'space-x-reverse space-x-5' : 'space-x-5'}`}>
+            {/* Elegant Luxury Shopping Cart Trigger with live counter */}
+            <button
+              id="desktop-cart-trigger"
+              onClick={onOpenCart}
+              className="relative flex items-center justify-center p-2 rounded-full border border-gold/15 transition-all duration-300 hover:border-gold hover:bg-gold/5 text-gold cursor-pointer"
+              title={isRTL ? 'حقيبة الاقتناء الملكية' : 'Royal Shopping Cart'}
+            >
+              <ShoppingBag className="h-4.5 w-4.5" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[8px] font-mono text-luxury-black font-extrabold animate-pulse">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+
             {/* Language Toggle Button */}
             <button
               id="lang-toggle-desktop"
@@ -393,6 +412,21 @@ export default function Navbar({
 
           {/* Mobile Menu Action Button */}
           <div className="flex md:hidden items-center space-x-3 space-x-reverse">
+            {/* Mobile Cart Trigger */}
+            <button
+              id="mobile-cart-trigger"
+              onClick={onOpenCart}
+              className="relative text-luxury-cream/80 hover:text-gold transition-colors duration-300 cursor-pointer"
+              title={isRTL ? 'حقيبة الاقتناء الملكية' : 'Cart'}
+            >
+              <ShoppingBag className="h-5 w-5" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-gold text-[8px] font-bold text-luxury-black animate-pulse">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+
             {/* Mobile language switch shortcut */}
             <button
               id="lang-toggle-mobile"

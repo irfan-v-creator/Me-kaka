@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Sparkles, Send, Lock, ShoppingBag } from 'lucide-react';
-import { Product, Language, Order } from '../types';
+import { Product, Language, Order, CartItem } from '../types';
 
 interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
   lang: Language;
-  product: Product | null;
+  product?: Product | null;
+  cartItems?: CartItem[] | null;
   isLoggedIn: boolean;
   isAdmin: boolean;
   userEmail: string | null;
@@ -20,7 +21,8 @@ export default function CheckoutModal({
   isOpen,
   onClose,
   lang,
-  product,
+  product = null,
+  cartItems = null,
   isLoggedIn,
   isAdmin,
   userEmail,
@@ -40,7 +42,7 @@ export default function CheckoutModal({
   // Form errors state
   const [formErrors, setFormErrors] = useState<{ name?: boolean; phone?: boolean; address?: boolean }>({});
 
-  // Reset states when open/close or product changes
+  // Reset states when open/close or product/cartItems change
   useEffect(() => {
     if (isOpen) {
       setCheckoutName('');
@@ -50,12 +52,14 @@ export default function CheckoutModal({
       setFormErrors({});
       setIsSubmitting(false);
     }
-  }, [isOpen, product]);
+  }, [isOpen, product, cartItems]);
 
-  if (!isOpen || !product) return null;
+  if (!isOpen || (!product && (!cartItems || cartItems.length === 0))) return null;
 
   // Pricing calculations
-  const subtotal = product.priceAED;
+  const subtotal = product 
+    ? product.priceAED 
+    : (cartItems ? cartItems.reduce((sum, item) => sum + (item.product.priceAED * item.quantity), 0) : 0);
   const discount = (isLoggedIn && !isAdmin) ? (subtotal * 0.10) : 0;
   const taxable = subtotal - discount;
   const vat = taxable * (vatPercentage / 100);
@@ -78,10 +82,19 @@ export default function CheckoutModal({
     setFormErrors({});
     setIsSubmitting(true);
 
-    // Build the order items list with 1 item of quantity 1
+    const items = product 
+      ? [{ product, quantity: 1 }] 
+      : (cartItems || []);
+
+    const orderName = product 
+      ? (isRTL ? product.nameAr : product.nameEn)
+      : (cartItems 
+          ? cartItems.map(item => `${isRTL ? item.product.nameAr : item.product.nameEn} (x${item.quantity})`).join(', ') 
+          : '');
+
     const newOrder: Order = {
       id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
-      productName: isRTL ? product.nameAr : product.nameEn,
+      productName: orderName,
       priceAED: total,
       customerPhone: checkoutPhone.trim(),
       orderTime: new Date().toLocaleTimeString('en-US', {
@@ -99,7 +112,7 @@ export default function CheckoutModal({
       checkoutMethod: 'QuickBuy',
       userEmail: isLoggedIn && userEmail ? userEmail : undefined,
       customerEmail: isLoggedIn && userEmail ? userEmail : undefined,
-      items: [{ product, quantity: 1 }],
+      items: items,
       subtotal: subtotal,
       discount: discount,
       status: 'Pending'
@@ -162,27 +175,57 @@ export default function CheckoutModal({
           </div>
 
           <form onSubmit={handleSubmit} className="flex-grow overflow-y-auto p-5 space-y-4">
-            {/* Prefilled Product Card */}
-            <div className="rounded-lg border border-gold/10 bg-luxury-dark/40 p-3 flex gap-3.5 overflow-hidden">
-              <div className="w-16 h-16 rounded border border-gold/10 bg-luxury-black flex-shrink-0 overflow-hidden">
-                <img 
-                  src={product.image} 
-                  alt={isRTL ? product.nameAr : product.nameEn}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover" 
-                />
-              </div>
-              <div className="flex-grow flex flex-col justify-center min-w-0">
-                <h4 className="font-serif text-xs font-semibold text-white tracking-wide truncate">
-                  {isRTL ? product.nameAr : product.nameEn}
-                </h4>
-                <p className="text-[9px] text-gold font-mono uppercase tracking-wider mt-1">
-                  {isRTL ? product.categoryAr : product.categoryEn}
-                </p>
-                <div className="text-xs text-gold font-mono font-medium mt-1">
-                  {product.priceAED.toLocaleString()} AED
+            {/* Prefilled Product Card(s) */}
+            <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+              {product ? (
+                <div className="rounded-lg border border-gold/10 bg-luxury-dark/40 p-3 flex gap-3.5 overflow-hidden">
+                  <div className="w-16 h-16 rounded border border-gold/10 bg-luxury-black flex-shrink-0 overflow-hidden">
+                    <img 
+                      src={product.image} 
+                      alt={isRTL ? product.nameAr : product.nameEn}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover" 
+                    />
+                  </div>
+                  <div className="flex-grow flex flex-col justify-center min-w-0">
+                    <h4 className="font-serif text-xs font-semibold text-white tracking-wide truncate">
+                      {isRTL ? product.nameAr : product.nameEn}
+                    </h4>
+                    <p className="text-[9px] text-gold font-mono uppercase tracking-wider mt-1">
+                      {isRTL ? product.categoryAr : product.categoryEn}
+                    </p>
+                    <div className="text-xs text-gold font-mono font-medium mt-1">
+                      {product.priceAED.toLocaleString()} AED
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                cartItems && cartItems.map((item) => (
+                  <div key={item.product.id} className="rounded-lg border border-gold/10 bg-luxury-dark/40 p-2.5 flex gap-3.5 overflow-hidden">
+                    <div className="w-12 h-12 rounded border border-gold/10 bg-luxury-black flex-shrink-0 overflow-hidden">
+                      <img 
+                        src={item.product.image} 
+                        alt={isRTL ? item.product.nameAr : item.product.nameEn}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover" 
+                      />
+                    </div>
+                    <div className="flex-grow flex flex-col justify-center min-w-0">
+                      <h4 className="font-serif text-xs font-semibold text-white tracking-wide truncate">
+                        {isRTL ? item.product.nameAr : item.product.nameEn}
+                      </h4>
+                      <div className="flex justify-between items-center mt-1">
+                        <span className="text-[10px] text-gold font-mono">
+                          {item.product.priceAED.toLocaleString()} AED x {item.quantity}
+                        </span>
+                        <span className="text-[10px] text-white/80 font-mono">
+                          {(item.product.priceAED * item.quantity).toLocaleString()} AED
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
             {/* VIP Promo Info */}

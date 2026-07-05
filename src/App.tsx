@@ -11,6 +11,7 @@ import SEOManager from './components/SEOManager';
 import LoginModal from './components/LoginModal';
 import SovereignWishlist from './components/SovereignWishlist';
 import CheckoutModal from './components/CheckoutModal';
+import SovereignCart from './components/SovereignCart';
 import { Language, Product, CartItem, Order } from './types';
 import { LUXURY_PRODUCTS } from './data';
 import { auth, app } from './lib/firebase';
@@ -387,6 +388,7 @@ export default function App() {
   const [isPdfExporting, setIsPdfExporting] = useState<boolean>(false);
   const [isSharing, setIsSharing] = useState<boolean>(false);
   const [selectedDirectPurchaseProduct, setSelectedDirectPurchaseProduct] = useState<Product | null>(null);
+  const [selectedCartCheckoutItems, setSelectedCartCheckoutItems] = useState<CartItem[] | null>(null);
 
   const handleUpdateVatPercentage = (value: number) => {
     setVatPercentage(value);
@@ -552,6 +554,12 @@ export default function App() {
     }
 
     setOrders((prev) => [newOrder, ...prev]);
+
+    // Clear checked-out items from the shopping cart
+    if (newOrder.items && newOrder.items.length > 0) {
+      const checkedOutIds = newOrder.items.map(item => item.product.id);
+      setCart((prev) => prev.filter(item => !checkedOutIds.includes(item.product.id)));
+    }
 
     // Save states for post-purchase invoice display
     setPlacedOrderInvoice(newOrder);
@@ -944,6 +952,8 @@ export default function App() {
         onLogout={handleLogout}
         favoritesCount={favorites.length}
         onOpenWishlist={() => setIsWishlistOpen(true)}
+        cartCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
+        onOpenCart={() => setIsCartOpen(true)}
       />
 
       {/* Exquisite VIP Access Banner Info */}
@@ -976,6 +986,7 @@ export default function App() {
                 products={products} 
                 searchQuery={searchQuery} 
                 onDirectPurchase={(product) => setSelectedDirectPurchaseProduct(product)} 
+                onAddToCart={handleAddToCart}
                 onPlaceOrder={handlePlaceOrder} 
                 favorites={favorites}
                 onToggleFavorite={handleToggleFavorite}
@@ -1034,6 +1045,7 @@ export default function App() {
                 <HomepageGrids 
                   lang={lang}
                   onDirectPurchase={(product) => setSelectedDirectPurchaseProduct(product)}
+                  onAddToCart={handleAddToCart}
                   onPlaceOrder={handlePlaceOrder}
                   favorites={favorites}
                   onToggleFavorite={handleToggleFavorite}
@@ -1243,6 +1255,7 @@ export default function App() {
               products={products} 
               searchQuery={searchQuery} 
               onDirectPurchase={(product) => setSelectedDirectPurchaseProduct(product)} 
+              onAddToCart={handleAddToCart}
               onPlaceOrder={handlePlaceOrder} 
               favorites={favorites}
               onToggleFavorite={handleToggleFavorite}
@@ -1688,12 +1701,33 @@ export default function App() {
         onDirectPurchase={(product) => setSelectedDirectPurchaseProduct(product)}
       />
 
-      {/* Direct Purchase Checkout Modal */}
+      {/* Elegant Luxury Shopping Cart Drawer */}
+      <SovereignCart
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        lang={lang}
+        cart={cart}
+        onRemoveFromCart={handleRemoveFromCart}
+        onUpdateCartQuantity={handleUpdateCartQuantity}
+        isLoggedIn={isLoggedIn}
+        isAdmin={isAdmin}
+        vatPercentage={vatPercentage}
+        onProceedToCheckout={(selectedItems) => {
+          setSelectedCartCheckoutItems(selectedItems);
+          setIsCartOpen(false); // Close the cart drawer
+        }}
+      />
+
+      {/* Unified Order Checkout Modal */}
       <CheckoutModal
-        isOpen={selectedDirectPurchaseProduct !== null}
-        onClose={() => setSelectedDirectPurchaseProduct(null)}
+        isOpen={selectedDirectPurchaseProduct !== null || selectedCartCheckoutItems !== null}
+        onClose={() => {
+          setSelectedDirectPurchaseProduct(null);
+          setSelectedCartCheckoutItems(null);
+        }}
         lang={lang}
         product={selectedDirectPurchaseProduct}
+        cartItems={selectedCartCheckoutItems}
         isLoggedIn={isLoggedIn}
         isAdmin={isAdmin}
         userEmail={userEmail}

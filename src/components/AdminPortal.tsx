@@ -109,6 +109,23 @@ export default function AdminPortal({
   // Parse and calculate separate line items with their subtotals
   const getSelectedOrderItems = () => {
     if (!selectedOrder) return [];
+
+    // If order has detailed items array, map them directly with their correct resolving name
+    if (selectedOrder.items && selectedOrder.items.length > 0) {
+      return selectedOrder.items.map(item => {
+        const matchingProduct = products.find(p => p.id === item.product.id);
+        const name = matchingProduct ? (isRTL ? matchingProduct.nameAr : matchingProduct.nameEn) : item.product.nameEn;
+        const price = item.product.priceAED;
+        return {
+          name,
+          resolvedName: name,
+          quantity: item.quantity,
+          price: price,
+          subtotal: price * item.quantity
+        };
+      });
+    }
+
     const rawName = selectedOrder.productName || '';
     
     // Split by comma
