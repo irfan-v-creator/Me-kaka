@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Menu, X, Globe, ShoppingBag, User, Search, LogOut, Crown, ShieldAlert, Sparkles, Heart, Award } from 'lucide-react';
-import { Language, NavItem } from '../types';
-import { LUXURY_PRODUCTS } from '../data';
+import { Language, NavItem, Product } from '../types';
 
 interface NavbarProps {
   lang: Language;
@@ -20,6 +19,7 @@ interface NavbarProps {
   onOpenAcquisitions?: () => void;
   cartCount?: number;
   onOpenCart?: () => void;
+  products?: Product[];
 }
 
 export const navItems: NavItem[] = [
@@ -45,7 +45,8 @@ export default function Navbar({
   onOpenWishlist,
   onOpenAcquisitions,
   cartCount = 0,
-  onOpenCart
+  onOpenCart,
+  products = []
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -85,7 +86,7 @@ export default function Navbar({
 
   // Filter products for dynamic auto-suggest dropdown
   const suggestions = searchQuery.trim()
-    ? LUXURY_PRODUCTS.filter(p =>
+    ? products.filter(p =>
         p.nameEn.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (p.nameAr && p.nameAr.includes(searchQuery)) ||
         p.categoryEn.toLowerCase().includes(searchQuery.toLowerCase()) ||

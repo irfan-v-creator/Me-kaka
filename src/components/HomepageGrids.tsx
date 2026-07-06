@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, ShoppingBag, Flame, Star, Clock, Heart, Eye, X, Send, CheckCircle2 } from 'lucide-react';
 import { Product, Language } from '../types';
-import { LUXURY_PRODUCTS } from '../data';
 import ProductReviews from './ProductReviews';
 
 
 interface HomepageGridsProps {
   lang: Language;
+  products: Product[];
   onDirectPurchase: (product: Product) => void;
   onAddToCart?: (product: Product) => void;
   onPlaceOrder: (product: Product, customerPhone: string) => void;
@@ -18,6 +18,7 @@ interface HomepageGridsProps {
 
 export default function HomepageGrids({
   lang,
+  products,
   onDirectPurchase,
   onAddToCart,
   onPlaceOrder,
@@ -53,10 +54,36 @@ export default function HomepageGrids({
     return () => clearInterval(interval);
   }, []);
 
-  // Map products
-  const dealProduct = LUXURY_PRODUCTS.find(p => p.id === 'prod_4') || LUXURY_PRODUCTS[0]; // Grace Elite Chronograph Steel Watch
-  const trendingProducts = LUXURY_PRODUCTS.filter(p => p.id === 'prod_1' || p.id === 'prod_2'); // Royal Band & Neck-Chain
-  const newArrivals = LUXURY_PRODUCTS.filter(p => p.id === 'prod_3' || p.id === 'prod_5' || p.id === 'prod_6'); // Oud, Wallet, Sunglasses
+  if (!products || products.length === 0) {
+    return (
+      <div className="py-24 text-center space-y-4 max-w-md mx-auto text-luxury-cream" id="homepage-luxury-grids-empty" dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className="text-gold text-4xl font-serif">⚜</div>
+        <h2 className="font-serif text-xl font-bold tracking-widest uppercase text-white">
+          {isRTL ? 'صالة العرض قيد التحضير' : 'Gallery Under Curation'}
+        </h2>
+        <div className="w-12 h-[1px] bg-gold/50 mx-auto" />
+        <p className="text-luxury-cream/60 text-xs leading-relaxed">
+          {isRTL 
+            ? 'نحن نقوم حالياً بتجهيز صالة العرض بالقطع الفنية والنفائس الفريدة. يرجى تسجيل الدخول كمسؤول لإضافة قطع جديدة إلى التشكيلة.'
+            : 'Our master craftsmen are curating rare pieces for our sovereign boutique. Please authenticate as Administrator to upload direct creations.'}
+        </p>
+      </div>
+    );
+  }
+
+  // Dynamic Map products with custom fallbacks
+  const dealProduct = products.find(p => p.id === 'prod_4') || products.find(p => p.isPremium) || products[0];
+  
+  // If we have specific product IDs, use them. Otherwise, slice from products pool.
+  const explicitTrending = products.filter(p => p.id === 'prod_1' || p.id === 'prod_2');
+  const trendingProducts = explicitTrending.length > 0 
+    ? explicitTrending 
+    : products.filter(p => p.id !== dealProduct?.id).slice(0, 2);
+
+  const explicitNewArrivals = products.filter(p => p.id === 'prod_3' || p.id === 'prod_5' || p.id === 'prod_6');
+  const newArrivals = explicitNewArrivals.length > 0
+    ? explicitNewArrivals
+    : products.filter(p => p.id !== dealProduct?.id && !trendingProducts.some(tp => tp.id === p.id)).slice(0, 3);
 
   const formatPrice = (price: number) => {
     return price.toLocaleString();

@@ -13,7 +13,6 @@ import SovereignWishlist from './components/SovereignWishlist';
 import CheckoutModal from './components/CheckoutModal';
 import SovereignCart from './components/SovereignCart';
 import { Language, Product, CartItem, Order } from './types';
-import { LUXURY_PRODUCTS } from './data';
 import { auth, app } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { 
@@ -54,7 +53,7 @@ export default function App() {
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
   const [loginModalInitialTab, setLoginModalInitialTab] = useState<'profile' | 'orders'>('profile');
   const [activePage, setActivePage] = useState<string>('home');
-  const [products, setProducts] = useState<Product[]>(LUXURY_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
 
   // Real-time synchronization of the products collection with Firestore "products"
   useEffect(() => {
@@ -77,15 +76,8 @@ export default function App() {
 
     const handleProductsSnapshot = async (snapshot: any) => {
       if (snapshot.empty) {
-        console.log('Firestore "products" collection is empty. Seeding default luxury products...');
-        try {
-          for (const prod of LUXURY_PRODUCTS) {
-            await setDoc(doc(db, 'products', prod.id), sanitizeForFirestore(prod));
-          }
-          console.log('[Admin/App] Default products successfully seeded into collection "products".');
-        } catch (err) {
-          console.error('[Admin/App] Error seeding products to Firestore:', err);
-        }
+        console.log('Firestore "products" collection is empty.');
+        setProducts([]);
       } else {
         const loadedProducts: Product[] = [];
         snapshot.forEach((docSnap: any) => {
@@ -226,7 +218,7 @@ export default function App() {
     return [
       {
         id: 'ORD-8429',
-        productName: LUXURY_PRODUCTS[0]?.nameEn || 'The Golden Chronometer Watch',
+        productName: 'The Golden Chronometer Watch',
         priceAED: 137025,
         customerPhone: '+971 50 123 4567',
         orderTime: '11:24 PM - Jun 22, 2026',
@@ -235,7 +227,24 @@ export default function App() {
         bespokeNotes: 'Deliver to front desk.',
         userEmail: 'vip@stylesandgrace.ae',
         customerEmail: 'vip@stylesandgrace.ae',
-        items: [{ product: LUXURY_PRODUCTS[0], quantity: 1 }],
+        items: [{
+          product: {
+            id: 'fallback_prod_watch',
+            nameEn: 'The Golden Chronometer Watch',
+            nameAr: 'ساعة جريس السيادية',
+            priceAED: 137025,
+            image: '',
+            categoryEn: 'Watches',
+            categoryAr: 'ساعات',
+            descriptionEn: '',
+            descriptionAr: '',
+            stockStatus: 'In Stock',
+            stockStatusAr: 'متوفر',
+            isPremium: true,
+            stock: 5
+          },
+          quantity: 1
+        }],
         subtotal: 145000,
         discount: 14500,
         vatAED: 6525,
@@ -243,7 +252,7 @@ export default function App() {
       },
       {
         id: 'ORD-1094',
-        productName: LUXURY_PRODUCTS[2]?.nameEn || 'Burj Oud Intense Fragrance',
+        productName: 'Burj Oud Intense Fragrance',
         priceAED: 3969,
         customerPhone: '+971 50 123 4567',
         orderTime: '09:15 PM - Jun 22, 2026',
@@ -252,7 +261,24 @@ export default function App() {
         bespokeNotes: 'Deliver after sunset.',
         userEmail: 'vip@stylesandgrace.ae',
         customerEmail: 'vip@stylesandgrace.ae',
-        items: [{ product: LUXURY_PRODUCTS[2], quantity: 1 }],
+        items: [{
+          product: {
+            id: 'fallback_prod_oud',
+            nameEn: 'Burj Oud Intense Fragrance',
+            nameAr: 'عطر ستايلز آند جريس عود إنتنس',
+            priceAED: 3969,
+            image: '',
+            categoryEn: 'Fragrances',
+            categoryAr: 'عطور',
+            descriptionEn: '',
+            descriptionAr: '',
+            stockStatus: 'In Stock',
+            stockStatusAr: 'متوفر',
+            isPremium: false,
+            stock: 5
+          },
+          quantity: 1
+        }],
         subtotal: 4200,
         discount: 420,
         vatAED: 189,
@@ -566,8 +592,8 @@ export default function App() {
     if (newOrder.items) {
       setInvoiceCartItems(newOrder.items);
     } else {
-      // Find matching product object from database or luxury list
-      const matched = LUXURY_PRODUCTS.find(p => p.nameEn === newOrder.productName || p.nameAr === newOrder.productName);
+      // Find matching product object from database list
+      const matched = products.find(p => p.nameEn === newOrder.productName || p.nameAr === newOrder.productName);
       if (matched) {
         setInvoiceCartItems([{ product: matched, quantity: 1 }]);
       }
@@ -954,6 +980,7 @@ export default function App() {
         onOpenWishlist={() => setIsWishlistOpen(true)}
         cartCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
         onOpenCart={() => setIsCartOpen(true)}
+        products={products}
       />
 
       {/* Exquisite VIP Access Banner Info */}
@@ -1044,6 +1071,7 @@ export default function App() {
                 {/* Categorized Luxury Grids */}
                 <HomepageGrids 
                   lang={lang}
+                  products={products}
                   onDirectPurchase={(product) => setSelectedDirectPurchaseProduct(product)}
                   onAddToCart={handleAddToCart}
                   onPlaceOrder={handlePlaceOrder}

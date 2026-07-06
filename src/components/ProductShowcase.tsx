@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Shield, RefreshCw, X, ShoppingBag, Eye, Heart } from 'lucide-react';
 import { Product, Language } from '../types';
-import { LUXURY_PRODUCTS } from '../data';
 import ProductReviews from './ProductReviews';
 
 
@@ -61,58 +60,6 @@ export default function ProductShowcase({
   const [clientPhone, setClientPhone] = useState<string>('');
   const [validationError, setValidationError] = useState<boolean>(false);
 
-  // Fallback placeholder products for Styles & Grace (Italian Silver Rings, Luxury Watches, Oud Perfumes)
-  const FALLBACK_LUXURY_PRODUCTS: Product[] = [
-    {
-      id: 'fallback_ring_1',
-      nameEn: 'Styles & Grace Imperial Sterling Ring (925 Silver)',
-      nameAr: 'خاتم إمبراطوري فضة إيطالية ٩٢٥ من ستايلز آند جريس',
-      priceAED: 1350,
-      originalPriceAED: 1650,
-      image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&q=80&w=600',
-      categoryEn: '925 Italian Silver & Non-Tarnish Jewelry',
-      categoryAr: 'فضة إيطالية ٩٢٥ ومجوهرات راقية',
-      descriptionEn: 'An exquisite hand-carved 925 Italian sterling silver ring with high-polish tarnish protection, mirroring royal Dubai craftsmanship.',
-      descriptionAr: 'خاتم مصنوع يدوياً من الفضة الإيطالية عيار ٩٢٥ الفاخرة المقاومة للبهتان مع طبقة حماية فائقة البريق.',
-      stockStatus: 'In Stock',
-      stockStatusAr: 'متوفر',
-      isPremium: true,
-      stock: 12
-    },
-    {
-      id: 'fallback_watch_1',
-      nameEn: 'Grace Sovereignty Chrono Gold-Steel Watch',
-      nameAr: 'ساعة جريس السيادية الكرونوغراف المطلية بالذهب',
-      priceAED: 5400,
-      originalPriceAED: 6200,
-      image: 'https://images.unsplash.com/photo-1547996160-81dfa63595aa?auto=format&fit=crop&q=80&w=600',
-      categoryEn: 'Luxury Perfumes & Watches',
-      categoryAr: 'عطور وساعات فاخرة',
-      descriptionEn: 'Majestic automatic gold-plated masterpiece featuring premium Swiss chronometer movement and durable sapphire crystal armor.',
-      descriptionAr: 'تحفة ميكانيكية أوتوماتيكية فاخرة مطلية بالذهب بعيار دقيق وهيكل مصفح بالياقوت الكريستالي المقاوم للخدش.',
-      stockStatus: 'In Stock',
-      stockStatusAr: 'متوفر',
-      isPremium: true,
-      stock: 8
-    },
-    {
-      id: 'fallback_perfume_1',
-      nameEn: 'Styles & Grace Royal Oud Supreme Perfume',
-      nameAr: 'عطر ستايلز آند جريس العود الملكي الفاخر',
-      priceAED: 1450,
-      originalPriceAED: 1750,
-      image: 'https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&q=80&w=600',
-      categoryEn: 'Luxury Perfumes & Watches',
-      categoryAr: 'عطور وساعات فاخرة',
-      descriptionEn: 'Pure royal oud oil extract blended with amber, Damascene rose nectar, and sandalwood for intense, long-lasting presence.',
-      descriptionAr: 'خلاصة دهن العود الملكي النقي الممزوج بالعنبر والورد الدمشقي وخشب الصندل لنفحات قوية تدوم طويلاً.',
-      stockStatus: 'In Stock',
-      stockStatusAr: 'متوفر',
-      isPremium: false,
-      stock: 15
-    }
-  ];
-
   // Luxury Skeleton Loader state which triggers on category change or initial load for responsive feel
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -162,8 +109,8 @@ export default function ProductShowcase({
     return prod === sel;
   };
 
-  // Determine current active product pool (falls back to custom placeholders if database is empty)
-  const productPool = products.length > 0 ? products : FALLBACK_LUXURY_PRODUCTS;
+  // Determine current active product pool
+  const productPool = products;
 
   const filteredProducts = productPool.filter(p => {
     // Check category filter
