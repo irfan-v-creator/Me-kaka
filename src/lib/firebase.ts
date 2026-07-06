@@ -4,18 +4,18 @@ import { initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDORrqm1t9LKqFJXlw-0mG71GgXypjdbcE",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "gen-lang-client-0280736015.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "gen-lang-client-0280736015",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "gen-lang-client-0280736015.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "42896465814",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:42896465814:web:9ad9930963f7c5db0587b7"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
 
-const dbId = "ai-studio-luxoradubai-0f824072-2fe7-4c75-a950-651ada91cc36";
+const dbId = import.meta.env.VITE_FIREBASE_DATABASE_ID;
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true
 }, dbId);

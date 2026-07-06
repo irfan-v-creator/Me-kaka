@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, User, ShieldAlert, CheckCircle, Plus, Sparkles, TrendingUp, DollarSign, Coins, Eye, Image, Trash2, X, FileText, Shield, Phone, MapPin, Check, Bell } from 'lucide-react';
+import { Lock, User, ShieldAlert, CheckCircle, Plus, Sparkles, TrendingUp, DollarSign, Coins, Eye, Image, Trash2, X, FileText, Shield, Phone, MapPin, Check, Bell, Loader2 } from 'lucide-react';
 import { Product, Language, Order } from '../types';
 import { loginUser, signInWithGoogle, logoutUser } from '../lib/firebaseService';
-import { app } from '../lib/firebase';
-import { getFirestore } from 'firebase/firestore';
+import { app, storage } from '../lib/firebase';
+import { getFirestore, collection, addDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // Explicitly initialize Firestore database regionally as requested
 const db = getFirestore(app, "ai-studio-luxoradubai-0f824072-2fe7-4c75-a950-651ada91cc36");
@@ -62,6 +63,11 @@ export default function AdminPortal({
   const [image, setImage] = useState<string>('');
   const [stockStatus, setStockStatus] = useState<'In Stock' | 'Low Stock' | 'Out of Stock'>('In Stock');
   const [formSuccess, setFormSuccess] = useState<boolean>(false);
+  
+  // Storage and file upload states
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sovereign selected order for luxury detail view
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -269,40 +275,84 @@ export default function AdminPortal({
     }
   };
 
-  const handleCreateProduct = (e: React.FormEvent) => {
+  const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nameEn || !priceAED || !image) {
-      alert(isRTL ? 'يرجى ملء جميع الحقول المطلوبة بالذهب والأسعار الموقرة.' : 'Please provide at least a Product Name, Price, and Image Reference.');
+    if (!nameEn || !priceAED) {
+      alert(isRTL ? 'يرجى ملء اسم المنتج والسعر.' : 'Please provide at least a Product Name and Price.');
       return;
     }
 
-    const resolvedCategoryAr = mapCategoryArabic(categoryEn);
-    const resolvedStockAr = mapStockArabic(stockStatus);
+    if (!imageFile && !image) {
+      alert(isRTL ? 'يرجى تحميل صورة للمنتج أو اختيار أحد القوالب الجاهزة.' : 'Please upload an image file or choose one of the preset options.');
+      return;
+    }
 
-    onAddProduct({
-      nameEn,
-      nameAr: nameAr || nameEn,
-      priceAED: Number(priceAED),
-      image,
-      categoryEn,
-      categoryAr: resolvedCategoryAr,
-      descriptionEn,
-      descriptionAr: descriptionAr || descriptionEn,
-      stockStatus,
-      stockStatusAr: resolvedStockAr,
-      isPremium: priceAED >= 50000
-    });
+    setIsUploading(true);
+    try {
+      let finalImageUrl = image;
 
-    // Reset Form
-    setNameEn('');
-    setNameAr('');
-    setPriceAED(0);
-    setDescriptionEn('');
-    setDescriptionAr('');
-    setImage('');
-    setStockStatus('In Stock');
-    setFormSuccess(true);
-    setTimeout(() => setFormSuccess(false), 4000);
+      // Securely upload the selected product image to Firebase Storage if we have a file
+      if (imageFile) {
+        const fileRef = ref(storage, `products/${Date.now()}_${imageFile.name}`);
+        await uploadBytes(fileRef, imageFile);
+        finalImageUrl = await getDownloadURL(fileRef);
+      }
+
+      if (!finalImageUrl) {
+        throw new Error(isRTL ? 'فشل الحصول على رابط تحميل الصورة.' : 'Failed to retrieve image download URL.');
+      }
+
+      const resolvedCategoryAr = mapCategoryArabic(categoryEn);
+      const resolvedStockAr = mapStockArabic(stockStatus);
+
+      const productData = {
+        nameEn,
+        nameAr: nameAr || nameEn,
+        priceAED: Number(priceAED),
+        image: finalImageUrl,
+        categoryEn,
+        categoryAr: resolvedCategoryAr,
+        descriptionEn,
+        descriptionAr: descriptionAr || descriptionEn,
+        stockStatus,
+        stockStatusAr: resolvedStockAr,
+        isPremium: Number(priceAED) >= 50000,
+        stock: 10
+      };
+
+      // Uses Firestore addDoc to save the product details into the 'products' collection
+      const docRef = await addDoc(collection(db, 'products'), productData);
+
+      // Success alert as requested
+      alert(isRTL 
+        ? `تم بنجاح! تم حفظ المنتج في قاعدة البيانات بنجاح.\nالمعرف: ${docRef.id}` 
+        : `Success: The product has been securely saved to the collection!\nDocument ID: ${docRef.id}`
+      );
+
+      // Reset Form
+      setNameEn('');
+      setNameAr('');
+      setPriceAED(0);
+      setDescriptionEn('');
+      setDescriptionAr('');
+      setImage('');
+      setImageFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      setStockStatus('In Stock');
+      setFormSuccess(true);
+      setTimeout(() => setFormSuccess(false), 4000);
+    } catch (err: any) {
+      console.error('Failed to upload product and save to database:', err);
+      // Error alert as requested
+      alert(isRTL 
+        ? `خطأ: فشل في حفظ المنتج.\nالتفاصيل: ${err.message || err}` 
+        : `Error: Failed to save product to database!\nDetails: ${err.message || err}`
+      );
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   // Preset Luxury Image Templates for Easy Use
@@ -743,17 +793,43 @@ export default function AdminPortal({
                 </select>
               </div>
 
-              {/* Premium image reference selector helper */}
+              {/* Premium image reference selector & uploader helper */}
               <div className="space-y-1.5">
-                <label className="block text-[11px] uppercase tracking-wide font-serif text-luxury-cream">Interactive Image URL *</label>
-                <input
-                  type="url"
-                  required
-                  value={image}
-                  onChange={(e) => setImage(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full bg-luxury-black border border-gold/20 rounded p-2.5 text-xs text-luxury-cream focus:outline-none focus:border-gold font-mono"
-                />
+                <label className="block text-[11px] uppercase tracking-wide font-serif text-luxury-cream">
+                  {isRTL ? 'تحميل صورة المنتج *' : 'Upload Product Image *'}
+                </label>
+                <div className="relative">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setImageFile(e.target.files[0]);
+                        setImage(e.target.files[0].name);
+                      }
+                    }}
+                    className="w-full bg-luxury-black border border-gold/20 rounded p-2 text-xs text-luxury-cream focus:outline-none focus:border-gold file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-gold/10 file:text-gold file:hover:bg-gold/20 cursor-pointer"
+                  />
+                </div>
+                {imageFile ? (
+                  <p className="text-[10px] text-gold mt-1 font-mono flex items-center gap-1">
+                    <span>✓ {imageFile.name} ({(imageFile.size / 1024).toFixed(1)} KB)</span>
+                  </p>
+                ) : (
+                  <div className="mt-2">
+                    <label className="block text-[9px] uppercase tracking-wider text-luxury-cream/60">
+                      {isRTL ? 'أو أدخل رابط صورة مباشرة' : 'Or enter direct Image URL'}
+                    </label>
+                    <input
+                      type="text"
+                      value={image}
+                      onChange={(e) => setImage(e.target.value)}
+                      placeholder="https://images.unsplash.com/..."
+                      className="w-full bg-luxury-black/50 border border-gold/10 rounded p-2 text-[10px] text-luxury-cream/80 focus:outline-none focus:border-gold/30 mt-1 font-mono"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -765,7 +841,13 @@ export default function AdminPortal({
                   <button
                     key={p.name}
                     type="button"
-                    onClick={() => setImage(p.url)}
+                    onClick={() => {
+                      setImage(p.url);
+                      setImageFile(null);
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                      }
+                    }}
                     className="bg-luxury-black border border-gold/15 hover:border-gold px-2.5 py-1 text-[10px] text-luxury-cream/80 hover:text-white rounded transition-colors flex items-center gap-1"
                   >
                     <Image className="h-3.5 w-3.5 text-gold" />
@@ -802,9 +884,17 @@ export default function AdminPortal({
             <button
               id="submit-product-creation"
               type="submit"
-              className="w-full bg-gradient-to-r from-gold-dark via-gold to-gold-dark text-luxury-black font-serif text-xs font-bold tracking-widest uppercase py-3 rounded shadow-lg active:scale-95 transition-all mt-4"
+              disabled={isUploading}
+              className="w-full bg-gradient-to-r from-gold-dark via-gold to-gold-dark text-luxury-black font-serif text-xs font-bold tracking-widest uppercase py-3 rounded shadow-lg active:scale-95 transition-all mt-4 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isRTL ? 'إدراج المنتج ونشره على الموقع' : 'Save Product'}
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>{isRTL ? 'جاري رفع الصورة وحفظ التحفة...' : 'Uploading Asset & Saving...'}</span>
+                </>
+              ) : (
+                <span>{isRTL ? 'إدراج المنتج ونشره على الموقع' : 'Save Product'}</span>
+              )}
             </button>
           </form>
         </div>
