@@ -278,12 +278,12 @@ export default function AdminPortal({
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nameEn || !priceAED) {
-      alert(isRTL ? 'يرجى ملء اسم المنتج والسعر.' : 'Please provide at least a Product Name and Price.');
+      window.alert(isRTL ? 'يرجى ملء اسم المنتج والسعر.' : 'Please provide at least a Product Name and Price.');
       return;
     }
 
     if (!imageFile && !image) {
-      alert(isRTL ? 'يرجى تحميل صورة للمنتج أو اختيار أحد القوالب الجاهزة.' : 'Please upload an image file or choose one of the preset options.');
+      window.alert(isRTL ? 'يرجى تحميل صورة للمنتج أو اختيار أحد القوالب الجاهزة.' : 'Please upload an image file or choose one of the preset options.');
       return;
     }
 
@@ -323,8 +323,8 @@ export default function AdminPortal({
       // Uses Firestore addDoc to save the product details into the 'products' collection
       const docRef = await addDoc(collection(db, 'products'), productData);
 
-      // Success alert as requested
-      alert(isRTL 
+      // Success alert using window.alert as requested
+      window.alert(isRTL 
         ? `تم بنجاح! تم حفظ المنتج في قاعدة البيانات بنجاح.\nالمعرف: ${docRef.id}` 
         : `Success: The product has been securely saved to the collection!\nDocument ID: ${docRef.id}`
       );
@@ -345,8 +345,8 @@ export default function AdminPortal({
       setTimeout(() => setFormSuccess(false), 4000);
     } catch (err: any) {
       console.error('Failed to upload product and save to database:', err);
-      // Error alert as requested
-      alert(isRTL 
+      // Error alert using window.alert() as requested
+      window.alert(isRTL 
         ? `خطأ: فشل في حفظ المنتج.\nالتفاصيل: ${err.message || err}` 
         : `Error: Failed to save product to database!\nDetails: ${err.message || err}`
       );
