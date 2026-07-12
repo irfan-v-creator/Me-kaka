@@ -59,8 +59,9 @@ export default function SovereignCart({
   const total = taxable + vat;
 
   const handleProceed = () => {
-    if (selectedItems.length === 0) return;
-    onProceedToCheckout(selectedItems);
+    const itemsToCheckout = selectedItems.length > 0 ? selectedItems : cart;
+    if (itemsToCheckout.length === 0) return;
+    onProceedToCheckout(itemsToCheckout);
   };
 
   return (
@@ -76,29 +77,29 @@ export default function SovereignCart({
             className="fixed inset-0 z-50 bg-luxury-black/80 backdrop-blur-sm pointer-events-auto cursor-pointer"
           />
 
-          {/* Luxury Slide-over Panel */}
+          {/* Luxury Slide-over Panel - Now bounded as a compact floating panel */}
           <motion.div
-            initial={{ x: isRTL ? '-100%' : '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: isRTL ? '-100%' : '100%' }}
+            initial={{ opacity: 0, x: isRTL ? -40 : 40, scale: 0.95 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: isRTL ? -40 : 40, scale: 0.95 }}
             transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-            className={`fixed inset-y-0 ${
-              isRTL ? 'left-0 border-r' : 'right-0 border-l'
-            } z-50 w-full sm:max-w-md bg-luxury-dark/95 border-gold/15 shadow-[0_0_50px_rgba(0,0,0,0.8)] backdrop-blur-md flex flex-col justify-between overflow-hidden text-luxury-cream`}
+            className={`fixed top-[15vh] ${
+              isRTL ? 'left-4 sm:left-8' : 'right-4 sm:right-8'
+            } z-50 w-[calc(100vw-32px)] sm:w-[380px] h-[65vh] max-h-[65vh] bg-luxury-dark/98 border border-gold/20 shadow-[0_25px_60px_rgba(0,0,0,0.95)] rounded-2xl backdrop-blur-md flex flex-col justify-between overflow-hidden text-luxury-cream`}
             dir={isRTL ? 'rtl' : 'ltr'}
           >
             {/* Top Frame Gold Line Accent */}
             <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-gold to-transparent" />
 
             {/* Header section */}
-            <div className="p-6 border-b border-gold/10 flex justify-between items-center bg-luxury-black/40">
-              <div className="flex items-center gap-2.5">
-                <ShoppingBag className="h-5 w-5 text-gold animate-pulse" />
+            <div className="p-3.5 border-b border-gold/10 flex justify-between items-center bg-luxury-black/40">
+              <div className="flex items-center gap-1.5">
+                <ShoppingBag className="h-3.5 w-3.5 text-gold animate-pulse" />
                 <div>
-                  <h2 className="font-serif text-lg font-bold text-white tracking-widest uppercase">
+                  <h2 className="font-serif text-xs font-bold text-white tracking-wider uppercase">
                     {isRTL ? 'حقيبة الاقتناء الملوكية' : 'Your Shopping Cart'}
                   </h2>
-                  <p className="text-[10px] uppercase tracking-wider text-gold font-mono leading-none mt-1">
+                  <p className="text-[8px] uppercase tracking-wider text-gold font-mono leading-none mt-0.5">
                     {cart.reduce((sum, item) => sum + item.quantity, 0)}{' '}
                     {isRTL ? 'تحفة فنية مختارة' : 'item(s)'}
                   </p>
@@ -107,24 +108,24 @@ export default function SovereignCart({
               
               <button
                 onClick={onClose}
-                className="text-luxury-cream/60 hover:text-gold p-1.5 rounded-full border border-gold/10 hover:border-gold/30 transition-all duration-300 animate-none cursor-pointer"
+                className="text-luxury-cream/60 hover:text-gold p-1 rounded-full border border-gold/10 hover:border-gold/30 transition-all duration-300 animate-none cursor-pointer"
               >
-                <X className="h-4.5 w-4.5" />
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
 
-            {/* Main Content Area */}
-            <div className="flex-grow overflow-y-auto p-6 space-y-4">
+            {/* Main Content Area - Scrollable internal view */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
               {cart.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center space-y-4 py-12">
-                  <div className="h-12 w-12 rounded-full border border-gold/10 flex items-center justify-center text-gold bg-luxury-black/20">
-                    <ShoppingBag className="h-5 w-5 opacity-40" />
+                <div className="h-full flex flex-col items-center justify-center text-center space-y-2.5 py-6">
+                  <div className="h-8 w-8 rounded-full border border-gold/10 flex items-center justify-center text-gold bg-luxury-black/20">
+                    <ShoppingBag className="h-3.5 w-3.5 opacity-40" />
                   </div>
-                  <div className="space-y-1">
-                    <h3 className="font-serif text-sm font-bold text-white uppercase tracking-wider">
+                  <div className="space-y-0.5">
+                    <h3 className="font-serif text-[11px] font-bold text-white uppercase tracking-wider">
                       {isRTL ? 'حقيبة الاقتناء فارغة حالياً' : 'Cart Empty'}
                     </h3>
-                    <p className="text-xs text-luxury-cream/40 max-w-xs mx-auto">
+                    <p className="text-[10px] text-luxury-cream/40 max-w-xs mx-auto leading-relaxed">
                       {isRTL
                         ? 'اكتشف إبداعات حصرية لربيع وصيف ٢٠٢٦ المعززة بسبائك الذهب عيار ٢٤ قيراط لضمها لثرواتكم.'
                         : 'Explore our collections to select and save high-quality jewelry and watches.'}
@@ -132,23 +133,23 @@ export default function SovereignCart({
                   </div>
                   <button
                     onClick={onClose}
-                    className="px-5 py-2 border border-gold/20 text-gold text-[10px] font-serif uppercase tracking-widest hover:bg-gold hover:text-luxury-black transition-all duration-300 cursor-pointer"
+                    className="px-3 py-1 border border-gold/20 text-gold text-[8px] font-serif uppercase tracking-widest hover:bg-gold hover:text-luxury-black transition-all duration-300 cursor-pointer"
                   >
                     {isRTL ? 'العودة للمجموعة' : 'Continue Shopping'}
                   </button>
                 </div>
               ) : (
-                /* Item list view */
-                <div className="space-y-4">
+                /* Item list view - now scrolls within the parent container */
+                <div className="space-y-2">
                   {cart.map((item) => {
                     const itemTotal = item.product.priceAED * item.quantity;
                     const isChecked = checkedIds[item.product.id] !== false;
                     return (
                       <div 
                         key={item.product.id}
-                        className={`group relative rounded-lg border p-3.5 flex items-center gap-3.5 transition-all overflow-hidden ${
+                        className={`group relative rounded-lg border p-2 flex items-center gap-2 transition-all overflow-hidden ${
                           isChecked 
-                            ? 'border-gold/25 bg-luxury-dark/40 shadow-inner' 
+                            ? 'border-gold/20 bg-luxury-dark/40 shadow-inner' 
                             : 'border-neutral-800/40 bg-luxury-dark/10 opacity-60'
                         }`}
                       >
@@ -163,12 +164,12 @@ export default function SovereignCart({
                                 [item.product.id]: e.target.checked
                               }));
                             }}
-                            className="w-4 h-4 rounded border-gold/30 text-gold bg-luxury-black/60 focus:ring-gold focus:ring-offset-luxury-dark accent-[#e5c158] cursor-pointer"
+                            className="w-3 h-3 rounded border-gold/30 text-gold bg-luxury-black/60 focus:ring-gold focus:ring-offset-luxury-dark accent-[#e5c158] cursor-pointer"
                           />
                         </div>
 
                         {/* Image */}
-                        <div className="w-14 h-14 rounded border border-gold/10 bg-luxury-black/80 flex-shrink-0 overflow-hidden relative">
+                        <div className="w-10 h-10 rounded border border-gold/10 bg-luxury-black/80 flex-shrink-0 overflow-hidden relative">
                           <img 
                             src={item.product.image} 
                             alt={item.product.nameEn}
@@ -181,42 +182,42 @@ export default function SovereignCart({
                         <div className="flex-grow flex flex-col justify-between min-w-0">
                           <div className="flex justify-between items-start gap-1">
                             <div className="min-w-0">
-                              <h4 className="font-serif text-xs font-semibold text-white tracking-wide truncate">
+                              <h4 className="font-serif text-[10px] font-semibold text-white tracking-wide truncate leading-tight">
                                 {isRTL ? item.product.nameAr : item.product.nameEn}
                               </h4>
-                              <p className="text-[9px] text-gold font-mono uppercase tracking-wider leading-none mt-1">
+                              <p className="text-[7.5px] text-gold font-mono uppercase tracking-wider leading-none mt-0.5">
                                 {isRTL ? item.product.categoryAr : item.product.categoryEn}
                               </p>
                             </div>
                             <button
                               onClick={() => onRemoveFromCart(item.product.id)}
-                              className="text-luxury-cream/40 hover:text-red-400 p-0.5 cursor-pointer"
+                              className="text-luxury-cream/40 hover:text-red-400 p-0.5 cursor-pointer transition-colors"
                               title={isRTL ? 'إزالة' : 'Remove item'}
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
+                              <Trash2 className="h-2.5 w-2.5" />
                             </button>
                           </div>
 
-                          <div className="flex justify-between items-center mt-2 pt-1.5 border-t border-gold/5">
+                          <div className="flex justify-between items-center mt-1 pt-1 border-t border-gold/5">
                             {/* Quantity */}
-                            <div className="flex items-center border border-gold/25 rounded bg-luxury-black/40 overflow-hidden scale-90 origin-left">
+                            <div className="flex items-center border border-gold/15 rounded bg-luxury-black/40 overflow-hidden scale-80 origin-left">
                               <button 
                                 onClick={() => onUpdateCartQuantity(item.product.id, item.quantity - 1)}
-                                className="px-2 py-0.5 text-gold hover:bg-gold/10 font-bold cursor-pointer"
+                                className="px-1 py-0.5 text-gold hover:bg-gold/10 font-bold cursor-pointer"
                               >
-                                <Minus className="h-2.5 w-2.5" />
+                                <Minus className="h-2 w-2" />
                               </button>
-                              <span className="px-3 text-xs font-mono text-white">{item.quantity}</span>
+                              <span className="px-1.5 text-[9px] font-mono text-white">{item.quantity}</span>
                               <button 
                                 onClick={() => onUpdateCartQuantity(item.product.id, item.quantity + 1)}
-                                className="px-2 py-0.5 text-gold hover:bg-gold/10 font-bold cursor-pointer"
+                                className="px-1 py-0.5 text-gold hover:bg-gold/10 font-bold cursor-pointer"
                               >
-                                <Plus className="h-2.5 w-2.5" />
+                                <Plus className="h-2 w-2" />
                               </button>
                             </div>
                             
                             {/* Price */}
-                            <span className="text-xs text-gold font-mono">
+                            <span className="text-[10px] text-gold font-mono font-medium">
                               {itemTotal.toLocaleString()} AED
                             </span>
                           </div>
@@ -230,9 +231,9 @@ export default function SovereignCart({
 
             {/* Footer Summary & CTA area */}
             {cart.length > 0 && (
-              <div className="p-6 border-t border-gold/10 bg-luxury-black/60 space-y-4">
+              <div className="p-3 border-t border-gold/10 bg-luxury-black/60 space-y-2">
                 {/* Pricing breakdown */}
-                <div className="space-y-2 text-xs font-mono">
+                <div className="space-y-1 text-[10px] font-mono">
                   <div className="flex justify-between text-luxury-cream/70">
                     <span>{isRTL ? 'قيمة المجموعة الأساسية:' : 'Subtotal:'}</span>
                     <span>{subtotal.toLocaleString()} AED</span>
@@ -245,34 +246,31 @@ export default function SovereignCart({
                     </div>
                   )}
 
-                  <div className="flex justify-between text-luxury-cream/50 text-[11px]">
+                  <div className="flex justify-between text-luxury-cream/50 text-[9px]">
                     <span>{isRTL ? `ضريبة القيمة المضافة للإمارات (${vatPercentage}٪):` : `UAE VAT (${vatPercentage}%):`}</span>
                     <span>{vat.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED</span>
                   </div>
 
-                  <div className="flex justify-between text-white font-serif text-sm font-bold pt-2 border-t border-gold/10">
+                  <div className="flex justify-between text-white font-serif text-[11px] font-bold pt-1 border-t border-gold/10">
                     <span className="text-gold tracking-wider">{isRTL ? 'قيمة الاستثمار الإجمالي:' : 'Grand Total:'}</span>
                     <span className="text-gold font-mono">{total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED</span>
                   </div>
                 </div>
 
                 {/* Secure checkout info */}
-                <div className="flex items-center gap-1.5 justify-center text-[10px] uppercase tracking-widest text-gold/60 font-mono">
-                  <Lock className="h-3 w-3 text-gold" />
+                <div className="flex items-center gap-1 justify-center text-[7.5px] uppercase tracking-widest text-gold/60 font-mono">
+                  <Lock className="h-2 w-2 text-gold" />
                   <span>{isRTL ? 'إثبات حيازة وحجز آمن' : 'Secure Vault Booking'}</span>
                 </div>
 
                 {/* CTAs */}
                 <button
-                  disabled={selectedItems.length === 0}
+                  id="cart-checkout-btn-whatsapp"
                   onClick={handleProceed}
-                  className={`w-full py-4 rounded-xl shadow-lg transition-all duration-300 active:scale-95 cursor-pointer text-center font-serif text-xs font-black tracking-widest uppercase ${
-                    selectedItems.length === 0
-                      ? 'bg-neutral-800 text-neutral-500 border border-neutral-700/50 cursor-not-allowed'
-                      : 'bg-gold hover:bg-white text-luxury-black font-extrabold filter drop-shadow-[0_4px_12px_rgba(212,175,55,0.3)] hover:drop-shadow-[0_4px_20px_rgba(255,255,255,0.4)]'
-                  }`}
+                  style={{ backgroundColor: '#D4AF37' }}
+                  className="w-full py-2 px-3 rounded-lg shadow-lg transition-all duration-300 active:scale-95 cursor-pointer text-center font-serif text-[10px] font-black tracking-widest uppercase text-black hover:bg-white hover:text-black filter drop-shadow-[0_2px_6px_rgba(212,175,55,0.15)] hover:drop-shadow-[0_4px_12px_rgba(255,255,255,0.25)]"
                 >
-                  {isRTL ? 'إتمام الطلب عبر واتساب' : 'COMPLETE ORDER ON WHATSAPP'}
+                  {isRTL ? 'إجراء الطلب عبر واتساب' : 'Place Order via WhatsApp'}
                 </button>
               </div>
             )}
