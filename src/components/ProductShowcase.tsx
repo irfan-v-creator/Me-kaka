@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Shield, RefreshCw, X, ShoppingBag, Eye, Heart } from 'lucide-react';
+import { Sparkles, Shield, RefreshCw, X, ShoppingBag, Eye, Heart, Loader2 } from 'lucide-react';
 import { Product, Language } from '../types';
 import ProductReviews from './ProductReviews';
 
@@ -17,6 +17,8 @@ interface ProductShowcaseProps {
   vatPercentage?: number;
   selectedCategory?: string;
   onCategoryChange?: (category: string) => void;
+  onSeedDemoProducts?: () => Promise<void>;
+  isSeeding?: boolean;
 }
 
 export default function ProductShowcase({ 
@@ -30,7 +32,9 @@ export default function ProductShowcase({
   onToggleFavorite,
   vatPercentage = 5,
   selectedCategory: propSelectedCategory,
-  onCategoryChange: propOnCategoryChange
+  onCategoryChange: propOnCategoryChange,
+  onSeedDemoProducts,
+  isSeeding = false
 }: ProductShowcaseProps) {
   const isRTL = lang === 'ar';
   
@@ -92,8 +96,9 @@ export default function ProductShowcase({
 
   const matchCategory = (productCategory: string, selected: string): boolean => {
     if (selected === 'All') return true;
-    const prod = productCategory.toLowerCase();
-    const sel = selected.toLowerCase();
+    const prod = (productCategory || '').toLowerCase();
+    const sel = (selected || '').toLowerCase();
+    if (prod === sel) return true;
     if (sel === 'watches') {
       return prod.includes('watch') || prod.includes('timepiece');
     }
@@ -234,6 +239,25 @@ export default function ProductShowcase({
                     ? 'نأسف لعدم العثور على قطع تتوافق مع مدخلات البحث الحالية. يرجى مراجعة التهجئة أو استخدام تعبيرات أخرى مثل "ساعة" أو "أقراط" أو "عود".'
                     : 'Our elite vault currently has no masterworks matching this filter criteria. Please revise your search keywords or seek adjacent bespoke terms.'}
                 </p>
+                {onSeedDemoProducts && (
+                  <button
+                    onClick={onSeedDemoProducts}
+                    disabled={isSeeding}
+                    className="mt-6 inline-flex items-center gap-2 bg-gradient-to-r from-gold-dark via-gold to-gold-dark hover:from-gold hover:to-gold-dark text-luxury-black font-serif text-xs font-bold tracking-widest uppercase py-3 px-6 rounded shadow-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {isSeeding ? (
+                      <>
+                        <Loader2 className="animate-spin h-4 w-4 text-luxury-black" />
+                        <span>{isRTL ? 'جاري إدراج المنتجات...' : 'Seeding...'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 text-luxury-black" />
+                        <span>{isRTL ? 'تنزيل المنتجات التجريبية تلقائياً' : 'Seed Demo Catalog'}</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </motion.div>
             ) : (
               filteredProducts.map((product) => {

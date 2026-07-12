@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ShoppingBag, Flame, Star, Clock, Heart, Eye, X, Send, CheckCircle2 } from 'lucide-react';
+import { Sparkles, ShoppingBag, Flame, Star, Clock, Heart, Eye, X, Send, CheckCircle2, Loader2 } from 'lucide-react';
 import { Product, Language } from '../types';
 import ProductReviews from './ProductReviews';
 
@@ -14,6 +14,8 @@ interface HomepageGridsProps {
   favorites: string[];
   onToggleFavorite: (productId: string) => void;
   vatPercentage: number;
+  onSeedDemoProducts?: () => Promise<void>;
+  isSeeding?: boolean;
 }
 
 export default function HomepageGrids({
@@ -24,7 +26,9 @@ export default function HomepageGrids({
   onPlaceOrder,
   favorites,
   onToggleFavorite,
-  vatPercentage
+  vatPercentage,
+  onSeedDemoProducts,
+  isSeeding = false
 }: HomepageGridsProps) {
   const isRTL = lang === 'ar';
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -56,7 +60,7 @@ export default function HomepageGrids({
 
   if (!products || products.length === 0) {
     return (
-      <div className="py-24 text-center space-y-4 max-w-md mx-auto text-luxury-cream" id="homepage-luxury-grids-empty" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="py-24 text-center space-y-4 max-w-md mx-auto text-luxury-cream px-4" id="homepage-luxury-grids-empty" dir={isRTL ? 'rtl' : 'ltr'}>
         <div className="text-gold text-4xl font-serif">⚜</div>
         <h2 className="font-serif text-xl font-bold tracking-widest uppercase text-white">
           {isRTL ? 'صالة العرض قيد التحضير' : 'Gallery Under Curation'}
@@ -67,6 +71,26 @@ export default function HomepageGrids({
             ? 'نحن نقوم حالياً بتجهيز صالة العرض بالقطع الفنية والنفائس الفريدة. يرجى تسجيل الدخول كمسؤول لإضافة قطع جديدة إلى التشكيلة.'
             : 'Our master craftsmen are curating rare pieces for our sovereign boutique. Please authenticate as Administrator to upload direct creations.'}
         </p>
+
+        {onSeedDemoProducts && (
+          <button
+            onClick={onSeedDemoProducts}
+            disabled={isSeeding}
+            className="mt-6 inline-flex items-center gap-2 bg-gradient-to-r from-gold-dark via-gold to-gold-dark hover:from-gold hover:to-gold-dark text-luxury-black font-serif text-xs font-bold tracking-widest uppercase py-3 px-6 rounded shadow-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {isSeeding ? (
+              <>
+                <Loader2 className="animate-spin h-4 w-4 text-luxury-black" />
+                <span>{isRTL ? 'جاري إدراج المنتجات...' : 'Seeding...'}</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4 text-luxury-black" />
+                <span>{isRTL ? 'تنزيل المنتجات التجريبية تلقائياً' : 'Seed Demo Catalog'}</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
     );
   }

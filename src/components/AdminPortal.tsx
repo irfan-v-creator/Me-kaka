@@ -67,6 +67,7 @@ export default function AdminPortal({
   // Storage and file upload states
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [isSeeding, setIsSeeding] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sovereign selected order for luxury detail view
@@ -352,6 +353,95 @@ export default function AdminPortal({
       );
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleSeedDemoProducts = async () => {
+    setIsSeeding(true);
+    try {
+      const demoProducts = [
+        {
+          nameEn: "Royal Emerald Chronograph",
+          nameAr: "ساعة الزمرد الملكية",
+          priceAED: 145000,
+          image: "https://images.unsplash.com/photo-1547996160-81dfa63595aa?auto=format&fit=crop&q=80&w=800",
+          categoryEn: "Watches",
+          categoryAr: "ساعات",
+          descriptionEn: "An exquisite timepiece featuring deep emerald hues, self-winding caliber, and 18-karat rose gold accents.",
+          descriptionAr: "تحفة نادرة في عالم الساعات مصقولة بذهب عيار ١٨ قيراط ومزينة بقرص من الزمرد الأخضر الأخاذ.",
+          stockStatus: "In Stock" as const,
+          stockStatusAr: "متوفر" as const,
+          isPremium: true,
+          stock: 10
+        },
+        {
+          nameEn: "Sovereign Gold & Diamond Ring",
+          nameAr: "خاتم الألماس والذهب الملكي",
+          priceAED: 220000,
+          image: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&q=80&w=800",
+          categoryEn: "Jewelry",
+          categoryAr: "مجوهرات",
+          descriptionEn: "Impeccably cut flawless 3-carat diamond cradled in heavy, hand-beaten 24k gold band.",
+          descriptionAr: "خاتم ملكي مرصع بالألماس النقي بوزن ٣ قيراط مع طوق من الذهب الخالص عيار ٢٤ قيراط.",
+          stockStatus: "In Stock" as const,
+          stockStatusAr: "متوفر" as const,
+          isPremium: true,
+          stock: 10
+        },
+        {
+          nameEn: "Oud Imperial Elixir",
+          nameAr: "عطر عود إمبيريال",
+          priceAED: 1850,
+          image: "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&q=80&w=800",
+          categoryEn: "Fragrance",
+          categoryAr: "عطور",
+          descriptionEn: "A rare and mesmerizing sensory journey combining pure cambodian oud, precious dark rose, and warm amber resin.",
+          descriptionAr: "عطر مهيب يجمع بين دهن العود الكمبودي النادر وبتلات الورد المخملي واللبان الدافئ.",
+          stockStatus: "In Stock" as const,
+          stockStatusAr: "متوفر" as const,
+          isPremium: false,
+          stock: 10
+        },
+        {
+          nameEn: "Imperial Calfskin Handbag",
+          nameAr: "حقيبة جلد العجل الإمبراطورية",
+          priceAED: 38000,
+          image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=800",
+          categoryEn: "Accessories",
+          categoryAr: "إكسسوارات",
+          descriptionEn: "Hand-stitched by master artisans using selected full-grain calfskin with signature gold-plated monogram clasp.",
+          descriptionAr: "حقيبة فاخرة ومصنوعة يدوياً بالكامل من جلد العجل الطبيعي المختار بعناية فائقة وتفاصيل مطلية بالذهب.",
+          stockStatus: "In Stock" as const,
+          stockStatusAr: "متوفر" as const,
+          isPremium: false,
+          stock: 10
+        },
+        {
+          nameEn: "Majestic Sapphire Cufflinks",
+          nameAr: "أزرار الياقوت السيلاني والبلاتين",
+          priceAED: 12500,
+          image: "https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?auto=format&fit=crop&q=80&w=800",
+          categoryEn: "Accessories",
+          categoryAr: "إكسسوارات",
+          descriptionEn: "An extraordinary pairing of deep-blue royal Ceylon sapphires and polished platinum.",
+          descriptionAr: "أزرار أكمام ملكية مصاغة من البلاتين اللامع ومرصعة بأحجار الياقوت السيلاني الأزرق.",
+          stockStatus: "In Stock" as const,
+          stockStatusAr: "متوفر" as const,
+          isPremium: false,
+          stock: 10
+        }
+      ];
+
+      for (const product of demoProducts) {
+        await addDoc(collection(db, 'products'), product);
+      }
+
+      window.alert("Demo Products Seeded Successfully!");
+    } catch (err: any) {
+      console.error("Failed to seed demo products:", err);
+      window.alert(`Error Seeding Demo Products: ${err.message || err}`);
+    } finally {
+      setIsSeeding(false);
     }
   };
 
@@ -884,7 +974,7 @@ export default function AdminPortal({
             <button
               id="submit-product-creation"
               type="submit"
-              disabled={isUploading}
+              disabled={isUploading || isSeeding}
               className="w-full bg-gradient-to-r from-gold-dark via-gold to-gold-dark text-luxury-black font-serif text-xs font-bold tracking-widest uppercase py-3 rounded shadow-lg active:scale-95 transition-all mt-4 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isUploading ? (
@@ -894,6 +984,26 @@ export default function AdminPortal({
                 </>
               ) : (
                 <span>{isRTL ? 'إدراج المنتج ونشره على الموقع' : 'Save Product'}</span>
+              )}
+            </button>
+
+            <button
+              id="seed-demo-products"
+              type="button"
+              disabled={isUploading || isSeeding}
+              onClick={handleSeedDemoProducts}
+              className="w-full border border-gold/40 hover:bg-gold/10 text-gold font-serif text-xs font-bold tracking-widest uppercase py-3 rounded shadow-lg active:scale-95 transition-all mt-3 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSeeding ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>{isRTL ? 'جاري إدراج المنتجات التجريبية...' : 'Seeding Demo Catalog...'}</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 text-gold" />
+                  <span>{isRTL ? 'تغذية المتجر بمنتجات تجريبية فاخرة' : 'Seed Demo Products'}</span>
+                </>
               )}
             </button>
           </form>

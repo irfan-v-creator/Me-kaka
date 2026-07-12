@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Sparkles, Send, Lock, ShoppingBag } from 'lucide-react';
 import { Product, Language, Order, CartItem } from '../types';
 
+// The target WhatsApp phone number in international format for order dispatch (e.g. 971XXXXXXXXX)
+export const WHATSAPP_PHONE_NUMBER = '971588257372';
+
 interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -119,7 +122,39 @@ export default function CheckoutModal({
     };
 
     try {
+      // Construct beautifully formatted order summary for WhatsApp
+      const waItemsText = items.map(item => {
+        const name = isRTL ? item.product.nameAr : item.product.nameEn;
+        const price = item.product.priceAED.toLocaleString();
+        return `• ${name} (x${item.quantity}) - ${price} AED`;
+      }).join('\n');
+
+      const waNotesText = checkoutNotes.trim() 
+        ? (isRTL ? `📝 *طلبات صياغة خاصة:* ${checkoutNotes.trim()}` : `📝 *Bespoke Notes:* ${checkoutNotes.trim()}`) 
+        : '';
+
+      const waMessage = isRTL
+        ? `*✨ طلب جديد مخصص - بوتيك الفخامة ✨*\n\n` +
+          `👤 *العميل الموقر:* ${checkoutName.trim()}\n` +
+          `📞 *رقم الهاتف:* ${checkoutPhone.trim()}\n` +
+          `📍 *عنوان التسليم:* ${checkoutAddress.trim()}\n` +
+          (waNotesText ? `${waNotesText}\n` : '') +
+          `\n🛍️ *القطع المطلوبة:*\n${waItemsText}\n\n` +
+          `💰 *المجموع الكلي للاقتناء:* ${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`
+        : `*✨ New Bespoke Order - Luxury Boutique ✨*\n\n` +
+          `👤 *Client:* ${checkoutName.trim()}\n` +
+          `📞 *Phone:* ${checkoutPhone.trim()}\n` +
+          `📍 *Delivery Coordinates:* ${checkoutAddress.trim()}\n` +
+          (waNotesText ? `${waNotesText}\n` : '') +
+          `\n🛍️ *Items Ordered:*\n${waItemsText}\n\n` +
+          `💰 *Grand Total:* ${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`;
+
+      const waUrl = `https://wa.me/${WHATSAPP_PHONE_NUMBER}?text=${encodeURIComponent(waMessage)}`;
+
       await onPlaceOrder(newOrder);
+      
+      // Open the WhatsApp API link in a new tab safely
+      window.open(waUrl, '_blank', 'noopener,noreferrer');
       onClose();
     } catch (err) {
       console.error('Failed to submit order:', err);
