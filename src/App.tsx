@@ -13,7 +13,7 @@ import SovereignWishlist from './components/SovereignWishlist';
 import CheckoutModal from './components/CheckoutModal';
 import SovereignCart from './components/SovereignCart';
 import { Language, Product, CartItem, Order } from './types';
-import { auth, app } from './lib/firebase';
+import { auth, app, db } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { 
   collection, 
@@ -22,10 +22,8 @@ import {
   setDoc, 
   deleteDoc, 
   getDocs,
-  getFirestore,
   addDoc
 } from 'firebase/firestore';
-const db = getFirestore(app, "ai-studio-luxoradubai-0f824072-2fe7-4c75-a950-651ada91cc36");
 import { 
   getUserProfile, 
   getCartFromFirestore, 

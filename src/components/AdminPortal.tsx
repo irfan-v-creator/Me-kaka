@@ -3,12 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, User, ShieldAlert, CheckCircle, Plus, Sparkles, TrendingUp, DollarSign, Coins, Eye, Image, Trash2, X, FileText, Shield, Phone, MapPin, Check, Bell, Loader2 } from 'lucide-react';
 import { Product, Language, Order } from '../types';
 import { loginUser, signInWithGoogle, logoutUser } from '../lib/firebaseService';
-import { app, storage } from '../lib/firebase';
-import { getFirestore, collection, addDoc } from 'firebase/firestore';
+import { app, storage, db } from '../lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-
-// Explicitly initialize Firestore database regionally as requested
-const db = getFirestore(app, "ai-studio-luxoradubai-0f824072-2fe7-4c75-a950-651ada91cc36");
 
 
 interface AdminPortalProps {

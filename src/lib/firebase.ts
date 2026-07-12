@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { initializeFirestore } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -14,10 +14,5 @@ const firebaseConfig = {
 
 export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
-
-const dbId = import.meta.env.VITE_FIREBASE_DATABASE_ID;
-export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true
-}, dbId);
-
+export const db = getFirestore(app);
 export const storage = getStorage(app);

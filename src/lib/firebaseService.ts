@@ -18,16 +18,14 @@ import {
   updateDoc,
   serverTimestamp,
   Timestamp,
-  addDoc,
-  getFirestore
+  addDoc
 } from 'firebase/firestore';
 import { 
   ref, 
   uploadBytes, 
   getDownloadURL 
 } from 'firebase/storage';
-import { auth, app, storage } from './firebase';
-const db = getFirestore(app, "ai-studio-luxoradubai-0f824072-2fe7-4c75-a950-651ada91cc36");
+import { auth, app, storage, db } from './firebase';
 import { Order, CartItem, Product } from '../types';
 
 // ==========================================
