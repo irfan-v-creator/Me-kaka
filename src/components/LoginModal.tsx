@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { X, Lock, Mail, ShieldAlert, Sparkles, User, ShieldCheck, Crown, ExternalLink, Calendar, CreditCard, LogOut, Award, Clock, Eye, Share2, Star, Truck, Check } from 'lucide-react';
+import { X, Lock, Mail, ShieldAlert, Sparkles, User, ShieldCheck, Crown, ExternalLink, Calendar, CreditCard, LogOut, Award, Clock, Eye, Share2, Star, Truck, Check, RotateCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Language, Order } from '../types';
-import { loginUser, registerUser, updateOrderStatus, signInWithGoogle, unifiedAuth } from '../lib/firebaseService';
+import { loginUser, registerUser, updateOrderStatus, signInWithGoogle, unifiedAuth, getUserOrders } from '../lib/firebaseService';
+import { db, auth } from '../lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 
 interface LoginModalProps {
@@ -80,6 +82,213 @@ export default function LoginModal({
     const updated = { ...orderTrackingStages, [orderId]: stage };
     setOrderTrackingStages(updated);
     localStorage.setItem('luxora_order_tracking', JSON.stringify(updated));
+  };
+
+  const [isFetchingOrders, setIsFetchingOrders] = useState<boolean>(false);
+
+  const fetchOrdersFromFirestore = async () => {
+    if (!isLoggedIn) return;
+    setIsFetchingOrders(true);
+    try {
+      let targetUid = '';
+      if (auth.currentUser) {
+        targetUid = auth.currentUser.uid;
+      } else {
+        const savedFallbackUser = localStorage.getItem('luxora_fallback_user');
+        if (savedFallbackUser) {
+          const parsed = JSON.parse(savedFallbackUser);
+          if (parsed && parsed.uid) {
+            targetUid = parsed.uid;
+          }
+        }
+      }
+
+      let fetchedOrders: Order[] = [];
+
+      if (isAdmin) {
+        // Admins fetch all orders from Firestore
+        const ordersCol = collection(db, 'orders');
+        const querySnapshot = await getDocs(ordersCol);
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          fetchedOrders.push({
+            id: data.id || docSnap.id,
+            productName: data.productName,
+            priceAED: data.priceAED,
+            customerPhone: data.customerPhone,
+            orderTime: data.orderTime,
+            clientName: data.clientName,
+            deliveryCoordinates: data.deliveryCoordinates,
+            bespokeNotes: data.bespokeNotes,
+            vatAED: data.vatAED,
+            status: data.status || 'Pending',
+            checkoutMethod: data.checkoutMethod || 'QuickBuy',
+            userEmail: data.userEmail,
+            customerEmail: data.customerEmail,
+            items: data.items,
+            subtotal: data.subtotal,
+            discount: data.discount
+          } as Order);
+        });
+      } else if (targetUid) {
+        // Fetch only for current logged in user
+        fetchedOrders = await getUserOrders(targetUid);
+      } else if (userEmail) {
+        // Fallback email matching if uid is not resolved yet
+        const ordersCol = collection(db, 'orders');
+        const querySnapshot = await getDocs(ordersCol);
+        const emailToMatch = userEmail.toLowerCase().trim();
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const cEmail = data.customerEmail?.toLowerCase().trim();
+          const uEmail = data.userEmail?.toLowerCase().trim();
+          if (cEmail === emailToMatch || uEmail === emailToMatch) {
+            fetchedOrders.push({
+              id: data.id || docSnap.id,
+              productName: data.productName,
+              priceAED: data.priceAED,
+              customerPhone: data.customerPhone,
+              orderTime: data.orderTime,
+              clientName: data.clientName,
+              deliveryCoordinates: data.deliveryCoordinates,
+              bespokeNotes: data.bespokeNotes,
+              vatAED: data.vatAED,
+              status: data.status || 'Pending',
+              checkoutMethod: data.checkoutMethod || 'QuickBuy',
+              userEmail: data.userEmail,
+              customerEmail: data.customerEmail,
+              items: data.items,
+              subtotal: data.subtotal,
+              discount: data.discount
+            } as Order);
+          }
+        });
+      }
+
+      // Sort descending
+      fetchedOrders.sort((a, b) => b.id.localeCompare(a.id));
+      
+      setLocalOrders(fetchedOrders);
+      
+      // Update selectedOrder if none is selected, or if the currently selected one is updated
+      if (fetchedOrders.length > 0) {
+        setSelectedOrder(prev => {
+          if (prev) {
+            const updated = fetchedOrders.find(o => o.id === prev.id);
+            if (updated) return updated;
+          }
+          return fetchedOrders[0];
+        });
+      } else {
+        setSelectedOrder(null);
+      }
+    } catch (err) {
+      console.error('Error fetching orders from Firestore:', err);
+    } finally {
+      setIsFetchingOrders(false);
+    }
+  };
+
+  const renderStatusBadge = (status: Order['status']) => {
+    const s = status || 'Pending';
+    switch (s) {
+      case 'Cancelled':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/15 border border-red-500/30 text-red-500 text-[9px] font-mono font-bold uppercase tracking-wider">
+            <span className="h-1 w-1 rounded-full bg-red-500 animate-pulse" />
+            {isRTL ? 'ملغي ومسترد' : 'Cancelled'}
+          </span>
+        );
+      case 'Delivered':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#e5c158]/15 border border-[#e5c158]/40 text-[#e5c158] text-[9px] font-mono font-bold uppercase tracking-wider">
+            <span className="h-1 w-1 rounded-full bg-[#e5c158] animate-pulse" />
+            {isRTL ? 'تم التسليم باليد' : 'Delivered'}
+          </span>
+        );
+      case 'Shipped':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400 text-[9px] font-mono font-bold uppercase tracking-wider">
+            <span className="h-1 w-1 rounded-full bg-blue-400 animate-pulse" />
+            {isRTL ? 'نقل مدرع نشط' : 'In Armored Transit'}
+          </span>
+        );
+      case 'Processing':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[9px] font-mono font-bold uppercase tracking-wider">
+            <span className="h-1 w-1 rounded-full bg-amber-400 animate-pulse" />
+            {isRTL ? 'قيد التحضير الفني' : 'Bespoke Preparation'}
+          </span>
+        );
+      case 'Pending':
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/15 border border-yellow-500/30 text-yellow-400 text-[9px] font-mono font-bold uppercase tracking-wider">
+            <span className="h-1 w-1 rounded-full bg-yellow-400 animate-ping" />
+            {isRTL ? 'انتظار التأمين' : 'Pending Secured'}
+          </span>
+        );
+    }
+  };
+
+  const renderPreviewStatusBadge = (status: Order['status']) => {
+    const s = status || 'Pending';
+    switch (s) {
+      case 'Cancelled':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/15 border border-red-500/30 text-red-500 text-[9px] font-mono font-bold uppercase tracking-wider">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+            {isRTL ? 'ملغي ومسترد' : 'Cancelled'}
+          </span>
+        );
+      case 'Delivered':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#e5c158]/15 border border-[#e5c158]/40 text-[#e5c158] text-[9px] font-mono font-bold uppercase tracking-wider">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#e5c158]" />
+            {isRTL ? 'تم التسليم باليد VVIP' : 'Hand-delivered VVIP'}
+          </span>
+        );
+      case 'Shipped':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400 text-[9px] font-mono font-bold uppercase tracking-wider">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
+            {isRTL ? 'نقل مدرع نشط' : 'In Armored Transit'}
+          </span>
+        );
+      case 'Processing':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[9px] font-mono font-bold uppercase tracking-wider">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+            {isRTL ? 'قيد التحضير الفني' : 'Bespoke Preparation'}
+          </span>
+        );
+      case 'Pending':
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-yellow-500/15 border border-yellow-500/30 text-yellow-400 text-[9px] font-mono font-bold uppercase tracking-wider">
+            <span className="h-1.5 w-1.5 rounded-full bg-yellow-400 animate-pulse" />
+            {isRTL ? 'انتظار التأمين' : 'Pending Secured'}
+          </span>
+        );
+    }
+  };
+
+  const isStageActive = (order: Order, stage: 1 | 2 | 3 | 4) => {
+    if (order.status === 'Cancelled') return false;
+    const status = order.status || 'Pending';
+    const simulated = getOrderTrackingStage(order.id);
+
+    if (stage === 1) return true;
+    if (stage === 2) {
+      return status === 'Processing' || status === 'Shipped' || status === 'Delivered';
+    }
+    if (stage === 3) {
+      return status === 'Shipped' || status === 'Delivered' || simulated === 'Delivered' || simulated === 'Transit';
+    }
+    if (stage === 4) {
+      return status === 'Delivered' || simulated === 'Delivered';
+    }
+    return false;
   };
 
   const handleCancelConfirm = async () => {
@@ -164,9 +373,10 @@ export default function LoginModal({
     }
   }, [isOpen, initialTab]);
 
-  // Fetch & Filter dynamically from localStorage when orders tab is active or modal is open
+  // Load fast initial fallback from localStorage and also fetch fresh from Firestore
   React.useEffect(() => {
     if (isOpen && isLoggedIn && userEmail) {
+      // 1. First set fast local state so the user gets immediate response
       try {
         const saved = localStorage.getItem('luxora_orders');
         let allOrders: Order[] = [];
@@ -200,10 +410,13 @@ export default function LoginModal({
           setSelectedOrder(null);
         }
       } catch (err) {
-        console.error('Error fetching orders from localStorage:', err);
+        console.error('Error loading initial orders:', err);
       }
+
+      // 2. Query Firestore asynchronously for direct, fresh updates
+      fetchOrdersFromFirestore();
     }
-  }, [isOpen, isLoggedIn, userEmail, isAdmin, orders, activeTab]);
+  }, [isOpen, isLoggedIn, userEmail, isAdmin, activeTab]);
 
   if (!isOpen) return null;
 
@@ -471,6 +684,28 @@ export default function LoginModal({
               ) : (
                 /* Tab 2: User Order History with Desktop Side-by-side Invoice Preview */
                 <div className="space-y-3.5 text-start">
+                  <div className="flex justify-between items-center bg-[#0d0d0d] border border-[#e5c158]/10 p-3 rounded-xl">
+                    <div>
+                      <h3 className="font-serif text-xs font-bold tracking-widest text-white uppercase">
+                        {isRTL ? 'سجل الطلبات السيادية' : 'Sovereign Order History'}
+                      </h3>
+                      <p className="text-[9px] text-[#e5c158]/70 font-mono">
+                        {isRTL ? 'متصل ومحمي بواسطة Firestore' : 'Secured connection to Firestore DB'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fetchOrdersFromFirestore();
+                      }}
+                      disabled={isFetchingOrders}
+                      className="flex items-center gap-1.5 bg-[#e5c158]/10 hover:bg-[#e5c158]/20 disabled:opacity-50 text-[#e5c158] text-[10px] font-serif uppercase tracking-widest px-2.5 py-1.5 rounded-lg border border-[#e5c158]/20 transition-all cursor-pointer select-none"
+                    >
+                      <RotateCw className={`h-3 w-3 ${isFetchingOrders ? 'animate-spin' : ''}`} />
+                      <span>{isFetchingOrders ? (isRTL ? 'جاري التحديث...' : 'Syncing...') : (isRTL ? 'تحديث' : 'Refresh')}</span>
+                    </button>
+                  </div>
+
                   {isAdmin && (
                     <div className="bg-[#e5c158]/10 border border-[#e5c158]/20 p-2.5 rounded-lg text-[10px] text-[#e5c158] font-mono tracking-wide text-center mb-2">
                       ⚡ {isRTL ? 'عرض لوحة التحكم الإدارية لكافة الفواتير النشطة' : 'ADMIN VIEW: Customer Orders'}
@@ -504,17 +739,7 @@ export default function LoginModal({
                               <div className="space-y-1">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="text-xs font-mono text-[#e5c158] font-bold tracking-widest">{order.id}</span>
-                                  {order.status === 'Cancelled' ? (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/15 border border-red-500/30 text-red-500 text-[9px] font-mono font-bold uppercase tracking-wider">
-                                      <span className="h-1 w-1 rounded-full bg-red-500 animate-pulse" />
-                                      {isRTL ? 'ملغي ومسترد' : 'Cancelled'}
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#10b981]/15 border border-[#10b981]/30 text-[#10b981] text-[9px] font-mono font-bold uppercase tracking-wider">
-                                      <span className="h-1 w-1 rounded-full bg-[#10b981] animate-ping" />
-                                      {isRTL ? 'مؤمن' : 'Secured'}
-                                    </span>
-                                  )}
+                                  {renderStatusBadge(order.status)}
                                 </div>
                                 <div className="flex items-center gap-1.5 text-[10px] text-luxury-cream/50 font-mono">
                                   <Clock className="h-3.5 w-3.5 text-[#e5c158]/60" />
@@ -679,7 +904,15 @@ export default function LoginModal({
                                       <div className={`absolute ${isRTL ? 'right-[9px]' : 'left-[9px]'} top-1.5 bottom-1.5 w-0.5 bg-[#a99260]/20`}>
                                         <div 
                                           className="absolute top-0 left-0 w-full bg-[#a99260] transition-all duration-500" 
-                                          style={{ height: getOrderTrackingStage(order.id) === 'Delivered' ? '100%' : '66%' }}
+                                          style={{ 
+                                            height: isStageActive(order, 4) 
+                                              ? '100%' 
+                                              : isStageActive(order, 3) 
+                                                ? '66%' 
+                                                : isStageActive(order, 2) 
+                                                  ? '33%' 
+                                                  : '0%' 
+                                          }}
                                         />
                                       </div>
 
@@ -703,12 +936,18 @@ export default function LoginModal({
                                       {/* Stage 2: Processing */}
                                       <div className="flex gap-3 items-start relative">
                                         <div className={`absolute ${isRTL ? '-right-[22px]' : '-left-[22px]'} flex items-center justify-center`}>
-                                          <div className="h-[18px] w-[18px] rounded-full bg-[#0d0d0d] border border-[#e5c158] flex items-center justify-center text-[#e5c158] z-10">
-                                            <Check className="h-3 w-3" />
-                                          </div>
+                                          {isStageActive(order, 2) ? (
+                                            <div className="h-[18px] w-[18px] rounded-full bg-[#0d0d0d] border border-[#e5c158] flex items-center justify-center text-[#e5c158] z-10">
+                                              <Check className="h-3 w-3" />
+                                            </div>
+                                          ) : (
+                                            <div className="h-[18px] w-[18px] rounded-full bg-[#0d0d0d] border border-[#262626] flex items-center justify-center text-luxury-cream/30 z-10">
+                                              <span className="h-1.5 w-1.5 rounded-full bg-luxury-cream/30 animate-pulse" />
+                                            </div>
+                                          )}
                                         </div>
                                         <div>
-                                          <p className="text-[11px] font-serif font-bold text-[#e5c158]">
+                                          <p className={`text-[11px] font-serif font-bold ${isStageActive(order, 2) ? 'text-[#e5c158]' : 'text-luxury-cream/30'}`}>
                                             {isRTL ? 'معالجة وتحضير التحفة' : 'Order Processing'}
                                           </p>
                                           <p className="text-[9px] text-luxury-cream/50 leading-relaxed">
@@ -720,18 +959,18 @@ export default function LoginModal({
                                       {/* Stage 3: Armored Transit */}
                                       <div className="flex gap-3 items-start relative">
                                         <div className={`absolute ${isRTL ? '-right-[22px]' : '-left-[22px]'} flex items-center justify-center`}>
-                                          {getOrderTrackingStage(order.id) === 'Delivered' ? (
+                                          {isStageActive(order, 3) ? (
                                             <div className="h-[18px] w-[18px] rounded-full bg-[#0d0d0d] border border-[#e5c158] flex items-center justify-center text-[#e5c158] z-10">
                                               <Check className="h-3 w-3" />
                                             </div>
                                           ) : (
-                                            <div className="h-[18px] w-[18px] rounded-full bg-[#0d0d0d] border border-[#e5c158] flex items-center justify-center z-10">
-                                              <span className="h-2 w-2 rounded-full bg-[#e5c158] animate-pulse" />
+                                            <div className="h-[18px] w-[18px] rounded-full bg-[#0d0d0d] border border-[#262626] flex items-center justify-center text-luxury-cream/30 z-10">
+                                              <span className="h-1.5 w-1.5 rounded-full bg-luxury-cream/30" />
                                             </div>
                                           )}
                                         </div>
                                         <div>
-                                          <p className={`text-[11px] font-serif font-bold ${getOrderTrackingStage(order.id) === 'Delivered' ? 'text-[#e5c158]' : 'text-white'}`}>
+                                          <p className={`text-[11px] font-serif font-bold ${isStageActive(order, 3) ? 'text-[#e5c158]' : 'text-luxury-cream/30'}`}>
                                             {isRTL ? 'نقل مدرع ودبلوماسي' : 'Shipped & In Transit'}
                                           </p>
                                           <p className="text-[9px] text-luxury-cream/50 leading-relaxed">
@@ -743,7 +982,7 @@ export default function LoginModal({
                                       {/* Stage 4: Delivered */}
                                       <div className="flex gap-3 items-start relative">
                                         <div className={`absolute ${isRTL ? '-right-[22px]' : '-left-[22px]'} flex items-center justify-center`}>
-                                          {getOrderTrackingStage(order.id) === 'Delivered' ? (
+                                          {isStageActive(order, 4) ? (
                                             <div className="h-[18px] w-[18px] rounded-full bg-[#0d0d0d] border border-[#e5c158] flex items-center justify-center text-[#e5c158] z-10">
                                               <Check className="h-3 w-3" />
                                             </div>
@@ -754,11 +993,11 @@ export default function LoginModal({
                                           )}
                                         </div>
                                         <div>
-                                          <p className={`text-[11px] font-serif font-bold ${getOrderTrackingStage(order.id) === 'Delivered' ? 'text-gold' : 'text-luxury-cream/30'}`}>
+                                          <p className={`text-[11px] font-serif font-bold ${isStageActive(order, 4) ? 'text-gold' : 'text-luxury-cream/30'}`}>
                                             {isRTL ? 'تم التسليم باليد' : 'Delivered'}
                                           </p>
                                           <p className="text-[9px] text-luxury-cream/50 leading-relaxed">
-                                            {getOrderTrackingStage(order.id) === 'Delivered' 
+                                            {isStageActive(order, 4) 
                                               ? (isRTL ? 'تم تسليم التحفة المنسقة بنجاح إلى المقر' : 'Secure handover finalized with signature') 
                                               : (isRTL ? 'في انتظار وصول الشحنة والمرافقة' : 'Awaiting arrival at destination coordinates')
                                             }
@@ -788,17 +1027,7 @@ export default function LoginModal({
                                   {isRTL ? 'معاينة المستند المالي' : 'Invoice Preview'}
                                 </span>
                               </div>
-                              {selectedOrder.status === 'Cancelled' ? (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/15 border border-red-500/30 text-red-500 text-[9px] font-mono font-bold uppercase tracking-wider">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                                  {isRTL ? 'ملغي ومسترد' : 'Cancelled'}
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#10b981]/15 border border-[#10b981]/30 text-[#10b981] text-[9px] font-mono font-bold uppercase tracking-wider">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-[#10b981] animate-ping" />
-                                  {isRTL ? 'معتمد ومؤمن' : 'Confirmed'}
-                                </span>
-                              )}
+                              {renderPreviewStatusBadge(selectedOrder.status)}
                             </div>
 
                             {/* Metadata Fields */}

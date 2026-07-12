@@ -430,6 +430,11 @@ export default function App() {
         } catch (err) {
           console.error('Error fetching user cart/orders from Firestore:', err);
         }
+
+        if (localStorage.getItem('luxora_pending_checkout') === 'true') {
+          localStorage.removeItem('luxora_pending_checkout');
+          setIsCartOpen(true);
+        }
       } else {
         // Fallback checks for DB/LocalStorage session
         const savedFallbackUser = localStorage.getItem('luxora_fallback_user');
@@ -528,6 +533,21 @@ export default function App() {
         }
       }
     }
+
+    if (localStorage.getItem('luxora_pending_checkout') === 'true') {
+      localStorage.removeItem('luxora_pending_checkout');
+      setIsCartOpen(true);
+    }
+  };
+
+  const handleDirectPurchase = (product: Product) => {
+    if (!auth.currentUser && !isLoggedIn) {
+      localStorage.setItem('luxora_pending_checkout', 'true');
+      handleOpenLogin('profile');
+      window.alert(isRTL ? 'يرجى تسجيل الدخول أو إنشاء حساب لإتمام عملية الشراء.' : 'Please login or sign up to complete your purchase.');
+      return;
+    }
+    setSelectedDirectPurchaseProduct(product);
   };
 
   const handleLogout = async () => {
@@ -1101,7 +1121,7 @@ export default function App() {
                 lang={lang} 
                 products={products} 
                 searchQuery={searchQuery} 
-                onDirectPurchase={(product) => setSelectedDirectPurchaseProduct(product)} 
+                onDirectPurchase={handleDirectPurchase} 
                 onAddToCart={handleAddToCart}
                 onPlaceOrder={handlePlaceOrder} 
                 favorites={favorites}
@@ -1163,7 +1183,7 @@ export default function App() {
                 <HomepageGrids 
                   lang={lang}
                   products={products}
-                  onDirectPurchase={(product) => setSelectedDirectPurchaseProduct(product)}
+                  onDirectPurchase={handleDirectPurchase}
                   onAddToCart={handleAddToCart}
                   onPlaceOrder={handlePlaceOrder}
                   favorites={favorites}
@@ -1375,7 +1395,7 @@ export default function App() {
               lang={lang} 
               products={products} 
               searchQuery={searchQuery} 
-              onDirectPurchase={(product) => setSelectedDirectPurchaseProduct(product)} 
+              onDirectPurchase={handleDirectPurchase} 
               onAddToCart={handleAddToCart}
               onPlaceOrder={handlePlaceOrder} 
               favorites={favorites}
@@ -1821,7 +1841,7 @@ export default function App() {
         favorites={favorites}
         products={products}
         onToggleFavorite={handleToggleFavorite}
-        onDirectPurchase={(product) => setSelectedDirectPurchaseProduct(product)}
+        onDirectPurchase={handleDirectPurchase}
       />
 
       {/* Elegant Luxury Shopping Cart Drawer */}
@@ -1836,6 +1856,13 @@ export default function App() {
         isAdmin={isAdmin}
         vatPercentage={vatPercentage}
         onProceedToCheckout={(selectedItems) => {
+          if (!auth.currentUser && !isLoggedIn) {
+            localStorage.setItem('luxora_pending_checkout', 'true');
+            handleOpenLogin('profile');
+            window.alert(isRTL ? 'يرجى تسجيل الدخول أو إنشاء حساب لإتمام عملية الشراء.' : 'Please login or sign up to complete your purchase.');
+            setIsCartOpen(false);
+            return;
+          }
           setSelectedCartCheckoutItems(selectedItems);
           setIsCartOpen(false); // Close the cart drawer
         }}

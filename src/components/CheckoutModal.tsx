@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Sparkles, Send, Lock, ShoppingBag } from 'lucide-react';
 import { Product, Language, Order, CartItem } from '../types';
+import { auth } from '../lib/firebase';
 
 // The target WhatsApp phone number in international format for order dispatch (e.g. 971XXXXXXXXX)
 export const WHATSAPP_PHONE_NUMBER = '971553957591';
@@ -45,9 +46,19 @@ export default function CheckoutModal({
   // Form errors state
   const [formErrors, setFormErrors] = useState<{ name?: boolean; phone?: boolean; address?: boolean }>({});
 
+  // Redirect to login if user is not authenticated and the modal is trying to open
+  useEffect(() => {
+    if (isOpen && !isLoggedIn && !auth.currentUser) {
+      onClose();
+      localStorage.setItem('luxora_pending_checkout', 'true');
+      onOpenLogin();
+      window.alert(isRTL ? 'يرجى تسجيل الدخول أو إنشاء حساب لإتمام عملية الشراء.' : 'Please login or sign up to complete your purchase.');
+    }
+  }, [isOpen, isLoggedIn, onOpenLogin, onClose, isRTL]);
+
   // Reset states when open/close or product/cartItems change
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && (isLoggedIn || !!auth.currentUser)) {
       setCheckoutName('');
       setCheckoutPhone('');
       setCheckoutAddress('');
@@ -55,9 +66,9 @@ export default function CheckoutModal({
       setFormErrors({});
       setIsSubmitting(false);
     }
-  }, [isOpen, product, cartItems]);
+  }, [isOpen, isLoggedIn, product, cartItems]);
 
-  if (!isOpen || (!product && (!cartItems || cartItems.length === 0))) return null;
+  if (!isOpen || (!isLoggedIn && !auth.currentUser) || (!product && (!cartItems || cartItems.length === 0))) return null;
 
   // Pricing calculations
   const subtotal = product 

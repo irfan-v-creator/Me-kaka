@@ -39,7 +39,7 @@ export interface Order {
   deliveryCoordinates?: string;
   bespokeNotes?: string;
   vatAED?: number;
-  status?: 'Pending' | 'Dispatched' | 'Secured' | 'Cancelled';
+  status?: 'Pending' | 'Dispatched' | 'Secured' | 'Cancelled' | 'Processing' | 'Shipped' | 'Delivered';
   checkoutMethod?: 'WhatsApp' | 'QuickBuy';
   userEmail?: string;
   customerEmail?: string;
