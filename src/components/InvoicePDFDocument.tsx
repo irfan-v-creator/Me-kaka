@@ -299,7 +299,7 @@ export const InvoicePDFDocument: React.FC<InvoicePDFDocumentProps> = ({
                 <Text style={styles.logoText}>STYLES & GRACE</Text>
                 <Text style={styles.subtitleText}>TRADING L.L.C</Text>
                 <Text style={{ fontSize: 7, color: '#a99260', marginTop: 3 }}>
-                  Shop 22, Al Attar Shopping Mall, Karama - Dubai, UAE • +971 58 825 7372
+                  Shop 22, Al Attar Shopping Mall, Karama - Dubai, UAE • +971 55 395 7591
                 </Text>
               </View>
             </View>

@@ -485,14 +485,36 @@ export async function getCartFromFirestore(userId: string): Promise<CartItem[]> 
  */
 export async function createOrderInFirestore(order: Order, userId?: string): Promise<void> {
   try {
-    const orderRef = doc(db, 'orders', order.id);
-    await setDoc(orderRef, {
+    const user = auth.currentUser;
+    
+    // Fallback safe values for user-related fields so they default to strings if the user is not logged in:
+    const userEmail = order.userEmail || user?.email || "Guest";
+    const resolvedUserId = userId || order.userId || user?.uid || "guest_id";
+    const userName = order.userName || user?.displayName || "Guest Customer";
+    const customerEmail = order.customerEmail || user?.email || "Guest";
+
+    const basePayload = {
       ...order,
-      userId: userId || null,
+      userId: resolvedUserId,
+      userEmail,
+      customerEmail,
+      userName,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       trackingStage: 'Order Placed' // operational tracking state: Order Placed -> Processing -> Armored Transit -> Delivered
+    };
+
+    // Filter out undefined values to prevent Firestore crashes
+    const finalPayload: any = {};
+    Object.keys(basePayload).forEach((key) => {
+      const val = (basePayload as any)[key];
+      if (val !== undefined) {
+        finalPayload[key] = val;
+      }
     });
+
+    const orderRef = doc(db, 'orders', order.id);
+    await setDoc(orderRef, finalPayload);
   } catch (err) {
     console.error('Error creating order in Firestore:', err);
     throw err;
@@ -564,11 +586,22 @@ export async function getUserOrders(userId: string): Promise<Order[]> {
  */
 export async function updateOrderStatus(orderId: string, updates: Partial<Order> & { trackingStage?: string }): Promise<void> {
   try {
-    const orderRef = doc(db, 'orders', orderId);
-    await updateDoc(orderRef, {
+    const basePayload = {
       ...updates,
       updatedAt: serverTimestamp()
+    };
+
+    // Filter out undefined values to prevent Firestore crashes
+    const finalPayload: any = {};
+    Object.keys(basePayload).forEach((key) => {
+      const val = (basePayload as any)[key];
+      if (val !== undefined) {
+        finalPayload[key] = val;
+      }
     });
+
+    const orderRef = doc(db, 'orders', orderId);
+    await updateDoc(orderRef, finalPayload);
   } catch (err) {
     console.error('Error updating order in Firestore:', err);
     throw err;

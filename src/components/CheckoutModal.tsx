@@ -195,10 +195,10 @@ export default function CheckoutModal({
               <ShoppingBag className="h-5 w-5 text-gold animate-pulse" />
               <div>
                 <h2 className="font-serif text-base font-bold text-white tracking-widest uppercase">
-                  {isRTL ? 'تفاصيل حجز القطعة الفاخرة' : 'Bespoke Order Checkout'}
+                  {isRTL ? 'تفاصيل حجز القطعة الفاخرة' : 'BESPOKE ORDER CHECKOUT'}
                 </h2>
                 <p className="text-[9px] uppercase tracking-wider text-gold font-mono leading-none mt-1">
-                  {isRTL ? 'اقتناء مباشر وحصري' : 'Direct VIP Purchase'}
+                  {isRTL ? 'اقتناء مباشر وحصري' : 'DIRECT VIP PURCHASE'}
                 </p>
               </div>
             </div>
@@ -273,7 +273,7 @@ export default function CheckoutModal({
               </div>
             ) : (
               <div className="bg-luxury-black/35 border border-gold/10 rounded p-2.5 text-[9px] text-luxury-cream/60 flex items-center justify-between gap-1 font-serif">
-                <span>{isRTL ? 'سجل دخول كعضو كبار شخصيات للحصول على خصم ١٠٪' : 'Sign in as a VIP member to receive an instant 10% discount.'}</span>
+                <span>{isRTL ? 'سجل دخول كعضو كبار شخصيات للحصول على خصم ١٠٪' : 'Sign in as a VIP member to receive an instant 10% discount. '}</span>
                 <button 
                   type="button"
                   onClick={() => {
@@ -282,7 +282,7 @@ export default function CheckoutModal({
                   }}
                   className="text-[9px] uppercase tracking-wider text-gold font-bold underline bg-transparent cursor-pointer"
                 >
-                  {isRTL ? 'دخول العضوية' : 'VIP Sign In'}
+                  {isRTL ? 'دخول العضوية' : 'VIP SIGN IN'}
                 </button>
               </div>
             )}
@@ -291,7 +291,7 @@ export default function CheckoutModal({
             <div className="space-y-3.5 pt-1">
               <div className="space-y-1">
                 <label className="block text-[9px] uppercase font-mono tracking-widest text-luxury-cream/50">
-                  {isRTL ? 'اسم العميل الموقّر *' : 'Client Full Name *'}
+                  {isRTL ? 'اسم العميل الموقّر *' : 'CLIENT FULL NAME *'}
                 </label>
                 <input 
                   type="text"
@@ -310,7 +310,7 @@ export default function CheckoutModal({
 
               <div className="space-y-1">
                 <label className="block text-[9px] uppercase font-mono tracking-widest text-luxury-cream/50">
-                  {isRTL ? 'رقم الهاتف للاتصال الجاري والآمن *' : 'Direct Mobile Number *'}
+                  {isRTL ? 'رقم الهاتف للاتصال الجاري والآمن *' : 'DIRECT MOBILE NUMBER *'}
                 </label>
                 <input 
                   type="tel"
@@ -329,7 +329,7 @@ export default function CheckoutModal({
 
               <div className="space-y-1">
                 <label className="block text-[9px] uppercase font-mono tracking-widest text-luxury-cream/50">
-                  {isRTL ? 'عنوان التسليم الفاخر أو المجلس المخصص *' : 'Armored Delivery Coordinates *'}
+                  {isRTL ? 'عنوان التسليم الفاخر أو المجلس المخصص *' : 'ARMORED DELIVERY COORDINATES *'}
                 </label>
                 <textarea 
                   rows={2}
@@ -348,7 +348,7 @@ export default function CheckoutModal({
 
               <div className="space-y-1">
                 <label className="block text-[9px] uppercase font-mono tracking-widest text-luxury-cream/50">
-                  {isRTL ? 'طلبات صياغة أو نقوش خاصة (اختياري)' : 'Bespoke Custom Requests (Optional)'}
+                  {isRTL ? 'طلبات صياغة أو نقوش خاصة (اختياري)' : 'BESPOKE CUSTOM REQUESTS (OPTIONAL)'}
                 </label>
                 <textarea 
                   rows={1}
@@ -395,9 +395,8 @@ export default function CheckoutModal({
                 {isSubmitting ? (isRTL ? 'جاري توثيق حجزكم...' : 'Securing Vault Entry...') : (isRTL ? 'تأكيد وحجز طلب الاقتناء' : 'CONFIRM BESPOKE PURCHASE')}
               </button>
 
-              <div className="flex items-center gap-1.5 justify-center text-[9px] uppercase tracking-widest text-gold/60 font-mono">
-                <Lock className="h-3 w-3 text-gold" />
-                <span>{isRTL ? 'رحلة تسليم مؤمنة مخصصة عائلية' : 'Guarded Direct Courier Dispatch'}</span>
+              <div className="flex items-center justify-center text-[9px] uppercase tracking-widest text-gold/60 font-mono">
+                <span>{isRTL ? '🔒 رحلة تسليم مؤمنة مخصصة عائلية' : '🔒 GUARDED DIRECT COURIER DISPATCH'}</span>
               </div>
             </div>
           </form>

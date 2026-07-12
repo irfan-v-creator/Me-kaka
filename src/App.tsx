@@ -306,8 +306,8 @@ export default function App() {
         clientName: 'VIP Member',
         deliveryCoordinates: 'Penthouse 4, Address Boulevard, Downtown Dubai',
         bespokeNotes: 'Deliver to front desk.',
-        userEmail: 'vip@stylesandgrace.ae',
-        customerEmail: 'vip@stylesandgrace.ae',
+        userEmail: 'vip@stylesandgrace4.gmail.com',
+        customerEmail: 'vip@stylesandgrace4.gmail.com',
         items: [{
           product: {
             id: 'fallback_prod_watch',
@@ -340,8 +340,8 @@ export default function App() {
         clientName: 'VIP Member',
         deliveryCoordinates: 'Penthouse 4, Address Boulevard, Downtown Dubai',
         bespokeNotes: 'Deliver after sunset.',
-        userEmail: 'vip@stylesandgrace.ae',
-        customerEmail: 'vip@stylesandgrace.ae',
+        userEmail: 'vip@stylesandgrace4.gmail.com',
+        customerEmail: 'vip@stylesandgrace4.gmail.com',
         items: [{
           product: {
             id: 'fallback_prod_oud',
@@ -781,8 +781,8 @@ export default function App() {
     msg += `${lineDivider}\n\n`;
     msg += `✨ _Thank you for placing your order. We are ready to process your delivery in Dubai directly via this chat!_`;
 
-    // Target Phone Number is +971 58 825 7372
-    const whatsappUrl = `https://wa.me/971588257372?text=${encodeURIComponent(msg)}`;
+    // Target Phone Number is updated to +971 55 395 7591
+    const whatsappUrl = `https://wa.me/971553957591?text=${encodeURIComponent(msg)}`;
     window.open(whatsappUrl, '_blank');
 
     // Save states for post-purchase success invoice screen
@@ -898,8 +898,8 @@ export default function App() {
     msg += `${lineDivider}\n\n`;
     msg += `✨ _Thank you for shopping with Styles & Grace. We will contact you on WhatsApp shortly to complete your order details._`;
 
-    // Target Phone Number is updated directly as requested: +971 58 825 7372
-    const whatsappUrl = `https://wa.me/971588257372?text=${encodeURIComponent(msg)}`;
+    // Target Phone Number is updated directly as requested: +971 55 395 7591
+    const whatsappUrl = `https://wa.me/971553957591?text=${encodeURIComponent(msg)}`;
     window.open(whatsappUrl, '_blank');
 
     // Save states for post-purchase invoice display
@@ -1674,13 +1674,16 @@ export default function App() {
           {/* Quick Contact info */}
           <div className="space-y-2 flex flex-col items-center md:items-start text-luxury-cream/70">
             <span className="font-serif text-[11px] font-bold text-gold uppercase tracking-widest mb-1">{isRTL ? 'تواصل معنا' : 'Concierge Desk'}</span>
-            <div className="flex items-center space-x-2 space-x-reverse justify-center md:justify-start">
-              <Phone className="h-3.5 w-3.5 text-gold" />
-              <span>+971 58 825 7372</span>
+            <div className="flex items-start space-x-2 space-x-reverse justify-center md:justify-start">
+              <Phone className="h-3.5 w-3.5 text-gold mt-0.5" />
+              <div className="flex flex-col text-center md:text-start">
+                <span>+971 55 395 7591</span>
+                <span>+971 58 825 7372</span>
+              </div>
             </div>
             <div className="flex items-center space-x-2 space-x-reverse justify-center md:justify-start">
               <Mail className="h-3.5 w-3.5 text-gold" />
-              <span>info@stylesandgrace.ae</span>
+              <span>stylesandgrace4@gmail.com</span>
             </div>
           </div>
 
@@ -1750,7 +1753,10 @@ export default function App() {
         isLoggedIn={isLoggedIn}
         isAdmin={isAdmin}
         vatPercentage={vatPercentage}
-        onProceedToCheckout={handleDirectCartWhatsAppCheckout}
+        onProceedToCheckout={(selectedItems) => {
+          setSelectedCartCheckoutItems(selectedItems);
+          setIsCartOpen(false);
+        }}
       />
 
       {/* Unified Order Checkout Modal */}
@@ -1922,7 +1928,7 @@ export default function App() {
                         RETAIL FLAGSHIP
                       </p>
                       <p className="text-[10px] font-sans text-luxury-cream/60 mt-1">
-                        Shop 22, Al Attar Shopping Mall, Karama - Dubai, UAE • info@stylesandgrace.ae
+                        Shop 22, Al Attar Shopping Mall, Karama - Dubai, UAE • stylesandgrace4@gmail.com
                       </p>
                     </div>
                   </div>
@@ -1974,7 +1980,7 @@ export default function App() {
                   </div>
                   <div>
                     <span className="text-luxury-cream/40 print-text-muted">{isRTL ? 'البريد الإلكتروني: ' : 'Email: '}</span>
-                    <span className="text-white print-text-dark">info@stylesandgrace.ae</span>
+                    <span className="text-white print-text-dark">stylesandgrace4@gmail.com</span>
                   </div>
                   <div>
                     <span className="text-luxury-cream/40 print-text-muted">{isRTL ? 'العنوان الرئيسي: ' : 'Address: '}</span>
@@ -2187,8 +2193,8 @@ export default function App() {
               {/* Print Footer Signature */}
               <div className="text-center text-[9px] text-luxury-cream/35 italic mt-8 pt-4 border-t border-gold/5 uppercase tracking-widest font-serif">
                 {isRTL 
-                  ? 'طلب معتمد إلكترونياً وصادر بموجب لوائح الصياغة والحماية بدبي • رقم الهاتف للتواصل المباشر: +971 58 825 7372' 
-                  : 'Digitally Certified Order issued under Emirati Fine-Art Guidelines • Phone: +971 58 825 7372'
+                  ? 'طلب معتمد إلكترونياً وصادر بموجب لوائح الصياغة والحماية بدبي • رقم الهاتف للتواصل المباشر: +971 55 395 7591' 
+                  : 'Digitally Certified Order issued under Emirati Fine-Art Guidelines • Phone: +971 55 395 7591'
                 }
               </div>
 

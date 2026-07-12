@@ -69,7 +69,7 @@ export default function ProductReviews({ productId, lang }: ProductReviewsProps)
       await submitProductReview(
         productId,
         currentUser.uid,
-        currentUser.email || 'vip-guild@stylesandgrace.ae',
+        currentUser.email || 'vip-guild@stylesandgrace4.gmail.com',
         rating,
         reviewText.trim()
       );

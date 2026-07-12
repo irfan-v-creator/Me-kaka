@@ -43,6 +43,8 @@ export interface Order {
   checkoutMethod?: 'WhatsApp' | 'QuickBuy';
   userEmail?: string;
   customerEmail?: string;
+  userName?: string;
+  userId?: string;
   items?: CartItem[];
   subtotal?: number;
   discount?: number;

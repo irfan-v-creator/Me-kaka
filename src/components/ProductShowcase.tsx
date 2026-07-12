@@ -564,7 +564,7 @@ export default function ProductShowcase({
 
                                   // WhatsApp Fast Alert
                                   const formattedMsg = `✨ *New Order Alert* ✨\n\nProduct: ${selectedProduct.nameEn}\nPrice: ${selectedProduct.priceAED.toLocaleString()} AED\nPhone: ${clientPhone.trim()}`;
-                                  const whatsappUrl = `https://wa.me/971588257372?text=${encodeURIComponent(formattedMsg)}`;
+                                  const whatsappUrl = `https://wa.me/971553957591?text=${encodeURIComponent(formattedMsg)}`;
                                   window.open(whatsappUrl, '_blank');
                                 }
                               }}
