@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Phone, MapPin, Globe, Sparkles, Trash2, Minus, Plus, ArrowLeft, ShoppingBag, Send, Check, Share2, Printer, X, FileText, Crown } from 'lucide-react';
+import { Mail, Phone, MapPin, Globe, Sparkles, Trash2, Minus, Plus, ArrowLeft, ShoppingBag, Send, Check, Share2, Printer, X, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
@@ -33,14 +33,6 @@ import {
   updateOrderStatus, 
   logoutUser 
 } from './lib/firebaseService';
-
-
-const DUBAI_ZONES = [
-  { id: '1', nameEn: 'Downtown Dubai & Burj District', nameAr: 'وسط مدينة دبي ومنطقة برج خليفة', feeAED: 50, estimatedDays: 'Within 3 Hours', estimatedDaysAr: 'خلال ٣ ساعات' },
-  { id: '2', nameEn: 'Palm Jumeirah & Dubai Marina', nameAr: 'نخلة جميرا ومرسى دبي', feeAED: 75, estimatedDays: 'Within 4 Hours', estimatedDaysAr: 'خلال ٤ ساعات' },
-  { id: '3', nameEn: 'Emirates Hills & Jumeirah Golf Estates', nameAr: 'تلال الإمارات وعقارات جميرا للجولف', feeAED: 100, estimatedDays: 'Within 4 Hours', estimatedDaysAr: 'خلال ٤ ساعات' },
-  { id: '4', nameEn: 'Dubai Hills Estate & Meydan', nameAr: 'دبي هيلز ستيت وميدان', feeAED: 50, estimatedDays: 'Same Day (Order before 4 PM)', estimatedDaysAr: 'نفس اليوم (قبل ٤ مساءً)' }
-];
 
 export default function App() {
   const [lang, setLang] = useState<Language>('en');
@@ -496,10 +488,6 @@ export default function App() {
     return saved !== null ? Number(saved) : 5;
   });
 
-  // Interactive mini calculator states for the UX engagement (Estimator)
-  const [selectedZone, setSelectedZone] = useState<string>('1');
-  const [estimatePrice, setEstimatePrice] = useState<number>(15000); // 15,000 AED representative watch buy
-
   // Invoice states for post-purchase success screen
   const [placedOrderInvoice, setPlacedOrderInvoice] = useState<Order | null>(null);
   const [invoiceCartItems, setInvoiceCartItems] = useState<CartItem[]>([]);
@@ -541,12 +529,6 @@ export default function App() {
   };
 
   const handleDirectPurchase = (product: Product) => {
-    if (!auth.currentUser && !isLoggedIn) {
-      localStorage.setItem('luxora_pending_checkout', 'true');
-      handleOpenLogin('profile');
-      window.alert(isRTL ? 'يرجى تسجيل الدخول أو إنشاء حساب لإتمام عملية الشراء.' : 'Please login or sign up to complete your purchase.');
-      return;
-    }
     setSelectedDirectPurchaseProduct(product);
   };
 
@@ -711,6 +693,112 @@ export default function App() {
     setInvoiceSubtotal(newOrder.subtotal || newOrder.priceAED);
   };
 
+  const handleDirectCartWhatsAppCheckout = async (selectedItems: CartItem[]) => {
+    if (selectedItems.length === 0) return;
+
+    const subtotal = selectedItems.reduce((sum, item) => sum + (item.product.priceAED * item.quantity), 0);
+    const discount = (isLoggedIn && !isAdmin) ? (subtotal * 0.10) : 0;
+    const taxable = subtotal - discount;
+    const vat = taxable * (vatPercentage / 100);
+    const total = taxable + vat;
+
+    const orderItemsDesc = selectedItems.map((item) => `${item.product.nameEn} (x${item.quantity})`).join(', ');
+    
+    // Determine user info
+    const clientName = isLoggedIn && userEmail 
+      ? (userEmail.split('@')[0].toUpperCase()) 
+      : (isRTL ? 'عميل مباشر' : 'Direct Guest Client');
+    const displayEmail = isLoggedIn && userEmail ? userEmail : (isRTL ? 'زائر' : 'Guest');
+    
+    const newOrder: Order = {
+      id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+      productName: orderItemsDesc || 'VIP Pieces Portfolio Selection',
+      priceAED: total,
+      customerPhone: isRTL ? 'تنسيق عبر واتساب' : 'Coordinated via WhatsApp',
+      orderTime: new Date().toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }) + ' - ' + new Date().toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: 'numeric'
+      }),
+      clientName: clientName,
+      deliveryCoordinates: isRTL ? 'سيتم مشاركة إحداثيات الموقع على واتساب' : 'To be coordinated directly on WhatsApp',
+      bespokeNotes: isRTL ? 'طلب سريع من السلة' : 'Direct Checkout from Cart',
+      vatAED: vat,
+      checkoutMethod: 'WhatsApp',
+      userEmail: isLoggedIn && userEmail ? userEmail : undefined,
+      customerEmail: isLoggedIn && userEmail ? userEmail : undefined,
+      items: selectedItems,
+      subtotal: subtotal,
+      discount: discount,
+      status: 'Pending'
+    };
+
+    // Trigger Firestore order sync in background so database latency/errors never block the WhatsApp redirect
+    (async () => {
+      if (isLoggedIn && auth.currentUser) {
+        await createOrderInFirestore(newOrder, auth.currentUser.uid);
+      } else {
+        await createOrderInFirestore(newOrder);
+      }
+    })().catch((err) => {
+      console.error('Failed to create order in Firestore:', err);
+    });
+
+    // Update orders list so it reflects in Admin/User dashboards instantly
+    setOrders((prev) => [newOrder, ...prev]);
+
+    // Construct the WhatsApp text
+    const lineDivider = '════════════════════════════';
+    let msg = `⚜️ *STYLES & GRACE - DIRECT CART ORDER* ⚜️\n`;
+    msg += `${lineDivider}\n\n`;
+    msg += `👤 *Client / العميل:* ${clientName}\n`;
+    msg += `✉️ *Email / البريد الإلكتروني:* ${displayEmail}\n`;
+    msg += `📍 *Delivery / التوصيل:* ${isRTL ? 'سيتم مشاركة الموقع في هذه المحادثة' : 'Coordinates will be shared in this chat'}\n`;
+    msg += `📅 *Date / التاريخ:* ${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}\n\n`;
+    msg += `🛍️ *ORDER ITEMS / المنتجات المطلوبة:*\n`;
+    
+    selectedItems.forEach((item, index) => {
+      const totalItemVal = item.product.priceAED * item.quantity;
+      msg += `❖ *${index + 1}. ${item.product.nameEn}* (${item.product.nameAr})\n`;
+      msg += `   • Quantity / الكمية: ${item.quantity}x\n`;
+      msg += `   • Unit Price / سعر الحبة: ${item.product.priceAED.toLocaleString()} AED\n`;
+      msg += `   • Total / المجموع: ${totalItemVal.toLocaleString()} AED\n\n`;
+    });
+
+    msg += `${lineDivider}\n`;
+    msg += `❖ *ORDER SUMMARY / ملخص الطلب:*\n`;
+    msg += `   • Subtotal / القيمة الأساسية: ${subtotal.toLocaleString()} AED\n`;
+    
+    if (discount > 0) {
+      msg += `   • VIP 10% Discount / خصم كبار الشخصيات: -${discount.toLocaleString()} AED\n`;
+    }
+    
+    msg += `   • UAE VAT ${vatPercentage}% / ضريبة القيمة المضافة: ${vat.toLocaleString()} AED\n`;
+    msg += `   • *Grand Total / الإجمالي النهائي:* *${total.toLocaleString()} AED*\n`;
+    msg += `${lineDivider}\n\n`;
+    msg += `✨ _Thank you for placing your order. We are ready to process your delivery in Dubai directly via this chat!_`;
+
+    // Target Phone Number is +971 58 825 7372
+    const whatsappUrl = `https://wa.me/971588257372?text=${encodeURIComponent(msg)}`;
+    window.open(whatsappUrl, '_blank');
+
+    // Save states for post-purchase success invoice screen
+    setPlacedOrderInvoice(newOrder);
+    setInvoiceCartItems([...selectedItems]);
+    setInvoiceDiscount(discount);
+    setInvoiceSubtotal(subtotal);
+
+    // Remove checked out items from cart
+    const checkedOutIds = selectedItems.map(item => item.product.id);
+    setCart((prev) => prev.filter(item => !checkedOutIds.includes(item.product.id)));
+
+    // Close the cart drawer
+    setIsCartOpen(false);
+  };
+
   const handleWhatsAppCheckout = async () => {
     // Basic validation
     const errors: { name?: boolean; phone?: boolean; address?: boolean } = {};
@@ -759,15 +847,16 @@ export default function App() {
       status: 'Pending'
     };
 
-    try {
+    // Trigger Firestore order sync in background so database latency/errors never block the WhatsApp redirect
+    (async () => {
       if (isLoggedIn && auth.currentUser) {
         await createOrderInFirestore(newOrder, auth.currentUser.uid);
       } else {
         await createOrderInFirestore(newOrder);
       }
-    } catch (err) {
+    })().catch((err) => {
       console.error('Failed to create order in Firestore:', err);
-    }
+    });
 
     // Push new order object to state array to instantly update admin dashboard stats and incoming logs
     setOrders((prev) => [newOrder, ...prev]);
@@ -1192,200 +1281,6 @@ export default function App() {
                   onSeedDemoProducts={handleSeedDemoProducts}
                   isSeeding={isSeeding}
                 />
-
-                {/* Major Section: Luxury Purchase Estimator */}
-                {(() => {
-                  const currentZone = DUBAI_ZONES.find(z => z.id === selectedZone) || DUBAI_ZONES[0];
-                  const appVatAmount = estimatePrice * 0.05;
-                  const appDeliveryFee = currentZone.feeAED;
-                  const appTotalPrice = estimatePrice + appVatAmount + appDeliveryFee;
-
-                  return (
-                    <section className="bg-luxury-dark py-20 px-4 sm:px-6 lg:px-8 border-t border-gold/15" id="luxury-estimator-section">
-                      <div className="max-w-7xl mx-auto">
-                        
-                        {/* Section Header */}
-                        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-                          <div className="inline-flex items-center space-x-2 space-x-reverse text-gold">
-                            <Sparkles className="h-4 w-4 animate-pulse" />
-                            <span className="font-serif text-xs tracking-[0.25em] uppercase font-semibold">
-                              {isRTL ? 'التخطيط الاستثماري الآمن' : 'SECURE INVESTMENT PLANNING'}
-                            </span>
-                          </div>
-                          
-                          <h2 className="font-serif text-3xl sm:text-4xl font-extrabold text-white tracking-widest uppercase leading-relaxed">
-                            {isRTL ? 'حاسبة الشراء والتوصيل الفاخر' : 'LUXURY PURCHASE ESTIMATOR'}
-                          </h2>
-                          
-                          <div className="w-20 h-[1.5px] bg-gradient-to-r from-transparent via-gold to-transparent mx-auto" />
-                          
-                          <p className="text-sm sm:text-base text-luxury-cream/70 leading-relaxed font-sans font-light">
-                            {isRTL 
-                              ? 'خطط لاستثمارك القادم بثقة واكتشف تكاليف التوصيل المؤمن وسرعة الطواقم في دبي.'
-                              : 'Configure your bespoke UAE VAT rate, secure armored delivery fees, and priority dispatch schedules to premium Dubai districts.'
-                            }
-                          </p>
-                        </div>
-
-                        {/* Content Grid */}
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-                          {/* Left Column: Copywriting & trust accords */}
-                          <div className="lg:col-span-6 space-y-8 text-start">
-                            <div className="space-y-4">
-                              <span className="text-[10px] tracking-[0.3em] font-mono text-gold uppercase font-semibold">
-                                {isRTL ? 'ضمانات السيادة المطلقة' : 'OUR TRUST GUARANTEE'}
-                              </span>
-                              <h3 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-wide uppercase">
-                                {isRTL ? 'صياغة فاخرة وتوصيل دبلوماسي محمي' : 'Quality Craftsmanship, Secure Delivery'}
-                              </h3>
-                              <p className="text-sm leading-relaxed text-luxury-cream/70 font-light">
-                                {isRTL 
-                                  ? 'كل قطعة فنية يتم نقلها تخضع لرقابة أمنية مشددة مع تتبع فوري مباشر. نلتزم بأعلى معايير الأمان الدبلوماسي لضمان تسليم مقتنياتكم النادرة بخصوصية مطلقة لقصوركم ومقراتكم في دبي.'
-                                  : 'Our premium jewelry is delivered with secure courier protection. We ensure all your items are fully covered and delivered in perfect condition.'
-                                }
-                              </p>
-                            </div>
-
-                            {/* List of high-end trust markers */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-gold/10 text-xs text-luxury-cream/80 uppercase tracking-widest font-serif">
-                              <div className="flex items-start gap-3">
-                                <div className="rounded-full bg-gold/10 p-2 border border-gold/20 text-gold mt-0.5 shrink-0">
-                                  <Check className="h-3.5 w-3.5" />
-                                </div>
-                                <div>
-                                  <p className="font-bold text-white mb-1">{isRTL ? 'أصالة معتمدة ١٠٠٪' : '100% CERTIFIED GENUINE'}</p>
-                                  <p className="text-[10px] lowercase text-luxury-cream/50 normal-case font-sans tracking-normal">{isRTL ? 'مرفق مع شهادة الفحص الإيطالية الرسمية.' : 'Supplied with formal Italian assay credentials.'}</p>
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-start gap-3">
-                                <div className="rounded-full bg-gold/10 p-2 border border-gold/20 text-gold mt-0.5 shrink-0">
-                                  <Check className="h-3.5 w-3.5" />
-                                </div>
-                                <div>
-                                  <p className="font-bold text-white mb-1">{isRTL ? 'توصيل مصفح سريع' : 'SECURE ARMORED DISPATCH'}</p>
-                                  <p className="text-[10px] lowercase text-luxury-cream/50 normal-case font-sans tracking-normal">{isRTL ? 'توصيل مباشر إلى الجناح الخاص في غضون ساعات.' : 'Direct-to-suite concierge transit in Dubai.'}</p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Right Column: Calculator Card */}
-                          <div className="lg:col-span-6">
-                            <div className="rounded-xl border border-gold/20 bg-luxury-black/90 p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative">
-                              <div className="absolute top-0 right-0 h-16 w-16 bg-gold/5 rounded-tr-xl rounded-bl-full pointer-events-none" />
-                              
-                              <div className="mb-6 border-b border-gold/10 pb-4">
-                                <h3 className="font-serif text-lg font-bold text-gold tracking-widest uppercase">
-                                  {isRTL ? 'حاسبة الاستثمار المباشر' : 'ESTIMATE TRANSACTION TOTAL'}
-                                </h3>
-                                <p className="text-xs text-luxury-cream/60">
-                                  {isRTL 
-                                    ? 'عدل القيمة التقديرية للقطعة المقتناة لمعاينة الرسوم المجدولة بدقة'
-                                    : 'Adjust target item value to preview instant UAE VAT rates and priority delivery schedules'
-                                  }
-                                </p>
-                              </div>
-
-                              {/* Slider for representative item value */}
-                              <div className="space-y-4 mb-6">
-                                <div className="flex justify-between text-xs tracking-wider">
-                                  <span className="text-luxury-cream/80 uppercase font-serif">{isRTL ? 'قيمة القطعة التقديرية' : 'Estimated Item Price'}</span>
-                                  <span className="text-gold font-mono font-bold text-sm sm:text-base">{estimatePrice.toLocaleString()} AED</span>
-                                </div>
-                                <input
-                                  id="price-range-slider-main"
-                                  type="range"
-                                  min="1000"
-                                  max="50000"
-                                  step="500"
-                                  value={estimatePrice}
-                                  onChange={(e) => setEstimatePrice(Number(e.target.value))}
-                                  className="w-full accent-gold bg-luxury-dark h-1.5 rounded cursor-pointer"
-                                />
-                                <div className="flex justify-between text-[10px] text-luxury-cream/50 font-mono">
-                                  <span>1,000 AED</span>
-                                  <span>50,000 AED</span>
-                                </div>
-                              </div>
-
-                              {/* District Area Selector */}
-                              <div className="space-y-4 mb-6">
-                                <label className="block text-xs uppercase font-serif tracking-widest text-luxury-cream/80">
-                                  {isRTL ? 'اختر منطقة التسليم الفاخر في دبي' : 'Select Premium Dubai Delivery District'}
-                                </label>
-                                <div className="relative">
-                                  <select
-                                    id="delivery-zone-selector-main"
-                                    value={selectedZone}
-                                    onChange={(e) => setSelectedZone(e.target.value)}
-                                    className="w-full bg-luxury-dark text-xs text-luxury-cream border border-gold/20 rounded p-3 focus:outline-none focus:border-gold cursor-pointer"
-                                  >
-                                    {DUBAI_ZONES.map((zone) => (
-                                      <option key={zone.id} value={zone.id}>
-                                        {isRTL ? zone.nameAr : zone.nameEn}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
-
-                              {/* Financial Calculation breakdown */}
-                              <div className="bg-luxury-dark/80 rounded-lg p-4 space-y-3.5 border border-gold/5 text-xs text-luxury-cream/70 font-sans">
-                                <div className="flex justify-between">
-                                  <span>{isRTL ? 'قيمة القطعة الأساسية' : 'Curated Value'}</span>
-                                  <span className="font-mono text-white">{estimatePrice.toLocaleString()} AED</span>
-                                </div>
-                                
-                                {/* VAT calculation based on active VAT rate state */}
-                                <div className="flex justify-between items-center text-luxury-cream/60">
-                                  <span className="flex items-center gap-1.5">
-                                    <FileText className="h-3.5 w-3.5 text-gold" />
-                                    {isRTL ? `ضريبة القيمة المضافة لدولة الإمارات (${vatPercentage}%)` : `UAE VAT Rate (${vatPercentage}%)`}
-                                  </span>
-                                  <span className="font-mono text-white">+{appVatAmount.toLocaleString()} AED</span>
-                                </div>
-
-                                <div className="flex justify-between items-center text-luxury-cream/60">
-                                  <span className="flex items-center gap-1.5">
-                                    <MapPin className="h-3.5 w-3.5 text-gold" />
-                                    {isRTL ? 'خدمة الشحن والتأمين المصفح' : 'Secured Armored Shipping'}
-                                  </span>
-                                  <span className="font-mono text-white">{appDeliveryFee === 0 ? 'Free' : `+${appDeliveryFee} AED`}</span>
-                                </div>
-
-                                {/* Estimate Speed */}
-                                <div className="border-t border-gold/10 pt-3.5 mt-1 flex justify-between items-center">
-                                  <span className="text-gold font-serif tracking-wider uppercase text-[11px]">{isRTL ? 'السرعة المتوقعة للتوصيل' : 'Delivery Lead Time'}</span>
-                                  <span className="text-white font-serif font-bold text-[10px] sm:text-[11px] bg-gold/10 border border-gold/20 px-2.5 py-0.5 rounded">
-                                    {isRTL ? currentZone.estimatedDaysAr : currentZone.estimatedDays}
-                                  </span>
-                                </div>
-
-                                {/* Secure Total */}
-                                <div className="border-t border-gold/20 pt-4 mt-2 flex justify-between items-center text-sm font-serif">
-                                  <span className="text-white font-bold uppercase tracking-widest">{isRTL ? 'مجموع الاستثمار الكلي الكلي المجدول' : 'Secured Transaction Total'}</span>
-                                  <span className="text-gold font-mono font-bold text-base filter drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]">
-                                    {appTotalPrice.toLocaleString()} AED
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Footer pledge warning */}
-                              <div className="mt-4 text-[10px] text-center text-luxury-cream/40 italic">
-                                {isRTL 
-                                  ? '* متاح النقل مجاناً للطلبيات فوق ٢٠,٠٠٠ درهم شاملة الحماية الدبلوماسية.'
-                                  : '* Complementary diplomatic courier for transactions exceeding 20,000 AED.'
-                                }
-                              </div>
-
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </section>
-                  );
-                })()}
               </>
             )}
           </div>
@@ -1855,17 +1750,7 @@ export default function App() {
         isLoggedIn={isLoggedIn}
         isAdmin={isAdmin}
         vatPercentage={vatPercentage}
-        onProceedToCheckout={(selectedItems) => {
-          if (!auth.currentUser && !isLoggedIn) {
-            localStorage.setItem('luxora_pending_checkout', 'true');
-            handleOpenLogin('profile');
-            window.alert(isRTL ? 'يرجى تسجيل الدخول أو إنشاء حساب لإتمام عملية الشراء.' : 'Please login or sign up to complete your purchase.');
-            setIsCartOpen(false);
-            return;
-          }
-          setSelectedCartCheckoutItems(selectedItems);
-          setIsCartOpen(false); // Close the cart drawer
-        }}
+        onProceedToCheckout={handleDirectCartWhatsAppCheckout}
       />
 
       {/* Unified Order Checkout Modal */}

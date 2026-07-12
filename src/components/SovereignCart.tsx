@@ -266,13 +266,13 @@ export default function SovereignCart({
                 <button
                   disabled={selectedItems.length === 0}
                   onClick={handleProceed}
-                  className={`w-full py-3.5 rounded shadow-lg transition-all active:scale-97 cursor-pointer text-center font-serif text-xs font-bold tracking-widest uppercase ${
+                  className={`w-full py-4 rounded-xl shadow-lg transition-all duration-300 active:scale-95 cursor-pointer text-center font-serif text-xs font-black tracking-widest uppercase ${
                     selectedItems.length === 0
                       ? 'bg-neutral-800 text-neutral-500 border border-neutral-700/50 cursor-not-allowed'
-                      : 'bg-gold hover:bg-white text-luxury-black font-black'
+                      : 'bg-gold hover:bg-white text-luxury-black font-extrabold filter drop-shadow-[0_4px_12px_rgba(212,175,55,0.3)] hover:drop-shadow-[0_4px_20px_rgba(255,255,255,0.4)]'
                   }`}
                 >
-                  {isRTL ? 'متابعة تفاصيل الحجز' : 'PROCEED TO ORDER'}
+                  {isRTL ? 'إتمام الطلب عبر واتساب' : 'COMPLETE ORDER ON WHATSAPP'}
                 </button>
               </div>
             )}

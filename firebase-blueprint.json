@@ -1,0 +1,153 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "A luxury product available in the gallery",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "nameEn": {
+          "type": "string"
+        },
+        "nameAr": {
+          "type": "string"
+        },
+        "priceAED": {
+          "type": "number"
+        },
+        "descriptionEn": {
+          "type": "string"
+        },
+        "descriptionAr": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "nameEn", "nameAr", "priceAED"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "An order placed by a client",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "productName": {
+          "type": "string"
+        },
+        "priceAED": {
+          "type": "number"
+        },
+        "customerPhone": {
+          "type": "string"
+        },
+        "orderTime": {
+          "type": "string"
+        },
+        "clientName": {
+          "type": "string"
+        },
+        "deliveryCoordinates": {
+          "type": "string"
+        },
+        "bespokeNotes": {
+          "type": "string"
+        },
+        "checkoutMethod": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "productName", "priceAED", "customerPhone"]
+    },
+    "Cart": {
+      "title": "Cart",
+      "description": "User's persistent shopping cart",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array"
+        },
+        "userId": {
+          "type": "string"
+        }
+      },
+      "required": ["items"]
+    },
+    "User": {
+      "title": "User",
+      "description": "A luxury platform user profile",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        }
+      },
+      "required": ["uid", "email"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "A verified customer product review with rating",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "productId": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "userEmail": {
+          "type": "string"
+        },
+        "rating": {
+          "type": "number"
+        },
+        "text": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        }
+      },
+      "required": ["productId", "userId", "userEmail", "rating", "text"]
+    }
+  },
+  "firestore": {
+    "products/{productId}": {
+      "schema": "Product",
+      "description": "Exquisite luxury timepieces and jewelry portfolio catalog"
+    },
+    "orders/{orderId}": {
+      "schema": "Order",
+      "description": "High-fidelity database tracking acquisitions and deliveries"
+    },
+    "carts/{userId}": {
+      "schema": "Cart",
+      "description": "Shopping carts synced in real-time across user sessions"
+    },
+    "users/{userId}": {
+      "schema": "User",
+      "description": "Client profile registry and privilege levels"
+    },
+    "reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Verified customer feedback and product star reviews"
+    }
+  }
+}

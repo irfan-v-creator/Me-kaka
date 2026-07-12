@@ -46,19 +46,9 @@ export default function CheckoutModal({
   // Form errors state
   const [formErrors, setFormErrors] = useState<{ name?: boolean; phone?: boolean; address?: boolean }>({});
 
-  // Redirect to login if user is not authenticated and the modal is trying to open
-  useEffect(() => {
-    if (isOpen && !isLoggedIn && !auth.currentUser) {
-      onClose();
-      localStorage.setItem('luxora_pending_checkout', 'true');
-      onOpenLogin();
-      window.alert(isRTL ? 'يرجى تسجيل الدخول أو إنشاء حساب لإتمام عملية الشراء.' : 'Please login or sign up to complete your purchase.');
-    }
-  }, [isOpen, isLoggedIn, onOpenLogin, onClose, isRTL]);
-
   // Reset states when open/close or product/cartItems change
   useEffect(() => {
-    if (isOpen && (isLoggedIn || !!auth.currentUser)) {
+    if (isOpen) {
       setCheckoutName('');
       setCheckoutPhone('');
       setCheckoutAddress('');
@@ -68,7 +58,7 @@ export default function CheckoutModal({
     }
   }, [isOpen, isLoggedIn, product, cartItems]);
 
-  if (!isOpen || (!isLoggedIn && !auth.currentUser) || (!product && (!cartItems || cartItems.length === 0))) return null;
+  if (!isOpen || (!product && (!cartItems || cartItems.length === 0))) return null;
 
   // Pricing calculations
   const subtotal = product 
@@ -162,7 +152,8 @@ export default function CheckoutModal({
 
       const waUrl = `https://wa.me/${WHATSAPP_PHONE_NUMBER}?text=${encodeURIComponent(waMessage)}`;
 
-      await onPlaceOrder(newOrder);
+      // Fire-and-forget order creation in the background so database latency/errors never block the WhatsApp redirect
+      onPlaceOrder(newOrder).catch(err => console.error('Background order save error:', err));
       
       // Open the WhatsApp API link in a new tab safely
       window.open(waUrl, '_blank', 'noopener,noreferrer');
