@@ -7,6 +7,9 @@ import { app, storage, db } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
+const CLOUDINARY_CLOUD_NAME = "p0kavqrz";
+const CLOUDINARY_UPLOAD_PRESET = "luxora_preset";
+
 
 interface AdminPortalProps {
   lang: Language;
@@ -280,8 +283,8 @@ export default function AdminPortal({
       return;
     }
 
-    if (!imageFile && !image) {
-      window.alert(isRTL ? 'يرجى تحميل صورة للمنتج أو اختيار أحد القوالب الجاهزة.' : 'Please upload an image file or choose one of the preset options.');
+    if (!image && !imageFile) {
+      window.alert(isRTL ? 'يرجى اختيار ملف صورة للمنتج أو إدخال رابط الصورة.' : 'Please choose a product image file or provide an image URL.');
       return;
     }
 
@@ -289,15 +292,28 @@ export default function AdminPortal({
     try {
       let finalImageUrl = image;
 
-      // Securely upload the selected product image to Firebase Storage if we have a file
+      // Upload file directly to Cloudinary using unsigned preset
       if (imageFile) {
-        const fileRef = ref(storage, `products/${Date.now()}_${imageFile.name}`);
-        await uploadBytes(fileRef, imageFile);
-        finalImageUrl = await getDownloadURL(fileRef);
+        const formData = new FormData();
+        formData.append('file', imageFile);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error?.message || 'Cloudinary upload failed');
+        }
+
+        const data = await res.json();
+        finalImageUrl = data.secure_url;
       }
 
       if (!finalImageUrl) {
-        throw new Error(isRTL ? 'فشل الحصول على رابط تحميل الصورة.' : 'Failed to retrieve image download URL.');
+        throw new Error(isRTL ? 'فشل الحصول على رابط الصورة.' : 'Failed to retrieve image URL.');
       }
 
       const resolvedCategoryAr = mapCategoryArabic(categoryEn);
@@ -308,6 +324,7 @@ export default function AdminPortal({
         nameAr: nameAr || nameEn,
         priceAED: Number(priceAED),
         image: finalImageUrl,
+        imageUrl: finalImageUrl,
         categoryEn,
         categoryAr: resolvedCategoryAr,
         descriptionEn,
@@ -342,7 +359,7 @@ export default function AdminPortal({
       setFormSuccess(true);
       setTimeout(() => setFormSuccess(false), 4000);
     } catch (err: any) {
-      console.error('Failed to upload product and save to database:', err);
+      console.error('Failed to save product to database:', err);
       // Error alert using window.alert() as requested
       window.alert(isRTL 
         ? `خطأ: فشل في حفظ المنتج.\nالتفاصيل: ${err.message || err}` 
@@ -880,12 +897,12 @@ export default function AdminPortal({
                 </select>
               </div>
 
-              {/* Premium image reference selector & uploader helper */}
-              <div className="space-y-1.5">
-                <label className="block text-[11px] uppercase tracking-wide font-serif text-luxury-cream">
-                  {isRTL ? 'تحميل صورة المنتج *' : 'Upload Product Image *'}
-                </label>
-                <div className="relative">
+              {/* Product Image Selection: File pick or direct URL input */}
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] uppercase tracking-wide font-serif text-luxury-cream">
+                    {isRTL ? 'تحميل صورة المنتج' : 'Choose Product Image'}
+                  </label>
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -893,30 +910,39 @@ export default function AdminPortal({
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
                         setImageFile(e.target.files[0]);
-                        setImage(e.target.files[0].name);
+                        setImage(''); // Clear manual URL when a file is selected
                       }
                     }}
                     className="w-full bg-luxury-black border border-gold/20 rounded p-2 text-xs text-luxury-cream focus:outline-none focus:border-gold file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-gold/10 file:text-gold file:hover:bg-gold/20 cursor-pointer"
                   />
+                  {imageFile && (
+                    <p className="text-[10px] text-gold font-mono">
+                      ✓ {imageFile.name} ({(imageFile.size / 1024).toFixed(1)} KB)
+                    </p>
+                  )}
                 </div>
-                {imageFile ? (
-                  <p className="text-[10px] text-gold mt-1 font-mono flex items-center gap-1">
-                    <span>✓ {imageFile.name} ({(imageFile.size / 1024).toFixed(1)} KB)</span>
-                  </p>
-                ) : (
-                  <div className="mt-2">
-                    <label className="block text-[9px] uppercase tracking-wider text-luxury-cream/60">
-                      {isRTL ? 'أو أدخل رابط صورة مباشرة' : 'Or enter direct Image URL'}
-                    </label>
-                    <input
-                      type="text"
-                      value={image}
-                      onChange={(e) => setImage(e.target.value)}
-                      placeholder="https://images.unsplash.com/..."
-                      className="w-full bg-luxury-black/50 border border-gold/10 rounded p-2 text-[10px] text-luxury-cream/80 focus:outline-none focus:border-gold/30 mt-1 font-mono"
-                    />
-                  </div>
-                )}
+
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] uppercase tracking-wide font-serif text-luxury-cream">
+                    {isRTL ? 'أو أدخل رابط صورة مباشرة' : 'Or enter direct Image URL'}
+                  </label>
+                  <input
+                    type="text"
+                    value={image}
+                    onChange={(e) => {
+                      setImage(e.target.value);
+                      if (e.target.value) {
+                        setImageFile(null); // Clear selected file when typing/pasting a URL
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = '';
+                        }
+                      }
+                    }}
+                    placeholder="https://images.unsplash.com/..."
+                    required={!imageFile}
+                    className="w-full bg-luxury-black border border-gold/20 rounded p-2.5 text-xs text-luxury-cream focus:outline-none focus:border-gold font-mono"
+                  />
+                </div>
               </div>
             </div>
 
