@@ -4,7 +4,7 @@ import { X, Sparkles, Send, Lock, ShoppingBag } from 'lucide-react';
 import { Product, Language, Order, CartItem } from '../types';
 
 // The target WhatsApp phone number in international format for order dispatch (e.g. 971XXXXXXXXX)
-export const WHATSAPP_PHONE_NUMBER = '971588257372';
+export const WHATSAPP_PHONE_NUMBER = '971553957591';
 
 interface CheckoutModalProps {
   isOpen: boolean;
