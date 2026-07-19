@@ -44,7 +44,7 @@ export default function CheckoutModal({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Form errors state
-  const [formErrors, setFormErrors] = useState<{ name?: boolean; phone?: boolean; address?: boolean }>({});
+  const [formErrors, setFormErrors] = useState<{ name?: boolean; phone?: boolean; address?: boolean; phoneMsg?: string }>({});
 
   // Reset states when open/close or product/cartItems change
   useEffect(() => {
@@ -73,9 +73,22 @@ export default function CheckoutModal({
     e.preventDefault();
     
     // Validation
-    const errors: { name?: boolean; phone?: boolean; address?: boolean } = {};
+    const errors: { name?: boolean; phone?: boolean; address?: boolean; phoneMsg?: string } = {};
     if (!checkoutName.trim()) errors.name = true;
-    if (!checkoutPhone.trim()) errors.phone = true;
+    
+    const cleanedPhone = checkoutPhone.replace(/[\s-]/g, '');
+    const uaeRegex = /^(?:\+971|971|0)?5[024568]\d{7}$/;
+    const indiaRegex = /^(?:\+91|91)?[6-9]\d{9}$/;
+
+    if (!checkoutPhone.trim()) {
+      errors.phone = true;
+    } else if (!uaeRegex.test(cleanedPhone) && !indiaRegex.test(cleanedPhone)) {
+      errors.phone = true;
+      errors.phoneMsg = isRTL 
+        ? 'رقم غير صحيح! يرجى إدخال رقم هاتف إماراتي أو هندي حقيقي.' 
+        : 'Invalid Number! Please enter a real UAE or Indian mobile number.';
+    }
+
     if (!checkoutAddress.trim()) errors.address = true;
 
     if (Object.keys(errors).length > 0) {
@@ -100,7 +113,7 @@ export default function CheckoutModal({
       id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
       productName: orderName,
       priceAED: total,
-      customerPhone: checkoutPhone.trim(),
+      customerPhone: cleanedPhone,
       orderTime: new Date().toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
@@ -137,14 +150,14 @@ export default function CheckoutModal({
       const waMessage = isRTL
         ? `*✨ طلب جديد مخصص - بوتيك الفخامة ✨*\n\n` +
           `👤 *العميل الموقر:* ${checkoutName.trim()}\n` +
-          `📞 *رقم الهاتف:* ${checkoutPhone.trim()}\n` +
+          `📞 *رقم الهاتف:* ${cleanedPhone}\n` +
           `📍 *عنوان التسليم:* ${checkoutAddress.trim()}\n` +
           (waNotesText ? `${waNotesText}\n` : '') +
           `\n🛍️ *القطع المطلوبة:*\n${waItemsText}\n\n` +
           `💰 *المجموع الكلي للاقتناء:* ${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AED`
         : `*✨ New Bespoke Order - Luxury Boutique ✨*\n\n` +
           `👤 *Client:* ${checkoutName.trim()}\n` +
-          `📞 *Phone:* ${checkoutPhone.trim()}\n` +
+          `📞 *Phone:* ${cleanedPhone}\n` +
           `📍 *Delivery Coordinates:* ${checkoutAddress.trim()}\n` +
           (waNotesText ? `${waNotesText}\n` : '') +
           `\n🛍️ *Items Ordered:*\n${waItemsText}\n\n` +
@@ -322,7 +335,7 @@ export default function CheckoutModal({
                 />
                 {formErrors.phone && (
                   <p className="text-[9px] text-red-400 font-sans mt-0.5">
-                    {isRTL ? 'يرجى إدخال رقم هاتف للتنسيق والتواصل.' : 'Mobile phone number is required.'}
+                    {formErrors.phoneMsg || (isRTL ? 'يرجى إدخال رقم هاتف للتنسيق والتواصل.' : 'Mobile phone number is required.')}
                   </p>
                 )}
               </div>

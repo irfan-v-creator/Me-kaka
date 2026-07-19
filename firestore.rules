@@ -61,9 +61,8 @@ service cloud.firestore {
     // Reviews Collection:
     // Secure reviews collection so that product reviews feature remains functional.
     match /reviews/{reviewId} {
-      allow read: if true;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow read, create, delete: if true;
+      allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
     }
   }
 }

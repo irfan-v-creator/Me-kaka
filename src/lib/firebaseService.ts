@@ -18,7 +18,8 @@ import {
   updateDoc,
   serverTimestamp,
   Timestamp,
-  addDoc
+  addDoc,
+  deleteDoc
 } from 'firebase/firestore';
 import { 
   ref, 
@@ -682,6 +683,19 @@ export async function submitProductReview(
     await addDoc(collection(db, 'reviews'), reviewData);
   } catch (err) {
     console.error('Error submitting review:', err);
+    throw err;
+  }
+}
+
+/**
+ * Deletes a review from the global reviews collection.
+ */
+export async function deleteProductReview(reviewId: string): Promise<void> {
+  try {
+    const reviewRef = doc(db, 'reviews', reviewId);
+    await deleteDoc(reviewRef);
+  } catch (err) {
+    console.error('Error deleting review:', err);
     throw err;
   }
 }

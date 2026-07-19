@@ -6,7 +6,8 @@ import {
   fetchProductReviews, 
   submitProductReview, 
   checkUserCanSubmitReview, 
-  ProductReview 
+  ProductReview,
+  deleteProductReview
 } from '../lib/firebaseService';
 
 interface ProductReviewsProps {
@@ -27,6 +28,16 @@ export default function ProductReviews({ productId, lang }: ProductReviewsProps)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const currentUser = auth.currentUser;
+
+  const handleDeleteReview = async (reviewId: string) => {
+    try {
+      await deleteProductReview(reviewId);
+      // Immediately update UI state
+      setReviews((prevReviews) => prevReviews.filter((r) => r.id !== reviewId));
+    } catch (err) {
+      console.error('Error removing review:', err);
+    }
+  };
 
   // Load reviews and check review capability
   useEffect(() => {
@@ -52,9 +63,10 @@ export default function ProductReviews({ productId, lang }: ProductReviewsProps)
   }, [productId, currentUser]);
 
   // Handle review submission
+  const [guestName, setGuestName] = useState<string>('');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return;
     if (!reviewText.trim()) {
       setMessage({
         type: 'error',
@@ -66,10 +78,21 @@ export default function ProductReviews({ productId, lang }: ProductReviewsProps)
     setSubmitting(true);
     setMessage(null);
     try {
+      const uid = currentUser ? currentUser.uid : 'guest_user';
+      
+      // If guest enters a name, sanitize it to make a valid display string, otherwise default to guest.patron
+      let email = 'guest.patron@luxoradubai.com';
+      if (currentUser) {
+        email = currentUser.email || 'vip-guild@stylesandgrace4.gmail.com';
+      } else if (guestName.trim()) {
+        const cleanName = guestName.trim().replace(/[^a-zA-Z0-9.\-_]/g, '');
+        email = cleanName ? `${cleanName}@guest.luxoradubai.com` : 'guest.patron@luxoradubai.com';
+      }
+
       await submitProductReview(
         productId,
-        currentUser.uid,
-        currentUser.email || 'vip-guild@stylesandgrace4.gmail.com',
+        uid,
+        email,
         rating,
         reviewText.trim()
       );
@@ -80,6 +103,7 @@ export default function ProductReviews({ productId, lang }: ProductReviewsProps)
       
       // Reset form
       setReviewText('');
+      setGuestName('');
       setRating(5);
       
       setMessage({
@@ -211,15 +235,23 @@ export default function ProductReviews({ productId, lang }: ProductReviewsProps)
                       })}
                     </div>
                   </div>
-                  <div className="flex items-center gap-0.5">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`h-3 w-3 ${
-                          star <= rev.rating ? 'text-[#e5c158] fill-[#e5c158]' : 'text-luxury-cream/10'
-                        }`}
-                      />
-                    ))}
+                  <div className="flex flex-col items-end gap-1.5">
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`h-3 w-3 ${
+                            star <= rev.rating ? 'text-[#e5c158] fill-[#e5c158]' : 'text-luxury-cream/10'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => handleDeleteReview(rev.id)}
+                      className="text-[10px] font-serif tracking-widest uppercase text-gold/40 hover:text-gold transition-colors duration-200 cursor-pointer hover:underline"
+                    >
+                      {isRTL ? 'إزالة' : 'Remove'}
+                    </button>
                   </div>
                 </div>
                 <p className="text-xs text-luxury-cream/80 leading-relaxed font-sans">
@@ -240,108 +272,90 @@ export default function ProductReviews({ productId, lang }: ProductReviewsProps)
           </h4>
         </div>
 
-        {currentUser ? (
-          canReview ? (
-            <form onSubmit={handleSubmit} className="space-y-4 text-start">
-              {message && (
-                <div className={`p-3.5 rounded-lg text-xs border ${
-                  message.type === 'success' 
-                    ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-400' 
-                    : 'bg-red-950/20 border-red-500/30 text-red-400'
-                }`}>
-                  {message.text}
-                </div>
-              )}
-
-              {/* Star Rating Select */}
-              <div className="space-y-1.5">
-                <span className="block text-[10px] uppercase tracking-widest text-gold/60 font-serif">
-                  {isRTL ? 'درجة الرضا الملكية' : 'Product Rating'}
-                </span>
-                <div className="flex items-center gap-2 py-1">
-                  {[1, 2, 3, 4, 5].map((star) => {
-                    const isFilled = (hoverRating || rating) >= star;
-                    return (
-                      <button
-                        key={star}
-                        type="button"
-                        onMouseEnter={() => setHoverRating(star)}
-                        onMouseLeave={() => setHoverRating(0)}
-                        onClick={() => setRating(star)}
-                        className="text-2xl transition-all active:scale-[0.85] cursor-pointer"
-                      >
-                        <Star 
-                          className={`h-6 w-6 transition-colors ${
-                            isFilled ? 'text-[#e5c158] fill-[#e5c158]' : 'text-luxury-cream/15 border-none'
-                          }`} 
-                        />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Review Text Area */}
-              <div className="space-y-1.5">
-                <span className="block text-[10px] uppercase tracking-widest text-gold/60 font-serif">
-                  {isRTL ? 'ملاحظاتكم الاستثنائية' : 'Review / Comments'}
-                </span>
-                <textarea
-                  value={reviewText}
-                  onChange={(e) => setReviewText(e.target.value)}
-                  placeholder={isRTL ? 'شاركنا تفاصيل تجربتك الاستثنائية مع هذه التحفة الملكية...' : 'Share your experience with this product...'}
-                  className="w-full min-h-[90px] bg-[#121212] border border-[#262626] focus:border-[#e5c158]/50 text-white rounded-lg p-3 text-xs outline-none focus:ring-1 focus:ring-[#e5c158]/30 transition-all font-sans resize-none"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="bg-gradient-to-r from-gold via-gold-light to-gold text-luxury-black font-serif text-[10px] font-bold tracking-widest uppercase px-6 py-3 rounded-lg shadow-lg hover:shadow-gold/15 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 cursor-pointer"
-              >
-                {submitting ? (
-                  <span className="h-4 w-4 border-2 border-luxury-black border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <CheckCircle2 className="h-4 w-4" />
-                    <span>{isRTL ? 'إرسال التقييم الموثق' : 'Publish Verified Review'}</span>
-                  </>
-                )}
-              </button>
-            </form>
-          ) : (
-            <div className="flex gap-3 bg-luxury-black/30 border border-gold/10 rounded-xl p-5 text-start items-start">
-              <Lock className="h-5 w-5 text-gold/60 flex-shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <h5 className="font-serif text-xs font-bold text-gold tracking-wider">
-                  {isRTL ? 'تم حظر التقييم - يلزم اقتناء القطعة' : 'Submission Locked - Verified Owners Only'}
-                </h5>
-                <p className="text-[11px] text-luxury-cream/60 leading-relaxed font-sans">
-                  {isRTL 
-                    ? 'في ستايلز آند جريس دبي، نلتزم بأعلى معايير المصداقية. لا يمكن تقديم تقييم إلا بعد إتمام الاستحواذ بنجاح على هذه القطعة الفنية المحددة وتأكيد تسليمها.' 
-                    : 'At Styles & Grace Dubai, we uphold absolute authenticity. Review submission is strictly reserved for patrons with completed, verified acquisitions of this specific timepiece/masterpiece.'
-                  }
-                </p>
-              </div>
+        <form onSubmit={handleSubmit} className="space-y-4 text-start">
+          {message && (
+            <div className={`p-3.5 rounded-lg text-xs border ${
+              message.type === 'success' 
+                ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-400' 
+                : 'bg-red-950/20 border-red-500/30 text-red-400'
+            }`}>
+              {message.text}
             </div>
-          )
-        ) : (
-          <div className="flex gap-3 bg-luxury-black/30 border border-gold/10 rounded-xl p-5 text-start items-start">
-            <Lock className="h-5 w-5 text-gold/60 flex-shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <h5 className="font-serif text-xs font-bold text-gold tracking-wider">
-                {isRTL ? 'يلزم تسجيل الدخول للتقييم' : 'Authentication Required'}
-              </h5>
-              <p className="text-[11px] text-luxury-cream/60 leading-relaxed font-sans">
-                {isRTL 
-                  ? 'يرجى تسجيل الدخول إلى حساب VIP الموثق الخاص بك للتحقق من أهليتك واقتنائك للقطع قبل تقديم المراجعة.' 
-                  : 'Please sign into your verified VIP account to check acquisition eligibility before presenting review notes.'
-                }
-              </p>
+          )}
+
+          {/* Guest Name input (only shown if guest) */}
+          {!currentUser && (
+            <div className="space-y-1.5">
+              <span className="block text-[10px] uppercase tracking-widest text-gold/60 font-serif">
+                {isRTL ? 'الاسم الكريم (اختياري)' : 'Your Name (Optional)'}
+              </span>
+              <input
+                type="text"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                placeholder={isRTL ? 'مثال: أحمد محمد' : 'e.g., Alexander Smith'}
+                className="w-full bg-[#121212] border border-[#262626] focus:border-[#e5c158]/50 text-white rounded-lg p-2.5 text-xs outline-none focus:ring-1 focus:ring-[#e5c158]/30 transition-all font-sans"
+              />
+            </div>
+          )}
+
+          {/* Star Rating Select */}
+          <div className="space-y-1.5">
+            <span className="block text-[10px] uppercase tracking-widest text-gold/60 font-serif">
+              {isRTL ? 'درجة الرضا الملكية' : 'Product Rating'}
+            </span>
+            <div className="flex items-center gap-2 py-1">
+              {[1, 2, 3, 4, 5].map((star) => {
+                const isFilled = (hoverRating || rating) >= star;
+                return (
+                  <button
+                    key={star}
+                    type="button"
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    onClick={() => setRating(star)}
+                    className="text-2xl transition-all active:scale-[0.85] cursor-pointer"
+                  >
+                    <Star 
+                      className={`h-6 w-6 transition-colors ${
+                        isFilled ? 'text-[#e5c158] fill-[#e5c158]' : 'text-luxury-cream/15 border-none'
+                      }`} 
+                    />
+                  </button>
+                );
+              })}
             </div>
           </div>
-        )}
+
+          {/* Review Text Area */}
+          <div className="space-y-1.5">
+            <span className="block text-[10px] uppercase tracking-widest text-gold/60 font-serif">
+              {isRTL ? 'ملاحظاتكم الاستثنائية' : 'Review / Comments'}
+            </span>
+            <textarea
+              value={reviewText}
+              onChange={(e) => setReviewText(e.target.value)}
+              placeholder={isRTL ? 'شاركنا تفاصيل تجربتك الاستثنائية مع هذه التحفة الملكية...' : 'Share your experience with this product...'}
+              className="w-full min-h-[90px] bg-[#121212] border border-[#262626] focus:border-[#e5c158]/50 text-white rounded-lg p-3 text-xs outline-none focus:ring-1 focus:ring-[#e5c158]/30 transition-all font-sans resize-none"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full sm:w-auto bg-gradient-to-r from-gold via-gold-light to-gold hover:from-white hover:to-white text-luxury-black font-serif text-[10px] font-bold tracking-widest uppercase px-6 py-3 rounded-lg shadow-lg hover:shadow-gold/15 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 cursor-pointer border border-gold/10"
+          >
+            {submitting ? (
+              <span className="h-4 w-4 border-2 border-luxury-black border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <CheckCircle2 className="h-4 w-4" />
+                <span>{isRTL ? 'إرسال التقييم' : 'SUBMIT REVIEW'}</span>
+              </>
+            )}
+          </button>
+        </form>
       </div>
     </div>
   );

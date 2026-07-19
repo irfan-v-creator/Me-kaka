@@ -384,38 +384,49 @@ export default function ProductShowcase({
                     </div>
 
                     {/* Action buttons */}
-                    <div className="mt-4 grid grid-cols-2 gap-2">
-                      <button 
-                        id={`buy-button-${product.id}`}
-                        disabled={product.stockStatus === 'Out of Stock'}
+                    <div className="mt-4 flex flex-col gap-2 w-full">
+                      <div className="grid grid-cols-2 gap-2">
+                        <button 
+                          id={`buy-button-${product.id}`}
+                          disabled={product.stockStatus === 'Out of Stock'}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (product.stockStatus === 'Out of Stock') return;
+                            if (onDirectPurchase) onDirectPurchase(product);
+                          }}
+                          className={`w-full py-2.5 text-[10px] sm:text-xs font-serif font-black uppercase tracking-widest rounded transition-all duration-300 text-center cursor-pointer ${
+                            product.stockStatus === 'Out of Stock'
+                              ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700/50'
+                              : 'bg-gold hover:bg-white text-luxury-black font-bold shadow-md hover:shadow-lg'
+                          }`}
+                        >
+                          {isRTL ? 'شراء مباشر' : 'BUY NOW'}
+                        </button>
+                        <button 
+                          id={`add-cart-button-${product.id}`}
+                          disabled={product.stockStatus === 'Out of Stock'}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (product.stockStatus === 'Out of Stock') return;
+                            if (onAddToCart) onAddToCart(product);
+                          }}
+                          className={`w-full py-2.5 text-[10px] sm:text-xs font-serif font-bold uppercase tracking-widest rounded transition-all duration-300 text-center cursor-pointer ${
+                            product.stockStatus === 'Out of Stock'
+                              ? 'bg-neutral-800/50 text-neutral-500 cursor-not-allowed border border-neutral-700/50'
+                              : 'border border-gold/30 hover:border-gold hover:bg-gold/10 text-gold font-bold shadow-md hover:shadow-lg'
+                          }`}
+                        >
+                          {isRTL ? 'إضافة للحقيبة' : 'ADD TO CART'}
+                        </button>
+                      </div>
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (product.stockStatus === 'Out of Stock') return;
-                          if (onDirectPurchase) onDirectPurchase(product);
+                          setSelectedProduct(product);
                         }}
-                        className={`w-full py-2.5 text-[10px] sm:text-xs font-serif font-black uppercase tracking-widest rounded transition-all duration-300 text-center cursor-pointer ${
-                          product.stockStatus === 'Out of Stock'
-                            ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700/50'
-                            : 'bg-gold hover:bg-white text-luxury-black font-bold shadow-md hover:shadow-lg'
-                        }`}
+                        className="w-full py-2 rounded border border-gold/30 bg-luxury-black/40 hover:border-gold hover:bg-gold/5 text-gold font-serif font-bold text-[10px] sm:text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center cursor-pointer"
                       >
-                        {isRTL ? 'شراء مباشر' : 'BUY NOW'}
-                      </button>
-                      <button 
-                        id={`add-cart-button-${product.id}`}
-                        disabled={product.stockStatus === 'Out of Stock'}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (product.stockStatus === 'Out of Stock') return;
-                          if (onAddToCart) onAddToCart(product);
-                        }}
-                        className={`w-full py-2.5 text-[10px] sm:text-xs font-serif font-bold uppercase tracking-widest rounded transition-all duration-300 text-center cursor-pointer ${
-                          product.stockStatus === 'Out of Stock'
-                            ? 'bg-neutral-800/50 text-neutral-500 cursor-not-allowed border border-neutral-700/50'
-                            : 'border border-gold/30 hover:border-gold hover:bg-gold/10 text-gold font-bold shadow-md hover:shadow-lg'
-                        }`}
-                      >
-                        {isRTL ? 'إضافة للحقيبة' : 'ADD TO CART'}
+                        <span>{isRTL ? 'معاينة التفاصيل' : 'VIEW DETAILS'}</span>
                       </button>
                     </div>
 
