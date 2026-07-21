@@ -355,23 +355,8 @@ export default function ProductShowcase({
                         </p>
                       </div>
 
-                      {/* Pricing with Original Price Struck Through & highlighted active price next to it */}
-                      <div className="pt-3 border-t border-gold/5 mt-3 flex items-center justify-between">
-                        <div className="flex flex-col text-start">
-                          <span className="text-[9px] text-luxury-cream/40 uppercase font-mono tracking-wider">{isRTL ? 'المبلغ التقديري' : 'Investment Value'}</span>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            {product.originalPriceAED && (
-                              <span className="font-mono text-xs text-gray-500 line-through">
-                                {product.originalPriceAED.toLocaleString()} AED
-                              </span>
-                            )}
-                            <span className="font-mono text-[15px] font-bold text-gold">
-                              {product.priceAED.toLocaleString()} AED
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Stock status indicator */}
+                      {/* Stock status indicator */}
+                      <div className="pt-3 border-t border-gold/5 mt-3 flex items-center justify-end">
                         <span className={`text-[10px] font-serif tracking-wider px-2 py-0.5 rounded flex items-center gap-1.5 ${
                           product.stockStatus === 'In Stock' 
                             ? 'text-emerald-400 bg-emerald-950/10' 

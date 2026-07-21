@@ -190,31 +190,8 @@ export default function HomepageGrids({
                 {isRTL ? dealProduct.descriptionAr : dealProduct.descriptionEn}
               </p>
 
-              {/* Pricing section with original and deal price */}
-              <div className="flex items-end gap-4 border-y border-gold/10 py-4 max-w-sm">
-                <div>
-                  <span className="block text-[8px] uppercase tracking-widest text-luxury-cream/40 font-mono mb-0.5">
-                    {isRTL ? 'السعر الأصلي' : 'ORIGINAL PRICE'}
-                  </span>
-                  <span className="text-xs sm:text-sm text-luxury-cream/50 line-through font-mono">
-                    AED {formatPrice(dealProduct.priceAED)}
-                  </span>
-                </div>
-                <div className="text-gold">
-                  <span className="block text-[8px] uppercase tracking-widest text-gold/60 font-mono mb-0.5 font-bold">
-                    {isRTL ? 'سعر العرض الخاص' : 'EXCLUSIVE DEAL PRICE'}
-                  </span>
-                  <span className="text-xl sm:text-2xl font-bold font-mono text-[#e5c158]">
-                    AED {formatPrice(Math.round(dealProduct.priceAED * 0.9))}
-                  </span>
-                </div>
-                <div className="bg-emerald-950/20 border border-emerald-500/30 rounded px-2 py-0.5 text-emerald-400 text-[10px] font-bold font-mono">
-                  {isRTL ? 'وفّر ١٠٪' : 'SAVE 10%'}
-                </div>
-              </div>
-
               {/* Action buttons */}
-              <div className="flex flex-wrap gap-3 pt-2">
+              <div className="flex flex-wrap gap-3 pt-4">
                 <button
                   onClick={() => onDirectPurchase(dealProduct)}
                   className="px-5 py-2.5 rounded bg-gradient-to-r from-[#e5c158] to-[#cba33f] text-luxury-black font-serif font-black text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 hover:scale-105 hover:shadow-[0_0_15px_rgba(229,193,88,0.3)] flex items-center gap-2 cursor-pointer"
@@ -234,7 +211,7 @@ export default function HomepageGrids({
                   className="px-5 py-2.5 rounded border border-gold/30 bg-luxury-black/40 hover:border-gold hover:bg-gold/5 text-gold font-serif font-bold text-xs sm:text-sm tracking-widest uppercase transition-all duration-300 flex items-center gap-2 cursor-pointer"
                 >
                   <Eye className="h-4 w-4" />
-                  <span>{isRTL ? 'معاينة التفاصيل' : 'View Details'}</span>
+                  <span>{isRTL ? 'معاينة التفاصيل' : 'VIEW DETAILS'}</span>
                 </button>
               </div>
             </div>
@@ -296,12 +273,6 @@ export default function HomepageGrids({
                       <p className="text-luxury-cream/60 text-xs font-light line-clamp-3 leading-relaxed mt-2">
                         {isRTL ? product.descriptionAr : product.descriptionEn}
                       </p>
-                    </div>
-                    
-                    <div className="pt-2">
-                      <span className="text-base font-bold font-mono text-[#e5c158]">
-                        AED {formatPrice(product.priceAED)}
-                      </span>
                     </div>
                   </div>
                 </div>
@@ -398,35 +369,27 @@ export default function HomepageGrids({
                     </p>
                   </div>
 
-                  <div className="pt-4 border-t border-gold/10 mt-4 flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-luxury-cream/40 uppercase tracking-wider font-mono">{isRTL ? 'قيمة الاستثمار' : 'Price'}</span>
-                      <span className="text-base font-bold font-mono text-[#e5c158]">
-                        AED {formatPrice(product.priceAED)}
-                      </span>
-                    </div>
-                    <div className="flex flex-col gap-2 w-full">
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() => onDirectPurchase(product)}
-                          className="w-full py-2.5 rounded bg-gold hover:bg-white text-luxury-black font-serif font-black text-[10px] sm:text-xs tracking-widest uppercase transition-colors cursor-pointer text-center font-bold"
-                        >
-                          {isRTL ? 'شراء مباشر' : 'BUY NOW'}
-                        </button>
-                        <button
-                          onClick={() => onAddToCart && onAddToCart(product)}
-                          className="w-full py-2.5 rounded border border-gold/30 hover:border-gold hover:bg-gold/10 text-gold font-serif font-black text-[10px] sm:text-xs tracking-widest uppercase transition-colors cursor-pointer text-center font-bold"
-                        >
-                          {isRTL ? 'إضافة للحقيبة' : 'ADD TO CART'}
-                        </button>
-                      </div>
+                  <div className="pt-4 border-t border-gold/10 mt-4 flex flex-col gap-2 w-full">
+                    <div className="grid grid-cols-2 gap-2">
                       <button
-                        onClick={() => setSelectedProduct(product)}
-                        className="w-full py-2 rounded border border-gold/30 bg-luxury-black/40 hover:border-gold hover:bg-gold/5 text-gold font-serif font-bold text-[10px] sm:text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center cursor-pointer"
+                        onClick={() => onDirectPurchase(product)}
+                        className="w-full py-2.5 rounded bg-gold hover:bg-white text-luxury-black font-serif font-black text-[10px] sm:text-xs tracking-widest uppercase transition-colors cursor-pointer text-center font-bold"
                       >
-                        <span>{isRTL ? 'معاينة التفاصيل' : 'VIEW DETAILS'}</span>
+                        {isRTL ? 'شراء مباشر' : 'BUY NOW'}
+                      </button>
+                      <button
+                        onClick={() => onAddToCart && onAddToCart(product)}
+                        className="w-full py-2.5 rounded border border-gold/30 hover:border-gold hover:bg-gold/10 text-gold font-serif font-black text-[10px] sm:text-xs tracking-widest uppercase transition-colors cursor-pointer text-center font-bold"
+                      >
+                        {isRTL ? 'إضافة للحقيبة' : 'ADD TO CART'}
                       </button>
                     </div>
+                    <button
+                      onClick={() => setSelectedProduct(product)}
+                      className="w-full py-2 rounded border border-gold/30 bg-luxury-black/40 hover:border-gold hover:bg-gold/5 text-gold font-serif font-bold text-[10px] sm:text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center cursor-pointer"
+                    >
+                      <span>{isRTL ? 'معاينة التفاصيل' : 'VIEW DETAILS'}</span>
+                    </button>
                   </div>
                 </div>
               </div>
